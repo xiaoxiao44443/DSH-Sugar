@@ -180,17 +180,17 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
                                 host.postMessage(WebMessage(result.toString()))
                             }
                         }
-                        "browseInternalFiles" -> if (activity is MainActivity && storageVisible && view.hasWindowFocus()) {
+                        "browseInternalFiles" -> if (activity is WorkspaceActivity && storageVisible && view.hasWindowFocus()) {
                             app.dsh.sugar.workspace.ProjectFolderReveal(activity).showInternal()
                         }
-                        "sessionStorageQuery", "sessionStorageDelete", "sessionStorageOpen" -> if (activity is MainActivity && sessionStorageVisible) {
+                        "sessionStorageQuery", "sessionStorageDelete", "sessionStorageOpen" -> if (activity is WorkspaceActivity && sessionStorageVisible) {
                             sessionStorage.handle(data, view.isShown && view.hasWindowFocus()) { result ->
                                 if (channel === host && sessionStorageVisible && endpoint.owns(view.url.orEmpty())) {
                                     host.postMessage(WebMessage(result.toString()))
                                 }
                             }
                         }
-                        "workspaceFilesQuery", "workspaceFilesDelete", "workspaceFilesOpen" -> if (activity is MainActivity && workspaceFilesVisible) {
+                        "workspaceFilesQuery", "workspaceFilesDelete", "workspaceFilesOpen" -> if (activity is WorkspaceActivity && workspaceFilesVisible) {
                             workspaceFiles.handle(data, view.isShown && view.hasWindowFocus()) { result ->
                                 if (channel === host && workspaceFilesVisible && endpoint.owns(view.url.orEmpty())) {
                                     host.postMessage(WebMessage(result.toString()))

@@ -32,7 +32,7 @@ import app.dsh.sugar.workspace.LegacyFolderLinks
 import app.dsh.sugar.workspace.ProjectFolderReveal
 import app.dsh.sugar.workspace.WorkspaceMenus
 
-class MainActivity : Activity() {
+class WorkspaceActivity : Activity() {
     private val session = WorkspaceSession()
     private lateinit var root: FrameLayout
     private lateinit var splash: LaunchScreen
@@ -241,14 +241,14 @@ class MainActivity : Activity() {
             }
 
             override fun onConnecting() {
-                if (isFinishing || launchAttempt != id || session.state !is LaunchState.Starting) return
-                session.progress(id, this@MainActivity.sugarString(R.string.splash_connecting))
+                if (isFinishing || isDestroyed || launchAttempt != id || session.state !is LaunchState.Starting) return
+                session.progress(id, this@WorkspaceActivity.sugarString(R.string.splash_connecting))
                 render()
                 if (web == null) createBrowser(id)
             }
 
             override fun onReady(address: String) {
-                if (isFinishing) return
+                if (isFinishing || isDestroyed) return
                 val endpoint = session.connected(id, address) ?: return
                 activeEndpoint = endpoint
                 val browser = web ?: createBrowser(id) ?: return
@@ -285,7 +285,7 @@ class MainActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun createBrowser(id: Long): WebView? {
         val browser = try { WebView(this) } catch (_: RuntimeException) {
-            session.failed(id, this@MainActivity.sugarString(R.string.splash_no_webview))
+            session.failed(id, this@WorkspaceActivity.sugarString(R.string.splash_no_webview))
             render()
             return null
         }
@@ -316,7 +316,7 @@ class MainActivity : Activity() {
                     callback.onReceiveValue(null)
                     return true
                 }
-                return uploads.open(this@MainActivity, callback, params)
+                return uploads.open(this@WorkspaceActivity, callback, params)
             }
             override fun onPermissionRequest(request: PermissionRequest) {
                 if (web !== browser || !canGrantMicrophone(request)) {

@@ -52,13 +52,16 @@
         <activity android:name=".RecoveryProfileEditorActivity" android:exported="false"
             android:theme="@style/RecoveryEditorWindow"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden" />
-        <activity android:name=".MainActivity" android:exported="true"
-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden">
+        <activity android:name=".WorkspaceActivity" android:exported="false" android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden" />
+        <!-- Keep the installed launcher component stable across upgrades. -->
+        <activity-alias android:name=".MainActivity" android:targetActivity=".NotificationEntryActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
         <receiver android:name=".AdbPairingReply" android:exported="false" />
         <provider
             android:name=".ExternalProfileProvider"

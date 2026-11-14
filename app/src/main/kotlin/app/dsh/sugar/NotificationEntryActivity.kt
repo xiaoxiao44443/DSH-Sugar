@@ -2,6 +2,7 @@ package app.dsh.sugar
 
 import android.Manifest
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
@@ -10,19 +11,24 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 
-/** Decide whether to bring Main to the front before Android applies CLEAR_TOP to its task. */
+/** Route launches while preserving the active diagnostic or file picker above the workspace. */
 class NotificationEntryActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val session = AgentNotifications.target(intent)
         val prefs = getSharedPreferences(STORE, MODE_PRIVATE)
-        if (RecoveryController.working) {
-            // Returning from this window reveals the existing viewer (or its open editor).
+        val workspace = getSystemService(ActivityManager::class.java).appTasks.firstOrNull {
+            it.taskInfo?.baseActivity?.className == WorkspaceActivity::class.java.name
+        }
+        val launcher = intent.action == Intent.ACTION_MAIN ||
+            (intent.action == null && intent.component?.className == "$packageName.MainActivity")
+        if (RecoveryController.working || launcher && workspace != null) {
+            // A launcher tap restores the whole task, including a diagnostic viewer or a file picker.
             if (session != null) prefs.edit().putString(SESSION, session).apply()
-        } else if (intent.action != Intent.ACTION_MAIN || isTaskRoot) {
+            workspace?.moveToFront()
+        } else {
             if (session != null) prefs.edit().remove(SESSION).apply()
-            val open = Intent(this, MainActivity::class.java).setAction(intent.action).setData(intent.data)
-                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            val open = Intent(this, WorkspaceActivity::class.java).setAction(intent.action).setData(intent.data)
             if (intent.hasCategory(Intent.CATEGORY_LAUNCHER)) open.addCategory(Intent.CATEGORY_LAUNCHER)
             startActivity(open)
         }
