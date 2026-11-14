@@ -1,0 +1,33 @@
+<resources>
+    <string name="diag_title">診断と復旧</string>
+    <string name="diag_back">戻る</string>
+    <string name="diag_intro">一時セッションの開始、本体の復元、設定の初期化を行うと、通常の DSH は一時停止し、実行中のワークスペースタスクは終了します。戻ると DSH に再接続します。一時セッションの会話と設定は終了時に削除されます。</string>
+    <string name="diag_current">一時設定で起動</string>
+    <string name="diag_current_note">現在の DSH を一時設定で起動します。診断ワークスペースの repair/.dsh で元のユーザーデータを、repair/dsh で元のプログラムを修復できます。</string>
+    <string name="diag_builtin">同梱版で診断</string>
+    <string name="diag_builtin_note">現在の DSH の破損が疑われるときに、APK 同梱版で一時セッションを起動します。</string>
+    <string name="diag_restore">DSH 本体を復元</string>
+    <string name="diag_restore_note">現在の DSH 本体をアプリ同梱版に置き換えます。インストール済みプログラムファイルへの変更は上書きされます。</string>
+    <string name="diag_reset">設定を初期化</string>
+    <string name="diag_reset_note">通常の DSH の設定ファイルを初期化します。このファイルでカスタマイズしたモデル設定やプラグイン設定は初期値に戻ります。</string>
+    <string name="diag_cancel">キャンセル</string>
+    <string name="diag_confirm">復元する</string>
+    <string name="diag_interrupted">前回の診断は中断されました。</string>
+    <string name="diag_busy">別の復旧操作を実行中です。</string>
+    <string name="diag_wait">準備中…</string>
+    <string name="diag_closing">一時セッションを終了中…</string>
+    <string name="diag_closed">一時セッションを終了しました。診断画面を閉じると DSH が再起動します。</string>
+    <string name="diag_repaired">復元しました。戻ると DSH を再起動します。</string>
+    <string name="diag_display_failed">診断ページを開けなかったため、一時セッションを終了しました。</string>
+    <string name="diag_failed">操作を完了できませんでした。もう一度お試しください。</string>
+    <string name="diag_end">診断を終了</string>
+    <string name="diag_nav_open">サイドナビを開く</string>
+    <string name="diag_nav_close">サイドナビを閉じる</string>
+    <string name="diag_nav_home">DSH ホームに戻る</string>
+    <string name="diag_session_home">診断セッションのホーム</string>
+    <string name="diag_forward">進む</string>
+    <string name="diag_end_question">診断を終了しますか？</string>
+    <string name="diag_end_detail">この一時セッションの会話と設定は削除されます。</string>
+    <string name="diag_browser_problem">診断ページを開けませんでした。サイドナビで診断セッションのホームを選ぶと再試行できます。</string>
+    <string name="diag_profile_edit_hint">変更は一時ファイルに保存されます。実行中のセッションでは読み込み済みの設定が使われ、診断を終了するとこのファイルは削除されます。</string>
+</resources>

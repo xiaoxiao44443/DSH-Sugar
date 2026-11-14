@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sugar_file_browser_missing">ブラウザーをインストールするか有効にしてから、もう一度ログインしてください。</string>
+    <string name="sugar_file_browser_launch">ブラウザーを開けません。システムの既定のブラウザー設定を確認してください。</string>
+    <string name="sugar_file_editor_missing">このテキストファイルを編集できるアプリがありません。内蔵エディターを使用できます。</string>
+    <string name="sugar_file_editor_choose">テキストエディターを選択</string>
+    <string name="sugar_file_editor_launch">外部エディターを開けません。</string>
+    <string name="sugar_file_editor_receive">外部エディターの変更を受け取れません。</string>
+    <string name="sugar_file_editor_stage">確認用の変更内容を一時保存できません。</string>
+    <string name="sugar_file_editor_read">外部エディターの変更を読み取れません。</string>
+    <string name="sugar_file_config_limit">設定ファイルが 1 MiB を超えています。</string>
+    <string name="sugar_file_editor_busy">設定はすでに外部エディターで編集中です。</string>
+    <string name="sugar_file_editor_pending">前回の編集内容を保存するか破棄してください。</string>
+    <string name="sugar_file_editor_expired">編集の有効期限が切れました。設定ファイルを開き直してください。</string>
+    <string name="sugar_file_editor_utf8">外部エディターで保存されたファイルは有効な UTF-8 ではありません。</string>
+    <string name="sugar_file_draft_limit">ファイルが 1 MiB を超えているため、変更を一時保存できません。</string>
+    <string name="sugar_file_edited_limit">外部エディターで保存されたファイルが 1 MiB を超えています。</string>
+    <string name="sugar_file_editor_writing">ファイルを書き込み中です。エディターの保存が完了してから再度お試しください。</string>
+    <string name="sugar_file_transfer_busy">ファイルを転送中です。</string>
+    <string name="sugar_file_invalid_size">ファイルサイズが無効です。</string>
+    <string name="sugar_file_invalid_action">ファイルの操作が無効です。</string>
+    <string name="sugar_file_incomplete">ファイルデータが不完全です。</string>
+    <string name="sugar_file_interrupted">ファイル転送が中断されました。</string>
+    <string name="sugar_file_invalid_transfer">ファイル転送が無効です。</string>
+    <string name="sugar_file_operation_failed">端末でのファイル操作に失敗しました。</string>
+    <string name="sugar_file_download_create">ダウンロードフォルダにファイルを作成できません。</string>
+    <string name="sugar_file_download_write">ダウンロードフォルダに書き込めません。</string>
+    <string name="sugar_file_download_finish">ダウンロードを完了できません。</string>
+    <string name="sugar_file_cache">ファイルキャッシュを準備できません。</string>
+    <string name="sugar_file_activity_closed">アプリの画面が閉じられました。</string>
+    <string name="sugar_file_open_failed">ファイルを開けません。</string>
+</resources>

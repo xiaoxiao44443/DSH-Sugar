@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_companion_ready">I’m here whenever you’re ready.</string>
+    <string name="pet_detail_waiting">Script waiting · Step %1$s</string>
+    <string name="pet_detail_thinking">Thinking · Step %1$s</string>
+    <string name="pet_detail_observed">Screen read · Step %1$s</string>
+    <string name="pet_detail_dispatched">Input sent · Step %1$s</string>
+    <string name="pet_detail_step">Step elapsed · %1$s</string>
+    <string name="pet_phone_step_screen">Checking the screen for the next step.</string>
+    <string name="pet_phone_step_error">Something went wrong on this step. Checking it now.</string>
+    <string-array name="pet_speech_idle">
+        <item>Right here.</item>
+        <item>Taking a little break.</item>
+    </string-array>
+    <string-array name="pet_speech_poke">
+        <item>Hm.</item>
+        <item>No poking.</item>
+        <item>What is it?</item>
+    </string-array>
+    <string-array name="pet_speech_phone">
+        <item>Checking the screen.</item>
+        <item>Using the phone.</item>
+    </string-array>
+    <string-array name="pet_speech_coding">
+        <item>Writing code.</item>
+        <item>A few more keystrokes.</item>
+    </string-array>
+    <string-array name="pet_speech_thinking">
+        <item>Let me think.</item>
+        <item>What else could work?</item>
+    </string-array>
+    <string-array name="pet_speech_asking">
+        <item>Waiting for your reply.</item>
+        <item>What do you think?</item>
+    </string-array>
+    <string-array name="pet_speech_working">
+        <item>Working on it.</item>
+        <item>Still on the task.</item>
+    </string-array>
+</resources>

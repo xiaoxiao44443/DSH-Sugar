@@ -1,0 +1,15 @@
+<resources>
+    <string name="pet_note_preview_title">回答メモのプレビュー</string>
+    <string name="pet_note_preview_question">このターン、何を優先する？</string>
+    <string name="pet_note_preview_result">選択した回答：%1$s</string>
+    <string-array name="pet_note_preview_options">
+        <item>盤上のアイテムを回収する</item>
+        <item>合成した装備を一番相性のいいキャラに渡す</item>
+        <item>無料更新を使う</item>
+        <item>主力キャラの星を上げる</item>
+        <item>コインを貯める</item>
+    </string-array>
+    <string name="pet_note_preview_transcript">音声入力の模擬プレビュー</string>
+    <string name="pet_note_preview_input">試したい回答を入力</string>
+    <string name="pet_note_preview_apply">メモに追加</string>
+</resources>

@@ -1,0 +1,15 @@
+<resources>
+    <item type="id" name="sugar_dialog_surface" />
+    <style name="SugarPopupLight" parent="@android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowElevation">10dp</item>
+        <item name="android:colorAccent">#080C11</item>
+    </style>
+    <style name="SugarPopupDark" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowElevation">10dp</item>
+        <item name="android:colorAccent">#FFFEFB</item>
+    </style>
+</resources>

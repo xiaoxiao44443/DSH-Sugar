@@ -1,0 +1,6 @@
+<resources>
+    <string name="diag_group_diagnose">临时诊断</string>
+    <string name="diag_group_restore">恢复原环境</string>
+    <color name="sugar_diag_ink">#446D68</color>
+    <color name="sugar_diag_restore_ink">#895D46</color>
+</resources>

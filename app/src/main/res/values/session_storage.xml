@@ -1,0 +1,10 @@
+<resources>
+    <string name="storage_preview_empty">空文件</string>
+    <string name="session_confirm_conversation">仅删除这条对话？系统保存的附件仍可在「仅剩附件」中按原对话名称清理。</string>
+    <string name="session_confirm_attachments">清理这条对话的系统附件？其他对话仍在使用的附件和工作区原文件会保留。</string>
+    <string name="session_confirm_both">删除这条对话及其系统附件？其他对话仍在使用的附件和工作区原文件会保留。</string>
+    <string name="storage_workspace_confirm_files">删除所选的 %1$d 项？</string>
+    <string name="storage_workspace_confirm_clear">清空当前目录中的 %1$d 项？</string>
+    <string name="storage_workspace_delete_contents">所选文件夹中的所有内容也将删除。</string>
+    <string name="storage_workspace_delete_phone">此工作区直连手机文件夹，也会删除手机文件夹中的原文件。</string>
+</resources>

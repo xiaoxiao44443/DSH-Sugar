@@ -1,0 +1,4 @@
+<resources>
+    <string name="pet_voice_preparing_note">Getting ready…</string>
+    <string name="pet_voice_discard_note">Cancel voice input</string>
+</resources>

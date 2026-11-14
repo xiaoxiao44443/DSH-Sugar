@@ -1,0 +1,4 @@
+<resources>
+    <string name="diag_group_diagnose">Temporary diagnostics</string>
+    <string name="diag_group_restore">Restore your environment</string>
+</resources>

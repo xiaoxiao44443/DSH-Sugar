@@ -1,0 +1,20 @@
+<resources>
+    <string name="mobile_virtual_open_chat">打开所属对话</string>
+    <string name="mobile_virtual_chat_unavailable">暂时无法打开这条对话。</string>
+    <string name="mobile_virtual_manager">管理虚拟屏</string>
+    <string name="mobile_virtual_parked">虚拟屏 #%1$d · 已保留</string>
+    <string name="mobile_virtual_stop">关闭屏幕</string>
+    <string name="mobile_virtual_list">屏幕列表</string>
+    <string name="mobile_virtual_empty">暂无运行中的虚拟屏</string>
+    <string name="mobile_virtual_starting">正在启动</string>
+    <string name="mobile_virtual_display_id">虚拟屏 #%1$d · 运行中</string>
+    <string name="mobile_virtual_conversation">对话 %1$s</string>
+    <string name="mobile_manager_close">关闭</string>
+    <string name="mobile_virtual_preview">虚拟屏预览</string>
+    <string name="mobile_preview_loading">正在读取虚拟屏…</string>
+    <string name="mobile_preview_unavailable">暂时无法获取虚拟屏画面。请确认虚拟屏任务正在运行。</string>
+    <string name="mobile_settings_unavailable">无法打开系统无障碍设置。</string>
+    <string name="mobile_preview_smaller">缩小预览</string>
+    <string name="mobile_preview_larger">放大预览</string>
+    <string name="mobile_preview_resize">拖动调整预览大小，轻点切换尺寸</string>
+</resources>

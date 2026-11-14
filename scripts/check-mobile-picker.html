@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>DSH Sugar directory picker regression</title>
+<style>
+  #card {width:330px;max-width:100%;border:1px solid;padding:8px}
+  #footer {display:flex;flex-wrap:wrap;gap:8px}
+  button {height:32px}
+</style>
+<body>
+<div role="dialog"><h2>Unrelated dialog</h2><button aria-pressed="false">Hidden</button></div>
+<div role="dialog" id="card">
+  <header><h2>Select directory</h2><div><span role="navigation" id="crumbs"></span>
+    <button id="edit" aria-label="Edit path">✎</button></div></header>
+  <div role="list"></div>
+  <div id="footer"><button>New folder</button><button id="hidden" aria-pressed="false">Hidden</button><span></span><button id="cancel">Cancel</button><button id="open">Open</button></div>
+</div>
+<p id="result">RUNNING</p>
+<script src="../app/src/main/assets/guest/dsh-sugar-workspace/picker.js"></script>
+<script>
+(async () => {
+  const get = id => document.getElementById(id);
+  const assert = (ok, message) => { if (!ok) throw Error(message); };
+  const settle = () => new Promise(resolve => setTimeout(resolve, 10));
+  let selection, projectRoots = [], listChanged, allow, revoke, clickedParent = '', phoneAction, closeCount = 0;
+  let sendDeletion = async () => true, nativePaths = [];
+  window.__dshSugarRemoveEmptyFolder = path => { nativePaths.push(path); return sendDeletion(path); };
+  window.__dshSugarChooseLocal = () => { phoneAction = 'pick'; return true; };
+  const card = get('card');
+  let adopted = '/workspace/old';
+  get('cancel').onclick = () => { closeCount++; card.remove(); };
+  get('open').onclick = () => { adopted = selection.join('/'); card.remove(); };
+  function show(segments) {
+    selection = segments;
+    get('crumbs').replaceChildren(...segments.map((name,index) => {
+      const button = document.createElement('button');
+      button.textContent = name;
+      button.onclick = () => { clickedParent = name; show(segments.slice(0,index+1)); };
+      return button;
+    }));
+  }
+  let editClicks = 0;
+  get('edit').onclick = () => { editClicks++; };
+  show(['/','workspace']);
+  const labels = {title:'Select directory', home:'Home', folderName:'Folder name', newFolder:'New folder', cancel:'Cancel', open:'Open', editPath:'Edit path', showHidden:'Hidden'};
+  const noop = () => {};
+  const dispose = installSugarDirectoryPicker({
+    locale:{bind:() => key => labels[key.split('.')[1]], resolveText:dict => dict.en, subscribe:() => noop},
+    remoteAccess:{whenAccess(_name, fn) { allow = () => { revoke = fn(); }; allow(); return () => revoke(); }},
+    workspaces:{list:{getSnapshot:() => ({phase:'ready',state:'ready',items:projectRoots.map(path => ({path}))}),
+      subscribe(fn) { listChanged = fn; return noop; }}}
+  });
+  const remove = () => document.querySelector('[data-sugar-picker-remove]');
+  const path = ['/', 'workspace','two words'];
+  await settle();
+  assert(selection.join(',') === '/,workspace', 'opens /workspace');
+  assert(!remove(), 'workspace root protected');
+  assert(document.querySelectorAll('[data-sugar-picker-header]').length === 1,'only picker enhanced');
+  const back = () => !window.dispatchEvent(new Event('sugar-picker-back', {cancelable:true}));
+  for (const dismiss of [() => get('cancel').click(), back]) {
+    show(['Home','aaaa']); await settle();
+    dismiss(); await settle();
+    assert(!card.isConnected && adopted === '/workspace/old','browsing and closing never adopts the folder');
+    document.body.append(card);
+    show(['/','workspace']); await settle();
+    assert(selection.join(',') === '/,workspace' && editClicks === 0,'a reopened picker does not navigate the path editor');
+  }
+  card.remove(); await settle(); document.body.append(card);
+  show(['Home']); await settle();
+  assert(editClicks === 0 && selection[0] === 'Home','explicit HOME navigation is preserved');
+  const nested = document.createElement('div'); nested.setAttribute('role','dialog');
+  nested.innerHTML='<h3>New folder</h3><input aria-label="Folder name"><button>Cancel</button>';
+  nested.querySelector('button').onclick=()=>nested.remove(); document.body.append(nested);
+  assert(back() && !nested.isConnected && card.isConnected,'Back dismisses the nested form before the picker');
+  show(path); await settle();
+  assert(remove()?.title === '/workspace/two words','exact path');
+  for (const registered of ['/workspace/two words','/workspace/two words/child']) {
+    projectRoots = [registered]; listChanged(); assert(!remove(),'protects registered root and parent');
+  }
+  projectRoots = []; listChanged();
+  revoke(); assert(!remove(),'read-only grant');
+  allow(); assert(remove(),'write permission');
+  if (innerWidth <= 680) {
+    const xy = () => ['cancel','open'].map(id => JSON.stringify(get(id).getBoundingClientRect().toJSON())).join();
+    const before = xy();
+    get('hidden').setAttribute('aria-pressed','true');
+    const check = document.createElement('i'); check.style.width = '14px'; get('hidden').append(check);
+    await settle(); assert(xy() === before,'toggle moved actions'); show(['/','workspace']); await settle();
+    assert(xy() === before,'protected folder moved actions'); show(path); await settle();
+  }
+  for (const segments of [['/','workspace','.hidden'], ['/','workspace','../foo'], ['/','workspace','phone-'+'a'.repeat(64)], ['/','workspace','local-'+'a'.repeat(64),'child'], ['/'], ['/','home'], ['/','home','sugar'], ['/','home','sugar','.dsh'], ['/','home','.cache'], ['/','opt','x']]) {
+    show(segments); await settle(); assert(!remove(),'hidden/reserved/unrecognised root');
+  }
+  for (const segments of [['/','home','新建项目'], ['/','home','sugar','新建项目']]) {
+    show(segments); await settle();
+    assert(remove()?.title === '/' + segments.slice(1).join('/'), 'full HOME path has the correct folder action');
+  }
+  show(path); await settle();
+  sendDeletion = async () => false; remove().click(); await settle();
+  assert(!clickedParent, 'confirmation cancellation');
+  sendDeletion = async () => { throw Error('not empty'); }; remove().click(); await settle();
+  assert(document.querySelector('[data-sugar-picker-error]').textContent === 'not empty','native failure visible');
+  let finish;
+  sendDeletion = () => new Promise(resolve => { finish = resolve; }); remove().click();
+  show(['/','workspace','another']); await settle(); finish(true); await settle();
+  assert(!clickedParent,'old completion moved new selection');
+  sendDeletion = async () => true; show(path); await settle(); remove().click(); await settle();
+  assert(clickedParent === 'workspace' && nativePaths.every(path => path === '/workspace/two words'),'success returns to parent');
+  document.querySelector('[data-sugar-picker-phone]').click();
+  assert(phoneAction === 'pick' && closeCount === 3,'phone dialog handoff');
+  dispose();
+  assert(!document.querySelector('[data-sugar-picker-header], [data-sugar-picker-phone], [data-sugar-picker-remove]'),'unload cleanup');
+  get('result').textContent = 'PASS';
+})().catch(error => { document.getElementById('result').textContent = 'FAIL: '+error.message; });
+</script></body></html>

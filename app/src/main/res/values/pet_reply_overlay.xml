@@ -1,0 +1,7 @@
+<resources>
+    <string name="pet_reply_preview_hint">双击宠物预览标签</string>
+    <string name="pet_reply_unavailable">回到对话查看当前请求</string>
+    <string name="pet_reply_send_error">暂时无法发送，请回到对话查看</string>
+    <string name="pet_reply_empty">可在桌宠设置中添加快捷短句</string>
+    <string name="pet_reply_to_session">回复 · %1$s</string>
+</resources>

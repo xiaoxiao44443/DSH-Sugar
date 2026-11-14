@@ -1,0 +1,4 @@
+<resources>
+    <string name="recovery_image_reuse">正在复用诊断环境</string>
+    <string name="recovery_program_copy">正在创建当前 DSH 的独立副本</string>
+</resources>

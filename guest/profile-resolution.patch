@@ -1,0 +1,106 @@
+--- a/opt/dsh/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js
++++ b/opt/dsh/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js
+@@ -2083,22 +2083,26 @@
+ 		return resolve(path);
+ 	}
+ }
+-function prefixes(path) {
++function prefixes(path, realDir = canonicalPath(path)) {
+ 	const configured = resolve(path) + sep;
+-	const canonical = canonicalPath(path) + sep;
++	const canonical = realDir + sep;
+ 	return canonical === configured ? [configured] : [configured, canonical];
+ }
+ function compileResolution(resolution) {
++	// Installation prefixes only exclude modules beneath linked roots. Profile
++	// entries always need a physical snapshot for the next replacement check.
++	const linked = resolution.linkedRoots.length !== 0;
++	const entries = resolution.entries.map((entry) => ({
++		...entry,
++		realDir: entry.scope === "installation" && !linked ? void 0 : canonicalPath(entry.packageDir)
++	}));
+ 	return {
+-		entries: new Map(resolution.entries.map((entry) => [entry.name, {
+-			...entry,
+-			realDir: canonicalPath(entry.packageDir)
+-		}])),
++		entries: new Map(entries.map((entry) => [entry.name, entry])),
+ 		profilesDir: resolution.profilesDir,
+ 		profileDir: resolution.profileDir,
+ 		profilePaths: prefixes(resolution.profilesDir),
+ 		profile: resolution.profileDir === void 0 ? [] : prefixes(resolution.profileDir),
+-		installationPaths: [...new Set(resolution.entries.filter((entry) => entry.scope === "installation").flatMap((entry) => prefixes(entry.packageDir)))],
++		installationPaths: linked ? [...new Set(entries.filter((entry) => entry.scope === "installation").flatMap((entry) => prefixes(entry.packageDir, entry.realDir)))] : [],
+ 		linkedPaths: resolution.linkedRoots.flatMap((root) => prefixes(root.realPath)),
+ 		localPackageNames: new Set(resolution.localPackageNames),
+ 		esmRoutes: /* @__PURE__ */ new Map(),
+@@ -2351,10 +2355,12 @@
+ 		for (const { name, realPath } of successor.linkedRoots) targets.set(name, realPath);
+ 		this.linkedTargets = targets;
+ 		for (const [from, to] of moves) this.moved.record(from, to);
+-		const current = [];
+-		for (const entry of next.entries.values()) current.push(entry.realDir);
+-		for (const root of successor.linkedRoots) current.push(root.realPath);
+-		this.moved.forget(current);
++		if (this.moved.targets.size !== 0) {
++			const current = [];
++			for (const entry of next.entries.values()) current.push(entry.realDir ?? canonicalPath(entry.packageDir));
++			for (const root of successor.linkedRoots) current.push(root.realPath);
++			this.moved.forget(current);
++		}
+ 		this.current = next;
+ 	}
+ 	/**
+--- a/opt/dsh/node_modules/@deepseek-ai/dsh-app-boot/lib/worker/profile-resolution-bootstrap.js
++++ b/opt/dsh/node_modules/@deepseek-ai/dsh-app-boot/lib/worker/profile-resolution-bootstrap.js
+@@ -81,22 +81,26 @@
+ 		return resolve(path);
+ 	}
+ }
+-function prefixes(path) {
++function prefixes(path, realDir = canonicalPath(path)) {
+ 	const configured = resolve(path) + sep;
+-	const canonical = canonicalPath(path) + sep;
++	const canonical = realDir + sep;
+ 	return canonical === configured ? [configured] : [configured, canonical];
+ }
+ function compileResolution(resolution) {
++	// Installation prefixes only exclude modules beneath linked roots. Profile
++	// entries always need a physical snapshot for the next replacement check.
++	const linked = resolution.linkedRoots.length !== 0;
++	const entries = resolution.entries.map((entry) => ({
++		...entry,
++		realDir: entry.scope === "installation" && !linked ? void 0 : canonicalPath(entry.packageDir)
++	}));
+ 	return {
+-		entries: new Map(resolution.entries.map((entry) => [entry.name, {
+-			...entry,
+-			realDir: canonicalPath(entry.packageDir)
+-		}])),
++		entries: new Map(entries.map((entry) => [entry.name, entry])),
+ 		profilesDir: resolution.profilesDir,
+ 		profileDir: resolution.profileDir,
+ 		profilePaths: prefixes(resolution.profilesDir),
+ 		profile: resolution.profileDir === void 0 ? [] : prefixes(resolution.profileDir),
+-		installationPaths: [...new Set(resolution.entries.filter((entry) => entry.scope === "installation").flatMap((entry) => prefixes(entry.packageDir)))],
++		installationPaths: linked ? [...new Set(entries.filter((entry) => entry.scope === "installation").flatMap((entry) => prefixes(entry.packageDir, entry.realDir)))] : [],
+ 		linkedPaths: resolution.linkedRoots.flatMap((root) => prefixes(root.realPath)),
+ 		localPackageNames: new Set(resolution.localPackageNames),
+ 		esmRoutes: /* @__PURE__ */ new Map(),
+@@ -349,10 +353,12 @@
+ 		for (const { name, realPath } of successor.linkedRoots) targets.set(name, realPath);
+ 		this.linkedTargets = targets;
+ 		for (const [from, to] of moves) this.moved.record(from, to);
+-		const current = [];
+-		for (const entry of next.entries.values()) current.push(entry.realDir);
+-		for (const root of successor.linkedRoots) current.push(root.realPath);
+-		this.moved.forget(current);
++		if (this.moved.targets.size !== 0) {
++			const current = [];
++			for (const entry of next.entries.values()) current.push(entry.realDir ?? canonicalPath(entry.packageDir));
++			for (const root of successor.linkedRoots) current.push(root.realPath);
++			this.moved.forget(current);
++		}
+ 		this.current = next;
+ 	}
+ 	/**

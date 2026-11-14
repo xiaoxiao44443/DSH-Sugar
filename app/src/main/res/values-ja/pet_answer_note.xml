@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_answer_voice">音声で回答</string>
+    <string name="pet_answer_confirm">選んだ回答を確定</string>
+    <string name="pet_answer_fold">回答ノートを閉じる</string>
+    <string name="pet_answer_expand">回答ノートを開く</string>
+</resources>

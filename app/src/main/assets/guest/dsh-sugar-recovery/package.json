@@ -1,0 +1,17 @@
+{
+  "name": "dsh-sugar-recovery",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-api-remote-access", "@deepseek-ai/dsh-api-session-controller"]
+    }
+  }
+}

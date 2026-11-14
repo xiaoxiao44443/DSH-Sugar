@@ -1,0 +1,7 @@
+<resources>
+    <string name="pet_reply_preview_hint">ペットをダブルタップしてメモを表示</string>
+    <string name="pet_reply_unavailable">このリクエストは会話で確認してください</string>
+    <string name="pet_reply_send_error">送信できませんでした。会話を確認してください</string>
+    <string name="pet_reply_empty">ペット設定で定型文を追加できます</string>
+    <string name="pet_reply_to_session">返信先 · %1$s</string>
+</resources>

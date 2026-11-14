@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sugar_file_browser_missing">Install or enable a browser, then try signing in again.</string>
+    <string name="sugar_file_browser_launch">Could not open the browser. Check the default browser in system settings.</string>
+    <string name="sugar_file_editor_missing">No installed app can edit this text file. You can use the built-in editor.</string>
+    <string name="sugar_file_editor_choose">Choose a text editor</string>
+    <string name="sugar_file_editor_launch">Could not open the external editor.</string>
+    <string name="sugar_file_editor_receive">Could not receive the changes from the external editor.</string>
+    <string name="sugar_file_editor_stage">Could not keep a copy of the changes for review.</string>
+    <string name="sugar_file_editor_read">Could not read the changes from the external editor.</string>
+    <string name="sugar_file_config_limit">The configuration file exceeds 1 MiB.</string>
+    <string name="sugar_file_editor_busy">The configuration is already open in an external editor.</string>
+    <string name="sugar_file_editor_pending">Save or discard your previous edits first.</string>
+    <string name="sugar_file_editor_expired">This edit has expired. Open the configuration file again.</string>
+    <string name="sugar_file_editor_utf8">The edited file is not valid UTF-8.</string>
+    <string name="sugar_file_draft_limit">The file exceeds 1 MiB. The changes could not be staged.</string>
+    <string name="sugar_file_edited_limit">The file saved by the external editor exceeds 1 MiB.</string>
+    <string name="sugar_file_editor_writing">The file is still being written. Try again after the editor finishes saving.</string>
+    <string name="sugar_file_transfer_busy">A file transfer is already in progress.</string>
+    <string name="sugar_file_invalid_size">Invalid file size.</string>
+    <string name="sugar_file_invalid_action">Invalid file action.</string>
+    <string name="sugar_file_incomplete">The file data is incomplete.</string>
+    <string name="sugar_file_interrupted">File transfer was interrupted.</string>
+    <string name="sugar_file_invalid_transfer">Invalid file transfer.</string>
+    <string name="sugar_file_operation_failed">The file operation on the phone failed.</string>
+    <string name="sugar_file_download_create">Could not create a file in Downloads.</string>
+    <string name="sugar_file_download_write">Could not write to Downloads.</string>
+    <string name="sugar_file_download_finish">Could not finish the download.</string>
+    <string name="sugar_file_cache">Could not prepare the file cache.</string>
+    <string name="sugar_file_activity_closed">The app page has closed.</string>
+    <string name="sugar_file_open_failed">Could not open the file.</string>
+</resources>

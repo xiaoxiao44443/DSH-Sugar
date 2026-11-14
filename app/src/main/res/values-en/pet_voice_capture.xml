@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_voice_recording">Listening…</string>
+    <string name="pet_voice_done">Finish recording</string>
+    <string name="pet_voice_transcribing">Transcribing…</string>
+    <string name="pet_voice_permission">Allow microphone access to record.</string>
+    <string name="pet_voice_unheard">No words were recognized. Try again.</string>
+    <string name="pet_voice_failed">Recording or local transcription is unavailable.</string>
+</resources>

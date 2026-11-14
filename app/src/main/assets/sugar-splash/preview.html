@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    html,body,#preview-page { height:100%; width:100%; margin:0; overflow:hidden; touch-action:none; }
+    #preview-page { position:absolute; inset:0; }
+  </style>
+  <script src="./layout.js"></script>
+</head>
+<body>
+  <section id="preview-page"></section>
+  <script>
+    'use strict';
+    const page = document.querySelector('#preview-page');
+    const surface = window.SugarSplashLayout.create(page);
+    const parentOrigin = location.ancestorOrigins?.[0];
+    let orientation, state, imageRevision, drag;
+    function send(message) { if (parentOrigin) parent.postMessage(message,parentOrigin); }
+    const bounded = value => Math.max(0,Math.min(100,Math.round(value * 1000) / 1000));
+    function stop(keep) {
+      if (!drag) return;
+      const {part,id,element,pos,moved} = drag;
+      drag = null;
+      if (element.hasPointerCapture(id)) element.releasePointerCapture(id);
+      if (keep && moved) send({type:'sugar-preview-position',part,orientation,...pos});
+      else if (moved) surface.configure(state,orientation);
+      element.style.cursor = 'grab';
+    }
+    function bind(element,part) {
+      element.setAttribute('data-preview-part',part);
+      element.tabIndex=0;
+      element.draggable=false;
+      Object.assign(element.style,{touchAction:'none',userSelect:'none',webkitUserSelect:'none',cursor:'grab',pointerEvents:'auto'});
+      element.addEventListener('pointerdown',event => {
+        if (drag || !orientation || !event.isPrimary || event.button !== 0) return;
+        event.preventDefault();
+        element.focus({preventScroll:true});
+        const bounds=surface.area.getBoundingClientRect(), rect=element.getBoundingClientRect();
+        const from=surface.position(part);
+        drag={id:event.pointerId,element,part,from,pos:from,moved:false,x:event.clientX,y:event.clientY,
+          spanX:Math.max(0,bounds.width-rect.width),spanY:Math.max(0,bounds.height-rect.height)};
+        element.setPointerCapture(event.pointerId);
+        element.style.cursor='grabbing';
+      });
+      function move(event) {
+        if (drag?.id !== event.pointerId) return;
+        const d=drag, dx=event.clientX-d.x, dy=event.clientY-d.y;
+        if (!d.moved && Math.abs(dx)+Math.abs(dy)<1) return;
+        d.moved=true;
+        d.pos={x:bounded(d.from.x+(d.spanX ? 100*dx/d.spanX : 0)),
+          y:bounded(d.from.y+(d.spanY ? 100*dy/d.spanY : 0))};
+        surface.move(part,d.pos.x,d.pos.y);
+      }
+      element.addEventListener('pointermove',move);
+      element.addEventListener('pointerup',event => { if (drag?.id === event.pointerId) { move(event); stop(true); } });
+      for (const type of ['pointercancel','lostpointercapture']) element.addEventListener(type,event => {
+        if (drag?.id === event.pointerId) stop(false);
+      });
+      element.addEventListener('keydown',event => {
+        const shifts={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+        if (!orientation || drag || !Object.hasOwn(shifts,event.key)) return;
+        event.preventDefault();
+        const delta=shifts[event.key], step=event.shiftKey?5:1, from=surface.position(part);
+        const x=bounded(from.x+delta[0]*step), y=bounded(from.y+delta[1]*step);
+        surface.move(part,x,y);
+        send({type:'sugar-preview-position',part,orientation,x,y});
+      });
+    }
+    bind(surface.art,'image');
+    bind(surface.text,'text');
+    window.addEventListener('message',event => {
+      if (event.source !== parent || event.origin !== parentOrigin) return;
+      const m=event.data;
+      if (m?.type !== 'sugar-preview-configure' || !['portrait','landscape'].includes(m.orientation) ||
+          !m.state || !Number.isSafeInteger(m.imageRevision) || m.imageRevision < 0 ||
+          !Array.isArray(m.safe) || m.safe.length !== 4 || !m.safe.every(Number.isFinite)) return;
+      if (orientation !== m.orientation) stop(false);
+      orientation=m.orientation; state=m.state;
+      page.style.setProperty('--safe',m.safe.map(v=>Math.max(0,v)+'px').join(' '));
+      if (!drag) surface.configure(state,orientation);
+      if (m.imageRevision !== imageRevision) {
+        imageRevision=m.imageRevision;
+        surface.setImage('./image?v='+imageRevision);
+      }
+    });
+    addEventListener('blur',()=>stop(false));
+    addEventListener('pagehide',()=>{stop(false);surface.dispose();});
+    send({type:'sugar-preview-ready'});
+  </script>
+</body>
+</html>

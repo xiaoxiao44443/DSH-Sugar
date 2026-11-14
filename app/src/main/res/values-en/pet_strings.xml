@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_service_active">Desktop pet is active. Tap to open Sugar.</string>
+    <string name="pet_idle">Idle</string>
+    <string name="pet_phone">On phone</string>
+    <string name="pet_coding">Coding</string>
+    <string name="pet_thinking">Thinking</string>
+    <string name="pet_asking">Asking</string>
+    <string name="pet_working">Working</string>
+    <string name="pet_operation_complete">Operation complete.</string>
+    <string name="pet_operation_error">The operation encountered a problem.</string>
+</resources>

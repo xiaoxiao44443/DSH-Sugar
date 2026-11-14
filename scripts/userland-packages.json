@@ -1,0 +1,157 @@
+[
+  {
+    "package": "coreutils",
+    "filename": "pool/main/c/coreutils/coreutils_9.1-1_arm64.deb",
+    "size": 2815252,
+    "sha256": "ec8f090a14c684879dce251254d8d9ed0876d4480f750d5807ef04e5435e1c4d",
+    "members": {
+      "/usr/bin/install": "usr/bin/install",
+      "/usr/bin/nohup": "usr/bin/nohup"
+    }
+  },
+  {
+    "package": "file",
+    "filename": "pool/main/f/file/file_5.44-3_arm64.deb",
+    "size": 42476,
+    "sha256": "de027231666482a8ae108f7f9c64711e08382b23476bb1f67979f9e3c39905c6",
+    "members": {
+      "/usr/bin/file": "usr/bin/file"
+    }
+  },
+  {
+    "package": "iproute2",
+    "filename": "pool/main/i/iproute2/iproute2_6.1.0-3_arm64.deb",
+    "size": 1008124,
+    "sha256": "58fad55c5a29be6c1e6301d0c572f2ac5e5962ff244e7da3784c1b29ffc6c6bf",
+    "members": {
+      "/usr/bin/ss.iproute2": "bin/ss"
+    }
+  },
+  {
+    "package": "libacl1",
+    "filename": "pool/main/a/acl/libacl1_2.3.1-3_arm64.deb",
+    "size": 30768,
+    "sha256": "2b0eef11a2e271e7355adaf1f6cbf8d2e83835ae1b6cf15165d59b8289c08342",
+    "members": {
+      "/usr/lib/aarch64-linux-gnu/libacl.so.1": "usr/lib/aarch64-linux-gnu/libacl.so.1.1.2301"
+    }
+  },
+  {
+    "package": "libattr1",
+    "filename": "pool/main/a/attr/libattr1_2.5.1-4_arm64.deb",
+    "size": 21888,
+    "sha256": "481e1c3fcad6773ba1c9d7f1de59e4fc80d95326c9b20192e13b7111013c932a",
+    "members": {
+      "/usr/lib/aarch64-linux-gnu/libattr.so.1": "usr/lib/aarch64-linux-gnu/libattr.so.1.1.2501"
+    }
+  },
+  {
+    "package": "libbsd0",
+    "filename": "pool/main/libb/libbsd/libbsd0_0.11.7-2_arm64.deb",
+    "size": 115116,
+    "sha256": "ef00f132ddd268ee67d756998723ee18543db27ab34930c0a9f1cff75cf55382",
+    "members": {
+      "/usr/lib/aarch64-linux-gnu/libbsd.so.0": "usr/lib/aarch64-linux-gnu/libbsd.so.0.11.7"
+    }
+  },
+  {
+    "package": "libc-bin",
+    "filename": "pool/main/g/glibc/libc-bin_2.36-9+deb12u14_arm64.deb",
+    "size": 534528,
+    "sha256": "65166ea54c05213c4f48d889138179f1b7345edd05031a9af276aa5fb4a45c05",
+    "members": {
+      "/usr/bin/getconf": "usr/bin/getconf",
+      "/usr/bin/getent": "usr/bin/getent"
+    }
+  },
+  {
+    "package": "libcap2",
+    "filename": "pool/main/libc/libcap2/libcap2_2.66-4+deb12u3+b1_arm64.deb",
+    "size": 27072,
+    "sha256": "b3a21ae1cef9c2f3fa340007100fb0aa934ab6a4d8aed131660de9713db2bb6e",
+    "members": {
+      "/usr/lib/aarch64-linux-gnu/libcap.so.2": "lib/aarch64-linux-gnu/libcap.so.2.66"
+    }
+  },
+  {
+    "package": "libmagic-mgc",
+    "filename": "pool/main/f/file/libmagic-mgc_5.44-3_arm64.deb",
+    "size": 304888,
+    "sha256": "ff57ca94d3c1231b16d10587e60a2cf6c53b53249879235c59fa0b19e832974c",
+    "members": {
+      "/usr/share/misc/magic.mgc": "usr/lib/file/magic.mgc"
+    }
+  },
+  {
+    "package": "libmagic1",
+    "filename": "pool/main/f/file/libmagic1_5.44-3_arm64.deb",
+    "size": 98536,
+    "sha256": "2fbaa1e2efdb80cf20cb13b2c523e82602c117cf5ec922c6d1d4ce6e18440052",
+    "members": {
+      "/usr/lib/aarch64-linux-gnu/libmagic.so.1": "usr/lib/aarch64-linux-gnu/libmagic.so.1.0.0"
+    }
+  },
+  {
+    "package": "libmd0",
+    "filename": "pool/main/libm/libmd/libmd0_1.0.4-2_arm64.deb",
+    "size": 29400,
+    "sha256": "99a8c7dd591fae9fb37d8bf8dfdffa850e207fa405b3198c5b24711a5f972381",
+    "members": {
+      "/usr/lib/aarch64-linux-gnu/libmd.so.0": "usr/lib/aarch64-linux-gnu/libmd.so.0.0.5"
+    }
+  },
+  {
+    "package": "libmnl0",
+    "filename": "pool/main/libm/libmnl/libmnl0_1.0.4-3_arm64.deb",
+    "size": 12116,
+    "sha256": "d63aafb6f2c07db8fcb135b00ff915baf72ef8a3397e773c9c24d67950c6a46c",
+    "members": {
+      "/usr/lib/aarch64-linux-gnu/libmnl.so.0": "usr/lib/aarch64-linux-gnu/libmnl.so.0.2.0"
+    }
+  },
+  {
+    "package": "libselinux1",
+    "filename": "pool/main/libs/libselinux/libselinux1_3.4-1+b6_arm64.deb",
+    "size": 68800,
+    "sha256": "29201edf23ebae40844d6c289afdb9bba52f927d55096ed1b1cd37e040135edc",
+    "members": {
+      "/usr/lib/aarch64-linux-gnu/libselinux.so.1": "lib/aarch64-linux-gnu/libselinux.so.1"
+    }
+  },
+  {
+    "package": "netcat-openbsd",
+    "filename": "pool/main/n/netcat-openbsd/netcat-openbsd_1.219-1_arm64.deb",
+    "size": 40788,
+    "sha256": "9b63cd7dccf658eaac3d527677e04d663167f0db8a2fba7a579654b8cdffffdd",
+    "members": {
+      "/usr/bin/nc.openbsd": "bin/nc.openbsd"
+    }
+  },
+  {
+    "package": "python3-pip-whl",
+    "filename": "pool/main/p/python-pip/python3-pip-whl_23.0.1+dfsg-1_all.deb",
+    "size": 1717296,
+    "sha256": "cc373690a1cb469fb301b9fe0125048e3102f2e365d1b2d27cab091ec89fccdc",
+    "members": {
+      "/usr/share/python-wheels/pip-23.0.1-py3-none-any.whl": "usr/share/python-wheels/pip-23.0.1-py3-none-any.whl"
+    }
+  },
+  {
+    "package": "python3-setuptools-whl",
+    "filename": "pool/main/s/setuptools/python3-setuptools-whl_66.1.1-1+deb12u2_all.deb",
+    "size": 1112076,
+    "sha256": "0eb54da9f3d47e42a1be5dd8285def8bbc6e2556131b9c4ce3bd781dfc4b425a",
+    "members": {
+      "/usr/share/python-wheels/setuptools-66.1.1-py3-none-any.whl": "usr/share/python-wheels/setuptools-66.1.1-py3-none-any.whl"
+    }
+  },
+  {
+    "package": "zip",
+    "filename": "pool/main/z/zip/zip_3.0-13_arm64.deb",
+    "size": 222732,
+    "sha256": "466ba35ece2f7b2dbdae389a36b6b5c7a92cb2de426ec2921682ddec399379f1",
+    "members": {
+      "/usr/bin/zip": "usr/bin/zip"
+    }
+  }
+]

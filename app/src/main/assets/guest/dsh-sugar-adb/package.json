@@ -1,0 +1,8 @@
+{
+  "name": "dsh-sugar-adb",
+  "version": "1.0.0",
+  "description": "DSH Sugar 本机无线 ADB",
+  "private": true,
+  "type": "module",
+  "exports": "./index.js"
+}

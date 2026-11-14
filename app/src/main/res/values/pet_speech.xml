@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_companion_ready">我在这儿，等你下一句。</string>
+    <string name="pet_detail_waiting">脚本等待中 · 本步 %1$s</string>
+    <string name="pet_detail_thinking">思考中 · 本步 %1$s</string>
+    <string name="pet_detail_observed">已读取画面 · 本步 %1$s</string>
+    <string name="pet_detail_dispatched">已发出操作 · 本步 %1$s</string>
+    <string name="pet_detail_step">本步已用 %1$s</string>
+    <string name="pet_phone_step_screen">正在看画面，确认下一步。</string>
+    <string name="pet_phone_step_error">这一步出错了，正在检查。</string>
+    <string-array name="pet_speech_idle">
+        <item>我在这儿。</item>
+        <item>歇一小会儿。</item>
+    </string-array>
+    <string-array name="pet_speech_poke">
+        <item>嗯。</item>
+        <item>别戳。</item>
+        <item>干嘛。</item>
+    </string-array>
+    <string-array name="pet_speech_phone">
+        <item>我来看看屏幕。</item>
+        <item>正在操作手机。</item>
+    </string-array>
+    <string-array name="pet_speech_coding">
+        <item>正在写代码。</item>
+        <item>敲几行代码。</item>
+    </string-array>
+    <string-array name="pet_speech_thinking">
+        <item>让我想想。</item>
+        <item>还有什么办法呢？</item>
+    </string-array>
+    <string-array name="pet_speech_asking">
+        <item>等你回个话。</item>
+        <item>这一步想听听你的意见。</item>
+    </string-array>
+    <string-array name="pet_speech_working">
+        <item>正在处理。</item>
+        <item>手头的活儿还在继续。</item>
+    </string-array>
+</resources>

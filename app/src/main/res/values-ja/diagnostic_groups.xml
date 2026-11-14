@@ -1,0 +1,4 @@
+<resources>
+    <string name="diag_group_diagnose">一時診断</string>
+    <string name="diag_group_restore">元の環境を復元</string>
+</resources>

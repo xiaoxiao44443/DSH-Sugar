@@ -1,0 +1,4 @@
+<resources>
+    <string name="recovery_image_reuse">診断環境を再利用しています</string>
+    <string name="recovery_program_copy">現在の DSH の独立したコピーを作成しています</string>
+</resources>

@@ -1,0 +1,9 @@
+<resources>
+    <color name="sugar_paper">#151517</color>
+    <color name="sugar_recovery_paper">#1C221F</color>
+    <color name="sugar_ink">#F9FAFB</color>
+    <color name="sugar_secondary">#ADB2B8</color>
+    <color name="sugar_accent">#EB9EAE</color>
+    <bool name="sugar_light_bars">false</bool>
+    <style name="SugarPlatform" parent="@android:style/Theme.Material.NoActionBar" />
+</resources>

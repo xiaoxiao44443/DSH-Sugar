@@ -1,0 +1,4 @@
+<resources>
+    <string name="mobile_use_accessibility_label">DSH Sugar 主屏控制</string>
+    <string name="mobile_use_accessibility_description">允许已启动的 Sugar 手机操作任务读取当前屏幕、截取画面和执行点击、滑动或文字输入。</string>
+</resources>

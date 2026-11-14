@@ -1,0 +1,65 @@
+// Reuse the pinned upstream filesystem semantics without installing DSH in every project.
+def assetsDir = layout.buildDirectory.dir('generated/projectFilesystemAssets')
+def archive = layout.buildDirectory.file('generated/sugarAssets/guest/rootfs.zip')
+def worker = assetsDir.map { it.file('guest/project-fs.mjs') }
+def prepare = tasks.register('prepareProjectFilesystemAssets') {
+    dependsOn tasks.named('verifyGuestAssets')
+    inputs.file(archive)
+    def adapters = ['project-hooks.json','project-creator-hooks.json'].collect { file('src/main/assets/guest/' + it) }
+    inputs.files(adapters)
+    outputs.file(worker)
+    doLast {
+        final String base = 'opt/dsh/node_modules/@deepseek-ai/'
+        def once = { String text, String find, String replacement ->
+            if (text.count(find) != 1) throw new GradleException('Unsupported DSH filesystem source')
+            text.replace(find, replacement)
+        }
+        new java.util.zip.ZipFile(archive.get().asFile).withCloseable { zip ->
+            def patchedSources = [:]
+            for (def adapter in adapters) {
+                def rules = new groovy.json.JsonSlurper().parse(adapter)
+                rules.each { name, rule ->
+                    def entry = zip.getEntry(base + name)
+                    if (!entry) throw new GradleException("Missing DSH package entry: ${name}")
+                    def bytes = zip.getInputStream(entry).withCloseable { it.bytes }
+                    def sha = java.security.MessageDigest.getInstance('SHA-256').digest(bytes).encodeHex().toString()
+                    if (sha != rule.hash) throw new GradleException("Unsupported DSH package version: ${name}")
+                    String text = patchedSources.get(name, new String(bytes, 'UTF-8'))
+                    rule.edits.each { edit -> text = once(text, edit[0], edit[1]) }
+                    patchedSources[name] = text
+                }
+            }
+            def source = { String pkg ->
+                def entry = zip.getEntry(base + pkg + '/lib/index.js')
+                if (!entry) throw new GradleException("Missing ${pkg} in DSH image")
+                zip.getInputStream(entry).withCloseable { it.getText('UTF-8') }
+            }
+            def patch = once(source('dsh-fs-patch'), 'export { PatchParseError, applyHunks, parsePatch };', '')
+            def fs = source('dsh-fs-local')
+            for (def dependency in ['import { applyHunks } from "@deepseek-ai/dsh-fs-patch";',
+                                    'import { watch } from "chokidar";', 'import z from "@deepseek-ai/schemastery";']) {
+                fs = once(fs, dependency, '')
+            }
+            def definitions = source('dsh-fs')
+            def errnoStart = definitions.indexOf('function fsErrorFromErrno(')
+            def errnoEnd = definitions.indexOf('\n//#endregion', errnoStart)
+            if (errnoStart < 0 || errnoEnd <= errnoStart) throw new GradleException('Unsupported DSH filesystem error classifier')
+            fs = once(fs, 'import { FileSystem, FsError, FsTargetKey, FsVersion, fsErrorFromErrno } from "@deepseek-ai/dsh-fs";',
+                '''const FsTargetKey = key => key;
+const FsVersion = value => value;
+class FsError extends Error {
+  constructor(message, code, options) { super(message, options); this.code = code; }
+}''' + '\n' + definitions.substring(errnoStart, errnoEnd))
+            fs = once(fs, 'class extends FileSystem {', 'class {')
+            def start = fs.indexOf('\tasync watch(target,')
+            def end = fs.indexOf('\t/** Validated config', start)
+            if (start < 0 || end <= start) throw new GradleException('Unsupported DSH watcher')
+            fs = once(fs.substring(0, start) + fs.substring(end), '\t\tsuper(ctx);', '')
+            def output = worker.get().asFile
+            output.parentFile.mkdirs()
+            output.setText('// Derived from the fixed DSH fs-local and fs-patch packages.\n' + patch + '\n' + fs, 'UTF-8')
+        }
+    }
+}
+android.sourceSets.main.assets.srcDir(assetsDir.get().asFile)
+tasks.named('preBuild').configure { dependsOn prepare }

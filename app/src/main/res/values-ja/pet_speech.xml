@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_companion_ready">ここにいるよ。また声をかけてね。</string>
+    <string name="pet_detail_waiting">スクリプト待機中 · 経過 %1$s</string>
+    <string name="pet_detail_thinking">思考中 · 経過 %1$s</string>
+    <string name="pet_detail_observed">画面を取得済み · 経過 %1$s</string>
+    <string name="pet_detail_dispatched">操作を送信済み · 経過 %1$s</string>
+    <string name="pet_detail_step">この手順の経過時間 %1$s</string>
+    <string name="pet_phone_step_screen">画面を見て、次の操作を確認中。</string>
+    <string name="pet_phone_step_error">この操作でエラーが出たので、確認中。</string>
+    <string-array name="pet_speech_idle">
+        <item>ここにいるよ。</item>
+        <item>ちょっとひと休み。</item>
+    </string-array>
+    <string-array name="pet_speech_poke">
+        <item>うん。</item>
+        <item>つつかないで。</item>
+        <item>なに？</item>
+    </string-array>
+    <string-array name="pet_speech_phone">
+        <item>画面を見てみるね。</item>
+        <item>スマホを操作中。</item>
+    </string-array>
+    <string-array name="pet_speech_coding">
+        <item>コードを書いてるよ。</item>
+        <item>もう少し打ってみるね。</item>
+    </string-array>
+    <string-array name="pet_speech_thinking">
+        <item>ちょっと考え中。</item>
+        <item>ほかに方法はあるかな？</item>
+    </string-array>
+    <string-array name="pet_speech_asking">
+        <item>返事を待ってるよ。</item>
+        <item>どう思う？</item>
+    </string-array>
+    <string-array name="pet_speech_working">
+        <item>作業中だよ。</item>
+        <item>続きを進めてるよ。</item>
+    </string-array>
+</resources>

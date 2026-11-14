@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_answer_voice">Answer by voice</string>
+    <string name="pet_answer_confirm">Confirm selected answers</string>
+    <string name="pet_answer_fold">Close answer notebook</string>
+    <string name="pet_answer_expand">Open answer notebook</string>
+</resources>

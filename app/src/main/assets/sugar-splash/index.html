@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="only light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <style>
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:transparent }
+    #cover,#page { position:absolute; inset:0 }
+  </style>
+  <script src="/layout.js"></script>
+  <script src="/motion.js"></script>
+</head>
+<body>
+  <div id="cover"><section id="page"></section></div>
+  <script>
+    'use strict';
+    const page = document.getElementById('page');
+    const layout = SugarSplashLayout.create(page);
+    const art = layout.art;
+    function configure(s) {
+      layout.configure(s);
+      art.onload = () => SugarLaunch.painted();
+      art.onerror = () => {
+        if (art.getAttribute('src') !== '/default.png') layout.setImage('/default.png');
+        else { art.hidden = true; SugarLaunch.painted(); }
+      };
+      layout.setImage(s.custom ? '/image' : '/default.png');
+    }
+    function updateStage(message, percent) { layout.setStage(message, percent); }
+    function exitSplash() {
+      const finish = () => { page.style.display = 'none'; SugarLaunch.dismissed(); };
+      if (!window.SugarPageMotion?.play({target:page,direction:'back',navigationTap:true,exiting:true,onFinish:finish})) {
+        finish();
+        return;
+      }
+      // Most launch and workspace backgrounds are both white. A geometric mask
+      // alone can leave a centered image unchanged until the very last frame.
+      // Blend the entire cover on the same clock as the randomly chosen preset.
+      const wipe = page.getAnimations().find(animation => animation.id.startsWith('sugar-pane-'));
+      if (wipe) {
+        const fade = document.getElementById('cover').animate([{opacity:1},{opacity:0}],
+          {duration:wipe.effect.getTiming().duration,easing:'ease-in-out',fill:'both'});
+        fade.startTime = wipe.startTime;
+      }
+    }
+  </script>
+</body>
+</html>

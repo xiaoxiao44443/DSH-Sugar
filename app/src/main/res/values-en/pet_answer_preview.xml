@@ -1,0 +1,15 @@
+<resources>
+    <string name="pet_note_preview_title">Answer note preview</string>
+    <string name="pet_note_preview_question">What should we do first this round?</string>
+    <string name="pet_note_preview_result">Selected: %1$s</string>
+    <string-array name="pet_note_preview_options">
+        <item>Collect the board items</item>
+        <item>Give the new equipment to the best character for it</item>
+        <item>Use the free refresh</item>
+        <item>Upgrade the lead character</item>
+        <item>Save the coins</item>
+    </string-array>
+    <string name="pet_note_preview_transcript">Simulate voice transcription</string>
+    <string name="pet_note_preview_input">Type an answer to preview</string>
+    <string name="pet_note_preview_apply">Add to note</string>
+</resources>

@@ -1,0 +1,315 @@
+--- a/opt/dsh/node_modules/@deepseek-ai/dsh-host-plugin-inventory/lib/index.js
++++ b/opt/dsh/node_modules/@deepseek-ai/dsh-host-plugin-inventory/lib/index.js
+@@ -118,13 +118,13 @@
+ * @param ctx Context with the Loader service.
+ * @returns Current inventory with optional display metadata and no separate runtime cache.
+ */
+-async function readPluginInventory(ctx) {
++async function readPluginEntries(ctx, includeMetadata = true) {
+ 	const entries = [];
+ 	const packages = ctx.get("pluginPackages");
+ 	for (const entry of ctx.loader.entries()) {
+ 		if (entry.options.group) continue;
+ 		const base = entry.parent.tree.ctx.baseUrl;
+-		const meta = base === void 0 ? void 0 : packages?.metaOf(entry.options.name, base);
++		const meta = includeMetadata && base !== void 0 ? packages?.metaOf(entry.options.name, base) : void 0;
+ 		const fiber = entry.fiber;
+ 		const fiberPhase = fiber === void 0 ? null : FIBER_PHASE[fiber.state];
+ 		let diagnostic;
+@@ -142,6 +142,11 @@
+ 			...meta === void 0 ? {} : { meta }
+ 		});
+ 	}
++	return entries;
++}
++async function readPluginInventory(ctx) {
++	const entries = await readPluginEntries(ctx);
++	const packages = ctx.get("pluginPackages");
+ 	const presets = ctx.get("agentPresets");
+ 	const management = ctx.get("pluginManager") === void 0 ? {} : { managementAvailable: true };
+ 	if (presets === void 0) return {
+@@ -165,4 +170,4 @@
+ 	};
+ }
+ //#endregion
+-export { PluginInventoryGateway, PluginInventoryGateway as default, pluginEntryId, readPluginInventory };
++export { PluginInventoryGateway, PluginInventoryGateway as default, pluginEntryId, readPluginEntries, readPluginInventory };
+--- a/opt/dsh/node_modules/@deepseek-ai/dsh-plugin-manager/lib/index.js
++++ b/opt/dsh/node_modules/@deepseek-ai/dsh-plugin-manager/lib/index.js
+@@ -10,8 +10,8 @@
+ import { DetailFailure, NPM_FILE_SOURCES, detailImage, detailImageResponse, languageChain, localFiles, npmFileSourceOrder, npmFiles, readPackageDocument } from "@deepseek-ai/dsh-plugin-detail";
+ import { MAX_TIMER_DELAY_MS } from "@deepseek-ai/dsh-timeout";
+ import { PROFILE_COMPATIBILITY_FILENAME, ResolutionRestartRequired, UnsupportedBundlePlatformError, assertBundlePlatform, bundlePatchPaths, composeEntries, evaluatePluginCompatibility, getDshRuntimeVersion, loadOptionalPatches, loadOverlayPatches, pluginCompatibilityWarning, readBundlePatches, readPluginMeta, readProfileCompatibility, readProfileManifest, readProfilePatches, readProfileVersionExemptions, resolveBundleDir, resolveProfileDir, setProfileVersionExemption, validatePluginVersionExemption } from "@deepseek-ai/dsh-app-boot";
+-import { pluginEntryId, readPluginInventory } from "@deepseek-ai/dsh-host-plugin-inventory";
+-import { OFFICIAL_ON_DEMAND_CATALOG, OPTIONAL_BUNDLES, PROTECTED_PLUGINS } from "@deepseek-ai/dsh-official-bundles";
++import { pluginEntryId, readPluginEntries } from "@deepseek-ai/dsh-host-plugin-inventory";
++import { HIDDEN_BUNDLES, OFFICIAL_ON_DEMAND_CATALOG, OPTIONAL_BUNDLES, PROTECTED_PLUGINS } from "@deepseek-ai/dsh-official-bundles";
+ import { once } from "node:events";
+ import { execa } from "execa";
+ import { scrubbedParentEnv } from "@deepseek-ai/dsh-subprocess";
+@@ -2168,33 +2168,44 @@
+ 		/** Read current plugins, including why a row cannot be changed through the profile patch.
+ 		* @returns Current runtime entries with persistent patch targets.
+ 		*/
+-		async listPlugins() {
+-			const rows = flatten(composeEntries([readProfilePatches("dsh", this.profile)]));
+-			return (await readPluginInventory(this.ctx)).entries.map((entry) => {
+-				const actual = [...this.ctx.loader.entries()].find((row) => row.id === entry.entryId);
+-				const candidates = rows.filter((row) => row.id === actual?.options.id);
+-				const candidate = candidates[0];
+-				if (PROTECTED_PLUGINS.has(entry.moduleName) || entry.entryId === this.ownerEntryId) return {
+-					...entry,
+-					readOnlyReason: "management-required"
+-				};
+-				if (candidate === void 0 || candidates.length > 1 || candidate.name !== entry.moduleName || actual?.parent.tree.ctx.fiber.entry?.id !== "include") return {
+-					...entry,
+-					readOnlyReason: "unaddressable"
+-				};
+-				return {
+-					...entry,
+-					patchId: candidate.id
+-				};
+-			});
++		async listPlugins(includeMetadata = true) {
++			const targets = this.pluginPatchTargets();
++			const inventory = await readPluginEntries(this.ctx, includeMetadata);
++			const live = new Map();
++			for (const entry of this.ctx.loader.entries()) {
++				if (!live.has(entry.id)) live.set(entry.id, entry);
++			}
++			return inventory.map((entry) => ({
++				...entry,
++				...this.pluginAccess(entry.entryId, entry.moduleName, live.get(entry.entryId), targets)
++			}));
++		}
++		pluginPatchTargets() {
++			const targets = new Map();
++			for (const row of flatten(composeEntries([readProfilePatches("dsh", this.profile)]))) {
++				// Only a unique composed id can be addressed by a profile override.
++				targets.set(row.id, targets.has(row.id) ? null : row);
++			}
++			return targets;
++		}
++		pluginAccess(id, name, actual, targets) {
++			if (PROTECTED_PLUGINS.has(name) || id === this.ownerEntryId) return { readOnlyReason: "management-required" };
++			const candidate = targets.get(actual?.options.id);
++			if (!candidate || candidate.name !== name || actual?.parent.tree.ctx.fiber.entry?.id !== "include") return { readOnlyReason: "unaddressable" };
++			return { patchId: candidate.id };
++		}
++		findLivePlugin(id) {
++			for (const entry of this.ctx.loader.entries()) {
++				if (!entry.options.group && entry.id === id) return entry;
++			}
+ 		}
+ 		/** Read installed, installation-provided, and offline Official catalog bundles, plus selected non-bundle names.
+ 		* A dependency without a bundle patch is listed, as a `not-bundle` problem, only while it is selected.
+ 		* @returns Package versions, manifest descriptions, the installable spec of profile dependencies, rows, optional
+ 		* display metadata, activation selections, whether the installation offers the bundle, and removal availability.
+ 		*/
+-		listBundles() {
+-			return Promise.resolve(this.readBundles().map((bundle) => {
++		listBundles(includeHiddenRowMetadata = true) {
++			return Promise.resolve(this.readBundles(includeHiddenRowMetadata).map((bundle) => {
+ 				const target = updateRefusal(bundle, bundle.name);
+ 				return typeof target === "string" ? bundle : {
+ 					...bundle,
+@@ -2203,7 +2214,7 @@
+ 			}));
+ 		}
+ 		/** The bundle inventory before update eligibility, which is derived from each listed bundle. */
+-		readBundles() {
++		readBundles(includeHiddenRowMetadata = true) {
+ 			const manifest = readProfileManifest("dsh", this.profile.dir);
+ 			const exemptions = readProfileVersionExemptions(this.profile.dir);
+ 			const selected = bundleSelection(manifest);
+@@ -2323,7 +2334,7 @@
+ 						optional,
+ 						removable: removable && readOnlyReason === void 0,
+ 						...readOnlyReason === void 0 ? {} : { readOnlyReason },
+-						...this.declaredRows(name, info),
++						...this.declaredRows(name, info, includeHiddenRowMetadata || !HIDDEN_BUNDLES.has(name)),
+ 						...error === void 0 ? {} : { error }
+ 					});
+ 				} catch (error) {
+@@ -2853,12 +2864,16 @@
+ 		*/
+ 		setPluginEnabled(id, enabled) {
+ 			return this.change((result) => this.configure(async () => {
+-				const row = (await this.listPlugins()).find((item) => item.entryId === id);
+-				if (row === void 0) throw new ManagementFailure("unknown-plugin");
+-				if (row.readOnlyReason !== void 0) throw new ManagementFailure(row.readOnlyReason);
+-				await writePluginEnabled(this.profile, row.patchId, row.moduleName, enabled);
+-				Object.assign(result, await this.reload(enabled ? [row.patchId] : []));
+-				return (await this.listPlugins()).find((item) => item.entryId === id)?.enabled !== enabled && this.ownerContext.get("hmr") !== void 0 ? "overridden" : void 0;
++				const entry = this.findLivePlugin(id);
++				if (entry === void 0) throw new ManagementFailure("unknown-plugin");
++				const access = this.pluginAccess(id, entry.options.name, entry, this.pluginPatchTargets());
++				if (access.readOnlyReason !== void 0) throw new ManagementFailure(access.readOnlyReason);
++				await writePluginEnabled(this.profile, access.patchId, entry.options.name, enabled);
++				Object.assign(result, await this.reload(enabled ? [access.patchId] : []));
++				if (this.ownerContext.get("hmr") !== void 0) {
++					const current = this.findLivePlugin(id);
++					if (current === void 0 || !current.disabled !== enabled) return "overridden";
++				}
+ 			}), {
+ 				stage: "enable",
+ 				target: id,
+@@ -3117,7 +3132,7 @@
+ 			}, "remove");
+ 		}
+ 		/** The rows a bundle's patch inserts and the existing rows it changes; an unreadable patch throws. */
+-		declaredRows(name, info) {
++		declaredRows(name, info, includeMetadata = true) {
+ 			const bundle = info.dsh?.bundle;
+ 			/* v8 ignore next -- bundleManifest answers only manifests that declare a patch */
+ 			if (bundle === void 0) return {
+@@ -3140,7 +3155,7 @@
+ 				const active = live.get(row.id);
+ 				const entryId = active?.entryId;
+ 				const base = active?.baseUrl ?? pathToFileURL(join(dir, "package.json")).href;
+-				const meta = packages?.metaOf(row.name, base);
++				const meta = includeMetadata ? packages?.metaOf(row.name, base) : void 0;
+ 				rows.push({
+ 					rowId: row.id,
+ 					moduleName: row.name,
+--- a/opt/dsh/node_modules/@deepseek-ai/dsh-plugin-manager/lib/typert.host.js
++++ b/opt/dsh/node_modules/@deepseek-ai/dsh-plugin-manager/lib/typert.host.js
+@@ -777,8 +777,24 @@
+       service: 'pluginManager',
+       description: 'Read installed, installation-provided, and offline Official catalog bundles, plus selected non-bundle names. A dependency without a bundle patch is listed, as a `not-bundle` problem, only while it is selected.',
+       invocation: { kind: 'direct' },
+-      parameters: [
+-      ],
++      parameters: [{
++        name: "includeHiddenRowMetadata",
++        description: "Include component display metadata for hidden bundles (default true).",
++        source: "json",
++        acceptsUndefined: true,
++        codec: {
++          mode: "strict",
++          typeSymbol: "@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:includeHiddenRowMetadata",
++          create: () => z.boolean().optional(),
++          jsonSchema: {"type":"boolean"}
++        },
++        strictCodec: {
++          mode: "strict",
++          typeSymbol: "@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:includeHiddenRowMetadata",
++          create: () => z.boolean().optional(),
++          jsonSchema: {"type":"boolean"}
++        },
++      }],
+       result: {
+         mode: 'strict',
+         typeSymbol: '@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:result',
+@@ -792,8 +808,24 @@
+       service: 'pluginManager',
+       description: 'Read current plugins, including why a row cannot be changed through the profile patch.',
+       invocation: { kind: 'direct' },
+-      parameters: [
+-      ],
++      parameters: [{
++        name: "includeMetadata",
++        description: "Include plugin display metadata (default true).",
++        source: "json",
++        acceptsUndefined: true,
++        codec: {
++          mode: "strict",
++          typeSymbol: "@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:includeMetadata",
++          create: () => z.boolean().optional(),
++          jsonSchema: {"type":"boolean"}
++        },
++        strictCodec: {
++          mode: "strict",
++          typeSymbol: "@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:includeMetadata",
++          create: () => z.boolean().optional(),
++          jsonSchema: {"type":"boolean"}
++        },
++      }],
+       result: {
+         mode: 'strict',
+         typeSymbol: '@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:result',
+@@ -1307,14 +1339,14 @@
+           {
+             "kind": "method",
+             "name": "listPlugins",
+-            "signature": "@Remote async listPlugins(): Promise<PluginInfo[]>",
++            "signature": "@Remote async listPlugins(includeMetadata?: boolean): Promise<PluginInfo[]>",
+             "summary": "Read current plugins, including why a row cannot be changed through the profile patch.",
+             "jsDoc": "/** Read current plugins, including why a row cannot be changed through the profile patch.\n * @returns Current runtime entries with persistent patch targets.\n */"
+           },
+           {
+             "kind": "method",
+             "name": "listBundles",
+-            "signature": "@Remote listBundles(): Promise<BundleInfo[]>",
++            "signature": "@Remote listBundles(includeHiddenRowMetadata?: boolean): Promise<BundleInfo[]>",
+             "summary": "Read installed, installation-provided, and offline Official catalog bundles, plus selected non-bundle names.",
+             "jsDoc": "/** Read installed, installation-provided, and offline Official catalog bundles, plus selected non-bundle names.\n * A dependency without a bundle patch is listed, as a `not-bundle` problem, only while it is selected.\n * @returns Package versions, manifest descriptions, the installable spec of profile dependencies, rows, optional\n * display metadata, activation selections, whether the installation offers the bundle, and removal availability.\n */"
+           },
+--- a/opt/dsh/node_modules/@deepseek-ai/dsh-plugin-manager/lib/typert.remote-client.js
++++ b/opt/dsh/node_modules/@deepseek-ai/dsh-plugin-manager/lib/typert.remote-client.js
+@@ -777,8 +777,24 @@
+       service: 'pluginManager',
+       description: 'Read installed, installation-provided, and offline Official catalog bundles, plus selected non-bundle names. A dependency without a bundle patch is listed, as a `not-bundle` problem, only while it is selected.',
+       invocation: { kind: 'direct' },
+-      parameters: [
+-      ],
++      parameters: [{
++        name: "includeHiddenRowMetadata",
++        description: "Include component display metadata for hidden bundles (default true).",
++        source: "json",
++        acceptsUndefined: true,
++        codec: {
++          mode: "strict",
++          typeSymbol: "@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:includeHiddenRowMetadata",
++          create: () => z.boolean().optional(),
++          jsonSchema: {"type":"boolean"}
++        },
++        strictCodec: {
++          mode: "strict",
++          typeSymbol: "@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:includeHiddenRowMetadata",
++          create: () => z.boolean().optional(),
++          jsonSchema: {"type":"boolean"}
++        },
++      }],
+       result: {
+         mode: 'strict',
+         typeSymbol: '@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:result',
+@@ -792,8 +808,24 @@
+       service: 'pluginManager',
+       description: 'Read current plugins, including why a row cannot be changed through the profile patch.',
+       invocation: { kind: 'direct' },
+-      parameters: [
+-      ],
++      parameters: [{
++        name: "includeMetadata",
++        description: "Include plugin display metadata (default true).",
++        source: "json",
++        acceptsUndefined: true,
++        codec: {
++          mode: "strict",
++          typeSymbol: "@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:includeMetadata",
++          create: () => z.boolean().optional(),
++          jsonSchema: {"type":"boolean"}
++        },
++        strictCodec: {
++          mode: "strict",
++          typeSymbol: "@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:includeMetadata",
++          create: () => z.boolean().optional(),
++          jsonSchema: {"type":"boolean"}
++        },
++      }],
+       result: {
+         mode: 'strict',
+         typeSymbol: '@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:result',
+--- a/opt/dsh/node_modules/@deepseek-ai/dsh-hmr/lib/index.js
++++ b/opt/dsh/node_modules/@deepseek-ai/dsh-hmr/lib/index.js
+@@ -54,6 +54,9 @@
+ 	const { cwd: _cwd, ignored: _ignored, ...watchOptions } = options;
+ 	const watcher = watch(target.root, {
+ 		awaitWriteFinish: true,
++		// Sucrune supports stat polling for these exact config paths.
++		usePolling: true,
++		interval: 2000,
+ 		...watchOptions,
+ 		depth: target.depth,
+ 		ignoreInitial: false,

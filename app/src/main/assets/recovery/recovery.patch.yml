@@ -1,0 +1,60 @@
+# Loaded after the web bundle, only in the disposable diagnosis profile.
+- id: agent-preset-registry
+  disabled: true
+- id: preset-standard
+  disabled: true
+- id: preset-minimal
+  disabled: true
+- id: preset-cordis
+  disabled: true
+- id: preset-ptc
+  disabled: true
+- id: ui-agent-preset
+  disabled: true
+- id: plugin-manager
+  disabled: true
+- id: ui-plugin-manager
+  disabled: true
+- id: hmr
+  disabled: true
+- id: directory-picker
+  disabled: true
+- insert:
+    - id: sugar-recovery-workspace
+      name: 'file:///opt/sugar/dsh-sugar-recovery/index.js'
+    - id: sugar-recovery-registry
+      name: 'file:///opt/sugar/dsh-sugar-recovery/preset-registry.mjs'
+      config:
+        default: sugar-recovery
+    - id: preset-sugar-recovery
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: sugar-recovery
+        name: 'PRESET_NAME'
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              complete: true
+              prefix: |
+                You are DSH Sugar's Android recovery assistant. Answer in the user's language.
+                RECOVERY_VARIANT
+                Diagnose the reported failure using the evidence available. In your diagnostic workspace, repair/.dsh/ is the original shared DSH user directory, including installed plugins, configuration, credentials and conversation data. The repair/cordis.patch.yml shortcut opens the original user configuration. The repair/dsh/ directory contains the original DSH program. An absent user patch can be valid. Inspect the relevant target first, make the smallest requested repair there, and read it back or run a focused check. Protect secrets when reporting configuration. The running /opt/dsh is a detached copy. Your temporary profile, workspace scratch files and diagnostic conversations are discarded at exit. Report the changes, checks and anything that still requires a normal restart. The user ends diagnosis using the navigation bar's End diagnosis action.
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'

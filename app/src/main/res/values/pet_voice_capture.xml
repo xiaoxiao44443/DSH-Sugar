@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_voice_recording">正在听…</string>
+    <string name="pet_voice_done">完成录音</string>
+    <string name="pet_voice_transcribing">正在识别…</string>
+    <string name="pet_voice_permission">需要麦克风权限才能录音。</string>
+    <string name="pet_voice_unheard">这次没有听清，请再试一次。</string>
+    <string name="pet_voice_failed">录音或本地语音识别暂时不可用。</string>
+</resources>

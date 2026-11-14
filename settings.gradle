@@ -1,0 +1,23 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        exclusiveContent {
+            forRepository { maven { url = uri('https://jitpack.io') } }
+            filter {
+                includeModule('com.github.MuntashirAkon', 'libadb-android')
+                includeModule('com.github.MuntashirAkon.spake2-java', 'spake2-android')
+            }
+        }
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = 'DSH-Sugar'
+include ':app', ':shared'

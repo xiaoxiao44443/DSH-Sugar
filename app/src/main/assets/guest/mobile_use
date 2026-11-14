@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /opt/sugar/mobile-python/bin/python3 -m mobile_use "$@"

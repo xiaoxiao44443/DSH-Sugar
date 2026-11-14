@@ -1,0 +1,42 @@
+{
+  "dsh-creation-recommendations/lib/index.js": {
+    "name": "dsh-creation-recommendations",
+    "hash": "ee47ef1853c217729951ec7380baaa7380a99409499f03c57884944594c80b4e",
+    "edits": [
+      [
+        "join(agent.session.header.cwd ?? this.ctx.profileContext.cwd, \".dsh-created-plugins\", id)",
+        "join(SUGAR_HOOK.sessionRoot(agent.session.header.cwd ?? this.ctx.profileContext.cwd), \".dsh-created-plugins\", id)"
+      ],
+      [
+        "await mkdir(sourceDirectory, {\n\t\t\t\trecursive: true,\n\t\t\t\tmode: 448\n\t\t\t});",
+        "await SUGAR_HOOK.prepareCreator(agent.session.header.cwd, sourceDirectory);"
+      ],
+      [
+        "await validateGeneratedBundle(sourceDirectory, bundleName);",
+        "const snapshot = await SUGAR_HOOK.exportBundle(sourceDirectory, agent.session.header.cwd);\n\t\t\tawait validateGeneratedBundle(snapshot, bundleName);"
+      ],
+      [
+        "await cp(sourceDirectory, directory, {",
+        "await cp(snapshot, directory, {"
+      ],
+      [
+        "this.ctx.pluginManager.installBundle(directory), this.stopped.promise",
+        "SUGAR_HOOK.host(() => this.ctx.pluginManager.installBundle(directory)), this.stopped.promise"
+      ]
+    ]
+  },
+  "dsh-plugin-manager/lib/index.js": {
+    "name": "dsh-plugin-manager",
+    "hash": "99afe4421ffb393e58d9996ebb781d2db8a7f0fbd2cbe58c1fe70ea8b58b2101",
+    "edits": [
+      [
+        "installBundle(spec, options) {\n\t\t\tconst requestId",
+        "installBundle(spec, options) {\n            const endpoint = SUGAR_HOOK.current();\n            const local = spec.trim().replace(/^(?:file|link):/, \"\");\n            if ((local !== spec.trim() || /^\\.{1,2}(?:[\\\\/]|$)/.test(local)) && !local.startsWith(\"/\"))\n                throw Error(\"A local plugin source must be an absolute path in the current workspace\");\n            if (local.startsWith(\"/\") && (endpoint || SUGAR_HOOK.ownsPath(local))) {\n                const source = endpoint ? local : SUGAR_HOOK.sessionRoot(local);\n                return SUGAR_HOOK.exportBundle(source, endpoint ? undefined : local)\n                    .then(snapshot => SUGAR_HOOK.host(() => this.installBundle(snapshot, options)));\n            }\n            if (endpoint) {\n                return SUGAR_HOOK.host(() => this.installBundle(spec, options));\n            }\n            const requestId"
+      ],
+      [
+        "async change(operation, request, reason, identity) {",
+        "async change(operation, request, reason, identity) {\n            if (SUGAR_HOOK.current()) return SUGAR_HOOK.host(() => this.change(operation, request, reason, identity));"
+      ]
+    ]
+  }
+}

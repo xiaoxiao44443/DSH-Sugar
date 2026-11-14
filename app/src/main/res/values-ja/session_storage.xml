@@ -1,0 +1,10 @@
+<resources>
+    <string name="storage_preview_empty">空のファイル</string>
+    <string name="session_confirm_conversation">この会話を削除しますか？保存された添付は「添付のみ」に元の会話名で残り、後から削除できます。</string>
+    <string name="session_confirm_attachments">この会話の添付を削除しますか？ほかの会話で使用中の添付と、ワークスペースの元ファイルは残ります。</string>
+    <string name="session_confirm_both">この会話と添付を削除しますか？ほかの会話で使用中の添付と、ワークスペースの元ファイルは残ります。</string>
+    <string name="storage_workspace_confirm_files">選択した %1$d 件を削除しますか？</string>
+    <string name="storage_workspace_confirm_clear">このフォルダー内の %1$d 件をすべて削除しますか？</string>
+    <string name="storage_workspace_delete_contents">選択したフォルダー内のすべての項目も削除されます。</string>
+    <string name="storage_workspace_delete_phone">このワークスペースは端末のフォルダーに直接接続されています。端末上の元のファイルも削除されます。</string>
+</resources>

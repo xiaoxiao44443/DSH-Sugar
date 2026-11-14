@@ -1,0 +1,20 @@
+// Both plugin implementations are on the root AGP classpath. AGP 9.1.1
+// supplies the matching Kotlin Gradle plugin 2.2.10.
+plugins {
+    id 'org.jetbrains.kotlin.multiplatform'
+    id 'com.android.kotlin.multiplatform.library'
+}
+
+kotlin {
+    androidLibrary {
+        namespace = 'app.dsh.sugar.shared'
+        compileSdk = 37
+        minSdk = 29
+    }
+    jvm()
+    iosArm64()
+    iosSimulatorArm64()
+    sourceSets {
+        commonTest.dependencies { implementation kotlin('test') }
+    }
+}

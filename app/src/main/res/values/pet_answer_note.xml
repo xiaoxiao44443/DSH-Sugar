@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_answer_voice">语音回答</string>
+    <string name="pet_answer_confirm">确认所选答案</string>
+    <string name="pet_answer_fold">收起回答手帐</string>
+    <string name="pet_answer_expand">展开回答手帐</string>
+</resources>

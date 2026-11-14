@@ -1,0 +1,7 @@
+<resources>
+    <string-array name="pet_quick_replies">
+        <item>続けて</item>
+        <item>少し待って</item>
+        <item>別の方法を試して</item>
+    </string-array>
+</resources>

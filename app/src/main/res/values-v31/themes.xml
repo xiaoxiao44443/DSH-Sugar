@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.DshSugar" parent="SugarBase">
+        <item name="android:windowSplashScreenBackground">@android:color/white</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+    </style>
+    <style name="RecoveryManagementWindow" parent="Theme.DshSugar">
+        <item name="android:windowBackground">@color/sugar_recovery_paper</item>
+        <item name="android:windowSplashScreenBackground">@color/sugar_recovery_paper</item>
+    </style>
+</resources>

@@ -1,0 +1,12 @@
+{
+  "name": "dsh-sugar-mobile-use",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./index.js", "./client": "./client.js" },
+  "dsh": { "client": {
+    "platform": "web",
+    "immediately": true,
+    "inject": ["@deepseek-ai/dsh-api-session-controller", "@deepseek-ai/dsh-client-ui-sidebar-right", "@deepseek-ai/dsh-client-ui-layout"]
+  } }
+}

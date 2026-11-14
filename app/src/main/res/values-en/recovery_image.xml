@@ -1,0 +1,4 @@
+<resources>
+    <string name="recovery_image_reuse">Reusing the diagnostic environment</string>
+    <string name="recovery_program_copy">Creating a separate copy of the current DSH</string>
+</resources>

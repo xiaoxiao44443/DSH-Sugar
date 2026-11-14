@@ -1,0 +1,4 @@
+<resources>
+    <string name="mobile_use_accessibility_label">DSH Sugar メイン画面操作</string>
+    <string name="mobile_use_accessibility_description">実行中の Sugar タスクが現在の画面を読み取り、スクリーンショット、タップ、スワイプ、文字入力を行います。</string>
+</resources>

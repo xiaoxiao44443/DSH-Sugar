@@ -1,0 +1,29 @@
+--- a/main.c
++++ b/main.c
+@@ -132,6 +132,7 @@
+ /* Parsed CLI: either a probe, or grants plus the command argv after `--`. */
+ struct cli {
+   int probe;
++  int partial_reported;
+   const char **ro;
+   size_t ro_count;
+   const char **rw;
+@@ -157,6 +158,9 @@
+         return fail_usage("--probe takes no other arguments", NULL);
+       }
+       cli->probe = 1;
++      index += 1;
++    } else if (strcmp(arg, "--sugar-reported-partial") == 0) {
++      cli->partial_reported = 1;
+       index += 1;
+     } else if (strcmp(arg, "--ro") == 0 || strcmp(arg, "--rw") == 0) {
+       if (index + 1 >= argc) {
+@@ -285,7 +289,7 @@
+   int partial = 0;
+   code = restrict_self(&cli, &partial);
+   if (code != 0) return code;
+-  if (partial) {
++  if (partial && !cli.partial_reported) {
+     /* Older ABI: some handled accesses are not governed (e.g. truncate
+      * before ABI 3). Still confined for everything the kernel supports —
+      * report, do not refuse. */

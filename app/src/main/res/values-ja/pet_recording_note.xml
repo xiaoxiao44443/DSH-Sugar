@@ -1,0 +1,4 @@
+<resources>
+    <string name="pet_voice_preparing_note">録音を準備中…</string>
+    <string name="pet_voice_discard_note">音声入力を取り消す</string>
+</resources>

@@ -1,0 +1,21 @@
+{
+  "name": "dsh-sugar-file-actions",
+  "version": "1.0.0",
+  "description": "Android 文件操作 · 下载、用系统应用打开、在文件夹中显示",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./index.js", "./client": "./client.js" },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-context-menu",
+        "@deepseek-ai/dsh-api-workspace-files",
+        "@deepseek-ai/dsh-api-remote-access",
+        "@deepseek-ai/dsh-api-workspace-controller"
+      ]
+    }
+  }
+}

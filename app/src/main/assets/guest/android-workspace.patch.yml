@@ -1,0 +1,22 @@
+- id: workspace-controller
+  config:
+    documentsDirectory: /workspace
+- id: directory-picker
+  disabled: true
+- insert:
+    - id: sugar-directory-picker
+      name: 'file:///opt/sugar/workspace-directory-picker.mjs'
+    - id: sugar-directory-picker-ui
+      name: '@deepseek-ai/dsh-client-ui-directory-picker-browse'
+    - id: sugar-mobile-workspace
+      name: 'file:///opt/sugar/dsh-sugar-workspace/index.js'
+    - id: sugar-mobile-file-actions
+      name: 'file:///opt/sugar/dsh-sugar-file-actions/index.js'
+    - id: sugar-mobile-navigation
+      name: 'file:///opt/sugar/dsh-sugar-navigation/index.js'
+    - id: sugar-mobile-adb
+      name: 'file:///opt/sugar/dsh-sugar-adb/index.js'
+    - id: sugar-mobile-use
+      name: 'file:///opt/sugar/dsh-sugar-mobile-use/index.js'
+    - id: sugar-mobile-notifications
+      name: 'file:///opt/sugar/dsh-sugar-notifications/index.js'

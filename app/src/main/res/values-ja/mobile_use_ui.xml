@@ -1,0 +1,20 @@
+<resources>
+    <string name="mobile_virtual_open_chat">会話を開く</string>
+    <string name="mobile_virtual_chat_unavailable">この会話は現在開けません。</string>
+    <string name="mobile_virtual_manager">仮想画面の管理</string>
+    <string name="mobile_virtual_parked">仮想画面 #%1$d · 待機中</string>
+    <string name="mobile_virtual_stop">画面を閉じる</string>
+    <string name="mobile_virtual_list">画面一覧</string>
+    <string name="mobile_virtual_empty">実行中の仮想画面はありません</string>
+    <string name="mobile_virtual_starting">起動中</string>
+    <string name="mobile_virtual_display_id">仮想画面 #%1$d · 実行中</string>
+    <string name="mobile_virtual_conversation">会話 %1$s</string>
+    <string name="mobile_manager_close">閉じる</string>
+    <string name="mobile_virtual_preview">仮想画面のプレビュー</string>
+    <string name="mobile_preview_loading">仮想画面を取得中…</string>
+    <string name="mobile_preview_unavailable">仮想画面を取得できません。仮想画面のタスクが実行中か確認してください。</string>
+    <string name="mobile_settings_unavailable">ユーザー補助設定を開けません。</string>
+    <string name="mobile_preview_smaller">プレビューを小さくする</string>
+    <string name="mobile_preview_larger">プレビューを大きくする</string>
+    <string name="mobile_preview_resize">ドラッグでサイズを調整、タップで切り替え</string>
+</resources>

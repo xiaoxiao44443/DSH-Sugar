@@ -1,0 +1,31 @@
+<resources>
+    <color name="sugar_paper">#FFFFFF</color>
+    <color name="sugar_recovery_paper">#F6F7F4</color>
+    <color name="sugar_ink">#0F1115</color>
+    <color name="sugar_secondary">#61666B</color>
+    <color name="sugar_accent">#A33754</color>
+    <bool name="sugar_light_bars">true</bool>
+    <style name="SugarPlatform" parent="@android:style/Theme.Material.Light.NoActionBar" />
+    <style name="SugarBase" parent="SugarPlatform">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/sugar_accent</item>
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">@bool/sugar_light_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/sugar_light_bars</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+    <style name="Theme.DshSugar" parent="SugarBase" />
+    <style name="RecoveryManagementWindow" parent="Theme.DshSugar">
+        <item name="android:windowBackground">@color/sugar_recovery_paper</item>
+    </style>
+    <style name="RecoveryEditorWindow" parent="Theme.DshSugar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>

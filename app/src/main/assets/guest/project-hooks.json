@@ -1,0 +1,518 @@
+{
+  "dsh-workspace/lib/index.js": {
+    "name": "dsh-workspace",
+    "hash": "8964c54f3c3f2fd79ed92e5fb1413d84ba80272c4eb984677aaf70bf4d687848",
+    "edits": [
+      [
+        "async createCanonical(canonical, title, firstUse = false) {",
+        "async createCanonical(canonical, title, firstUse = false) {\n\t\tif (!SUGAR_HOOK.isWorkspaceRoot(canonical)) throw Error(\"请选择 /workspace 或 /home 下独立、非隐藏的项目目录。\");"
+      ],
+      [
+        "const canonical = await realpathNormalize(path);\n\t\tif (!(await stat(canonical)).isDirectory()) throw new Error(`cannot create a workspace at '${canonical}': path is not a directory`);\n\t\treturn await this.enqueueOperation(() => this.createCanonical(canonical, title));",
+        "return await this.enqueueOperation(async () => {\n\t\t\tconst canonical = await realpathNormalize(path);\n\t\t\tif (!(await stat(canonical)).isDirectory()) throw new Error(`cannot create a workspace at '${canonical}': path is not a directory`);\n\t\t\treturn this.createCanonical(canonical, title);\n\t\t});"
+      ],
+      [
+        "this.rebuildEntities();\n\t\tthis.reportFilteredCandidates();",
+        "this.rebuildEntities();\n\t\tawait SUGAR_HOOK.setRegistry(this);\n\t\tthis.reportFilteredCandidates();"
+      ],
+      [
+        "return this.enqueueOperation(() => this.deleteKnown(id));",
+        "return this.enqueueOperation(() => SUGAR_HOOK.removeWorkspace(id, () => this.deleteKnown(id)));"
+      ],
+      [
+        "\t\treturn entity;\n\t}\n\tasync deleteKnown(id) {",
+        "\t\tawait SUGAR_HOOK.syncRegistry();\n\t\treturn entity;\n\t}\n\tasync deleteKnown(id) {"
+      ],
+      [
+        "const workspaceName = title ?? defaultWorkspaceTitle(canonical);",
+        "if (Array.from(this.entities.values()).some(item => SUGAR_HOOK.isWorkspaceRoot(item.path) && (canonical.startsWith(item.path + \"/\") || item.path.startsWith(canonical + \"/\")))) throw Error(\"Workspace folders cannot overlap\");\n\t\tconst workspaceName = title ?? defaultWorkspaceTitle(canonical);"
+      ],
+      [
+        "const id = WorkspaceId(randomUUID());\n\t\tconst now = (/* @__PURE__ */ new Date()).toISOString();\n\t\tconst record = {\n\t\t\tpath: canonical,\n\t\t\ttitle: workspaceName,\n\t\t\tsessionIds: [],",
+        "const retained = await SUGAR_HOOK.retainedWorkspace(canonical, this.sessionPaths, this.entities);\n\t\tconst id = WorkspaceId(retained?.id ?? randomUUID());\n\t\tconst now = (/* @__PURE__ */ new Date()).toISOString();\n\t\tconst record = {\n\t\t\tpath: canonical,\n\t\t\ttitle: workspaceName,\n\t\t\tsessionIds: retained?.sessionIds ?? [],"
+      ],
+      [
+        "await this.mutate((record) => record.sessionIds.includes(sessionId) ? record : {",
+        "SUGAR_HOOK.pin(sessionId,this);\n\t\tawait this.mutate((record) => record.sessionIds.includes(sessionId) ? record : {"
+      ]
+    ]
+  },
+  "dsh-tools/lib/index.js": {
+    "name": "dsh-tools",
+    "hash": "bf71a6ce1e95c5dfba06be7f69827bab19c5d2d9cf272875d92013ba2a8dadb0",
+    "edits": [
+      [
+        "return this.selectExecutor(input.agent).execute(input);",
+        "const run = () => this.selectExecutor(input.agent).execute(input);\n\t\treturn input.agent ? SUGAR_HOOK.within(input.agent.session.header.cwd, run, input.agent.id) : run();"
+      ]
+    ]
+  },
+  "dsh-fs-local/lib/index.js": {
+    "name": "dsh-fs-local",
+    "hash": "610a3ba3658e55adaa3d8d21e017eb6787860adf317e889fb361e8802c8f5a13",
+    "edits": [
+      [
+        "export { LocalFileSystem, LocalFileSystem as default };",
+        "SUGAR_HOOK.routeFs(LocalFileSystem, FsError);\nexport { LocalFileSystem, LocalFileSystem as default };"
+      ]
+    ]
+  },
+  "dsh-api-terminal-controller/lib/index.js": {
+    "name": "dsh-api-terminal-controller",
+    "hash": "7472d9e5e913590cd85bbaf74c84036bb2516ed7ad45b415d6ecb6fe88cba69d",
+    "edits": [
+      [
+        "async spawn(agent, owner, id, prepare, signal) {",
+        "async spawn(agent, owner, id, prepare, signal) {\n\t\t\treturn SUGAR_HOOK.within(agent.session.header.cwd, () => this.sugarSpawn(agent, owner, id, prepare, signal), agent.id);\n\t\t}\n\t\tasync sugarSpawn(agent, owner, id, prepare, signal) {"
+      ],
+      [
+        "return discoverShells(this.execution(agent).subprocess, this.config.shell, this.config.shellCandidates, signal);",
+        "return SUGAR_HOOK.within(agent.session.header.cwd, () => discoverShells(this.execution(agent).subprocess, this.config.shell, this.config.shellCandidates, signal),agent.id);"
+      ],
+      [
+        "const handle = await this.execution(agent).subprocess.spawnTerminal({",
+        "const handle = await SUGAR_HOOK.deviceProcess(agent, info.origin === \"user\", () => this.execution(agent).subprocess.spawnTerminal({"
+      ],
+      [
+        "\t\t\t\tsignal\n\t\t\t});\n\t\t\ttry {\n\t\t\t\tsignal.throwIfAborted();",
+        "\t\t\t\tsignal\n\t\t\t}));\n\t\t\ttry {\n\t\t\t\tsignal.throwIfAborted();"
+      ],
+      [
+        "release: () => this.removeHistory(subprocess, historyFile)",
+        "release: () => SUGAR_HOOK.within(agent.session.header.cwd, () => this.removeHistory(subprocess, historyFile), agent.id)"
+      ]
+    ]
+  },
+  "dsh-terminal-bash/lib/index.js": {
+    "name": "dsh-terminal-bash",
+    "hash": "30ba8ff500823e5faeaa3a52564672d9e97b994974824c39762f77b5eb260c5a",
+    "edits": [
+      [
+        "async spawn(spec) {",
+        "async spawn(spec) {\n\t\treturn SUGAR_HOOK.within(spec.owner.session.header.cwd, () => this.sugarSpawn(spec), spec.owner.id);\n\t}\n\tasync sugarSpawn(spec) {"
+      ],
+      [
+        "const terminal = await this.spawnTerminal({",
+        "const terminal = await SUGAR_HOOK.deviceProcess(spec.owner,false, async () => this.spawnTerminal({"
+      ],
+      [
+        "\t\t\tsignal: spec.signal\n\t\t});\n\t\tlet session;",
+        "\t\t\tsignal: spec.signal\n\t\t}));\n\t\tlet session;"
+      ]
+    ]
+  },
+  "dsh-api-workspace-files/lib/index.js": {
+    "name": "dsh-api-workspace-files",
+    "hash": "6d9795e9e5a89c18e4e036e01d257ba8e6efb7ed9f7cf5cd9142ada174e0c319",
+    "edits": [
+      [
+        "async read(workspaceFileScope, path, range, signal) {",
+        "async read(workspaceFileScope, path, range, signal) {\n\t\t\treturn SUGAR_HOOK.within(workspaceFileScope.workspaceRoot, () => this.sugarRead(workspaceFileScope, path, range, signal), workspaceFileScope.sessionId);\n\t\t}\n\t\tasync sugarRead(workspaceFileScope, path, range, signal) {"
+      ],
+      [
+        "async readBytes(workspaceFileScope, path, options, signal) {",
+        "async readBytes(workspaceFileScope, path, options, signal) {\n\t\t\treturn SUGAR_HOOK.within(workspaceFileScope.workspaceRoot, () => this.sugarReadBytes(workspaceFileScope, path, options, signal), workspaceFileScope.sessionId);\n\t\t}\n\t\tasync sugarReadBytes(workspaceFileScope, path, options, signal) {"
+      ],
+      [
+        "async stat(workspaceFileScope, path, signal) {",
+        "async stat(workspaceFileScope, path, signal) {\n\t\t\treturn SUGAR_HOOK.within(workspaceFileScope.workspaceRoot, () => this.sugarStat(workspaceFileScope, path, signal), workspaceFileScope.sessionId);\n\t\t}\n\t\tasync sugarStat(workspaceFileScope, path, signal) {"
+      ],
+      [
+        "async list(workspaceFileScope, path, signal) {",
+        "async list(workspaceFileScope, path, signal) {\n\t\t\treturn SUGAR_HOOK.within(workspaceFileScope.workspaceRoot, () => this.sugarList(workspaceFileScope, path, signal), workspaceFileScope.sessionId);\n\t\t}\n\t\tasync sugarList(workspaceFileScope, path, signal) {"
+      ],
+      [
+        "return this.feed.follow(workspaceFileScope.workspaceRoot, path, signal);",
+        "return SUGAR_HOOK.withinStream(workspaceFileScope.workspaceRoot, () => this.feed.follow(SUGAR_HOOK.sessionRoot(workspaceFileScope.workspaceRoot), path, signal), workspaceFileScope.sessionId);"
+      ],
+      [
+        "async relativePath(scope, baseFile, path, signal) {",
+        "async relativePath(scope, baseFile, path, signal) {\n\t\t\treturn SUGAR_HOOK.within(scope.workspaceRoot, () => this.sugarRelativePath(scope, baseFile, path, signal), scope.sessionId);\n\t\t}\n\t\tasync sugarRelativePath(scope, baseFile, path, signal) {"
+      ],
+      [
+        "const { workspaceRoot } = workspaceFileScope;\n\t\t\tconst root = await this.ctx.fs.resolve(workspaceRoot, { signal });\n\t\t\tconst entry",
+        "const workspaceRoot = SUGAR_HOOK.sessionRoot(workspaceFileScope.workspaceRoot);\n\t\t\tconst root = await this.ctx.fs.resolve(workspaceRoot, { signal });\n\t\t\tconst entry"
+      ],
+      [
+        "async search(workspaceFileScope, request, signal) {",
+        "async search(workspaceFileScope, request, signal) {\n\t\t\treturn SUGAR_HOOK.within(workspaceFileScope.workspaceRoot, () => this.sugarSearch({ ...workspaceFileScope, workspaceRoot: SUGAR_HOOK.sessionRoot(workspaceFileScope.workspaceRoot) }, request, signal), workspaceFileScope.sessionId);\n\t\t}\n\t\tasync sugarSearch(workspaceFileScope, request, signal) {"
+      ]
+    ]
+  },
+  "dsh-subprocess-local/lib/index.js": {
+    "name": "dsh-subprocess-local",
+    "hash": "152b009a77e0b5f846af5a86b25a35346c9aca5f380c82054a35bde722500752",
+    "edits": [
+      [
+        "async resolveExecutable(command, env, signal) {",
+        "async resolveExecutable(command, env, signal) {\n\t\tif (SUGAR_HOOK.current()) return SUGAR_HOOK.resolveExecutable(command, env, signal, SubprocessExecutableNotFoundError);"
+      ],
+      [
+        "\n\tspawn(spec) {",
+        "\n\tspawn(spec) {\n\t\tconst project = SUGAR_HOOK.current();\n\t\tif (project) return SUGAR_HOOK.spawn(project, spec, false);"
+      ],
+      [
+        "\n\tasync spawnTerminal(spec) {",
+        "\n\tasync spawnTerminal(spec) {\n\t\tconst project = SUGAR_HOOK.current();\n\t\tif (project) return SUGAR_HOOK.spawn(project, spec, true);"
+      ]
+    ]
+  },
+  "dsh-fs-sandbox/lib/index.js": {
+    "name": "dsh-fs-sandbox",
+    "hash": "f1b987fa86584ea3e194a8a413f6ce4c7d1d86de380dc1608634be5124612e61",
+    "edits": [
+      [
+        "if (await isPathUnder(fresh.targetKey, root))",
+        "if (SUGAR_HOOK.current() ? isLexicallyUnder(this.processPath(fresh),this.processPath(await this.resolve(root)),true) : await isPathUnder(fresh.targetKey, root))"
+      ]
+    ]
+  },
+  "dsh-working-directory/lib/index.js": {
+    "name": "dsh-working-directory",
+    "hash": "03cb7ebdaa8b97cfc3170320d04446b99ce939349696289b49549d1e96cea59b",
+    "edits": [
+      [
+        "\n\tensure(agent, signal) {",
+        "\n\tensure(agent, signal) {\n\t\treturn SUGAR_HOOK.within(agent.session.header.cwd, () => this.sugarensure(agent, signal),agent.id);\n\t}\n\tsugarensure(agent, signal) {"
+      ],
+      [
+        "\n\tset(agent, path, signal) {",
+        "\n\tset(agent, path, signal) {\n\t\treturn SUGAR_HOOK.within(agent.session.header.cwd, () => this.sugarset(agent, path, signal),agent.id);\n\t}\n\tsugarset(agent, path, signal) {"
+      ],
+      [
+        "stateVersion: 1,\n\t\t\tstateSchema: directorySchema,",
+        "stateVersion: 2,\n\t\t\tstateSchema: z$1.object({ original: z$1.boolean(), cwd: directorySchema }),"
+      ],
+      [
+        "init: (header) => header.cwd ?? null,",
+        "init: (header) => ({ original: true, cwd: header.cwd ?? null }),"
+      ],
+      [
+        "? event.data.cwd : state,",
+        "? { original: false, cwd: event.data.cwd } : state,"
+      ],
+      [
+        "view: (state) => state",
+        "view: (state) => SUGAR_HOOK.workingPath(state)"
+      ],
+      [
+        "this.workingDirectoryProjectionHandle.stateOf(session) ??",
+        "SUGAR_HOOK.workingPath(this.workingDirectoryProjectionHandle.stateOf(session)) ??"
+      ],
+      [
+        "stateOf(agent.session) === null",
+        "stateOf(agent.session).cwd === null"
+      ],
+      [
+        "const original = agent.session.header.cwd ??",
+        "const original = SUGAR_HOOK.sessionRoot(agent.session.header.cwd) ??"
+      ],
+      [
+        "this.workingDirectoryProjectionHandle = await ctx.sessionProjections.register({",
+        "await ctx.sessionProjections.register({\n\t\t\tkey: \"sugarWorkspaceRoot\",\n\t\t\tstateVersion: 1,\n\t\t\tstateSchema: directorySchema,\n\t\t\tinit: header => header.cwd ?? null,\n\t\t\tapply: state => state,\n\t\t\twire: { viewSchema: directorySchema, view: state => SUGAR_HOOK.sessionRoot(state) }\n\t\t});\n\t\tthis.workingDirectoryProjectionHandle = await ctx.sessionProjections.register({"
+      ]
+    ]
+  },
+  "dsh-agent-instructions/lib/index.js": {
+    "name": "dsh-agent-instructions",
+    "hash": "afbd526d1e3126a368774f24105140adc3ef532ca4aa93cfa0fb1318d5b9b75d",
+    "edits": [
+      [
+        "const compose = async (agent, signal, claimed, pending, touchedPaths = []) => {",
+        "const compose = (agent,...args) => SUGAR_HOOK.within(agent.session.header.cwd, () => composeProject(agent,...args),agent.id);\n\tconst composeProject = async (agent, signal, claimed, pending, touchedPaths = []) => {"
+      ],
+      [
+        "const fileSystem = ctx.get(\"fs\");",
+        "const fileSystem = SUGAR_HOOK.instructionFiles(ctx.get(\"fs\"),[resolved.dshHome,resolved.agentsHome]);"
+      ]
+    ]
+  },
+  "dsh-file-reference-local/lib/index.js": {
+    "name": "dsh-file-reference-local",
+    "hash": "99988e1858e227391386ec8579a2991e8be0104a9c9ea6b0b2baeb13cb3b89e6",
+    "edits": [
+      [
+        "async list(agent, query, signal) {",
+        "async list(agent, query, signal) {\n\t\t\treturn SUGAR_HOOK.within(agent.session.header.cwd, () => this.sugarList(agent, query, signal), agent.id);\n\t\t}\n\t\tasync sugarList(agent, query, signal) {"
+      ],
+      [
+        "import { lstat, readdir } from \"node:fs/promises\";",
+        "const lstat = name => SUGAR_HOOK.fileMention(\"lstat\",name);\nconst readdir = name => SUGAR_HOOK.fileMention(\"readdir\",name);"
+      ]
+    ]
+  },
+  "dsh-skill-filesystem/lib/index.js": {
+    "name": "dsh-skill-filesystem",
+    "hash": "c08860e282a01b51bf4726025dbd685b5d92c3e94194596993d07608a2469568",
+    "edits": [
+      [
+        "async list(options) {",
+        "async list(options) {\n\t\tconst agent = options.scope;\n\t\treturn agent?.session ? SUGAR_HOOK.within(agent.session.header.cwd, () => this.sugarList(options),agent.id) : this.sugarList(options);\n\t}\n\tasync sugarList(options) {"
+      ],
+      [
+        "await this.watchManager.observeRoots(roots);",
+        "await SUGAR_HOOK.host(() => this.watchManager.observeRoots(roots.filter(root => !root.source.startsWith(\"project-\"))));"
+      ],
+      [
+        "const roots = await this.roots(options.cwd);",
+        "const roots = await this.roots(SUGAR_HOOK.current() ? options.cwd : undefined);"
+      ],
+      [
+        "const discovered = await discoverRoot(root, this.ctx, this.name);",
+        "const scan = () => discoverRoot(root,this.ctx,this.name);\n\t\t\t\tconst discovered = await (root.source.startsWith(\"project-\") ? scan() : SUGAR_HOOK.host(scan));"
+      ],
+      [
+        "const parsed = await parseSkillFile(locator.path, this.ctx, options.signal, candidate.source === \"bundled\");",
+        "const load = () => parseSkillFile(locator.path,this.ctx,options.signal,candidate.source === \"bundled\");\n\t\tconst agent = options.scope;\n\t\tconst parsed = await (candidate.source.startsWith(\"project-\") && agent?.session ? SUGAR_HOOK.within(agent.session.header.cwd,load,agent.id) : SUGAR_HOOK.host(load));"
+      ]
+    ]
+  },
+  "dsh-skill/lib/index.js": {
+    "name": "dsh-skill",
+    "hash": "4b88621be4e7ff09b05c175fc6dcb67e77a22e5c5570e3aa603338b2937ea791",
+    "edits": [
+      [
+        "if (cached !== void 0) return {\n\t\t\t\tentries: cached,",
+        "if (!options.scope?.session && cached !== void 0) return {\n\t\t\t\tentries: cached,"
+      ]
+    ]
+  },
+  "dsh-sandbox-policy/lib/index.js": {
+    "name": "dsh-sandbox-policy",
+    "hash": "6c229f24f4b9ad67790ab5c8d1695e1ed538c0354955494bedd0dbe836debec4",
+    "edits": [
+      [
+        "return {\n\t\t\tmode: request.mode ??",
+        "return SUGAR_HOOK.projectPolicy(session?.header.cwd, {\n\t\t\tmode: request.mode ??"
+      ],
+      [
+        "...session === void 0 ? {} : { sessionId: session.id }\n\t\t};",
+        "...session === void 0 ? {} : { sessionId: session.id }\n\t\t});"
+      ],
+      [
+        "return cwd;\n\t}\n\t/**\n\t* Permit writes",
+        "return SUGAR_HOOK.sessionRoot(cwd);\n\t}\n\t/**\n\t* Permit writes"
+      ]
+    ]
+  },
+  "dsh-tool-present/lib/index.js": {
+    "name": "dsh-tool-present",
+    "hash": "648179f6025d85f4d60a2e7fb511c35a5613999785815d1dac55c0b464b42c7f",
+    "edits": [
+      [
+        "session: exec.agent.session,\n\t\t\t\tturn: boundary.lastTurn,\n\t\t\t\tfiles",
+        "session: exec.agent.session,\n\t\t\t\tturn: boundary.lastTurn,\n\t\t\t\tfiles: files.map(file => ({...file, path: SUGAR_HOOK.deliveryPath(exec.agent.session.header.cwd, file.path)}))"
+      ]
+    ]
+  },
+  "dsh-subagent/lib/index.js": {
+    "name": "dsh-subagent",
+    "hash": "47837c0cd3cd8259fbdd14b7a477f3df3f928946c5b9e261f35a883411ba3697",
+    "edits": [
+      [
+        "signal.throwIfAborted();\n\t\treturn cwd;",
+        "signal.throwIfAborted();\n\t\treturn SUGAR_HOOK.childDirectory(request.parent.session.header.cwd, cwd);"
+      ]
+    ]
+  },
+  "dsh-client-ui-directory-picker-browse/lib/client.js": {
+    "name": "dsh-client-ui-directory-picker-browse",
+    "hash": "e90178a60fe35c9982bf75e8aa7ac57061eabcf21928a65e6bf4043930a567a5",
+    "edits": [
+      [
+        "function BrowseDirectoryFlow(props){",
+        "function BrowseDirectoryFlow(props) {\n\t\t\tif (!props.open) return null;"
+      ],
+      [
+        "function displayCrumbs(listing,homeLabel){",
+        "function displayCrumbs(listing, homeLabel) {\n\t\t\tif (listing.crumbs[0]?.path === \"/\") return listing.crumbs;"
+      ],
+      [
+        "if(displayCrumbs(target,``).length<2)",
+        "if (path === void 0 || displayCrumbs(target, \"\").length < 2)"
+      ],
+      [
+        "loading&&slowScan&&(0,react_jsx_runtime.jsx)",
+        "((parent === null && error === null && !draftPending) || (loading && slowScan)) && (0, react_jsx_runtime.jsx)"
+      ]
+    ]
+  },
+  "dsh-api-session-controller/lib/index.js": {
+    "name": "dsh-api-session-controller",
+    "hash": "c6ce8f8014d943c8f2dceaf7a9b184a56b2de757de6097938646549d2d2a9087",
+    "edits": [
+      [
+        "\t\t\"connection\",\n\t\t\"fs\",\n\t\t\"attachments\"",
+        "\t\t\"connection\",\n\t\t\"fs\",\n\t\t\"attachments\",\n\t\t\"typert\""
+      ],
+      [
+        "fetch: (request) => serveFile(request, ctx.fs, maxBytes)",
+        "fetch: (request) => SUGAR_HOOK.serveSessionFile(ctx, request, () => serveFile(request, ctx.fs, maxBytes))"
+      ],
+      [
+        "const target = await fs.resolve(path, { signal: request.signal });\n\t\tconst info = await fs.stat(target, request.signal);",
+        "const target = await fs.resolve(path, { signal: request.signal });\n\t\tif (params.has(\"sessionId\") && !SUGAR_HOOK.workspaceMediaPath(fs.processPath(target))) return fail(403, \"outside session workspace\");\n\t\tconst info = await fs.stat(target, request.signal);"
+      ],
+      [
+        "const location = `?${new URLSearchParams({\n\t\t\t\tpath,\n\t\t\t\tv: info.version",
+        "const location = `?${new URLSearchParams({\n\t\t\t\tpath,\n\t\t\t\t...params.has(\"sessionId\") ? {sessionId: params.get(\"sessionId\")} : {},\n\t\t\t\tv: info.version"
+      ]
+    ]
+  },
+  "dsh-client-ui-chat/lib/client.js": {
+    "name": "dsh-client-ui-chat",
+    "hash": "eef53e82b8cd584d2f0e543a4a93395f9d90df3bba1218891bd99d07d788de5c",
+    "edits": [
+      [
+        "function fileMediaUrl(base,path){",
+        "function fileMediaUrl(base, path, sessionId) {"
+      ],
+      [
+        "return new URL(`api/file?path=${encodeURIComponent(path)}`,base).href",
+        "const url = new URL(`api/file?path=${encodeURIComponent(path)}`, base);\n\t\t\tif (sessionId !== void 0) {\n\t\t\t\tif (!sessionId || !path.startsWith(\"/workspace/\")) return void 0;\n\t\t\t\turl.searchParams.set(\"sessionId\", sessionId);\n\t\t\t}\n\t\t\treturn url.href;"
+      ],
+      [
+        "const fileImages=(0,react.useMemo)(()=>({",
+        "const mediaRoot = useProjection(\"sugarWorkspaceRoot\") ?? \"/workspace\";\n\t\t\tconst fileImages = (0, react.useMemo)(() => ({"
+      ],
+      [
+        "resolve:path=>fileMediaUrl(document.baseURI,resolveWorkspacePath(cwd,path)),",
+        "resolve: (path) => !path || /^(?:[a-z][a-z\\d+.-]*:|\\\\|\\/\\/)/iu.test(path) ? void 0 : fileMediaUrl(document.baseURI, resolveWorkspacePath(mediaRoot, path), sessionId),"
+      ],
+      [
+        "resourceAddress:path=>sessionFileAddress(sessionId,resolveWorkspacePath(cwd,path)),",
+        "resourceAddress: (path) => sessionFileAddress(sessionId, resolveWorkspacePath(mediaRoot, path)),"
+      ],
+      [
+        "[cwd,t,fileDrag,sessionId]",
+        "[mediaRoot,t,fileDrag,sessionId]"
+      ],
+      [
+        "function localPathMediaUrl(base,value){",
+        "function localPathMediaUrl(base, value, fileImages) {"
+      ],
+      [
+        "return fileMediaUrl(base,path)",
+        "return fileImages ? fileImages.resolve(path) : fileMediaUrl(base, path);"
+      ],
+      [
+        "const pathImages=(0,react.useMemo)(()=>{return{resolve:value=>localPathMediaUrl(document.baseURI,value)}},[]);",
+        "const { fileImages } = (0, _deepseek_ai_dsh_client_ui_primitives.useMarkdownDelegate)();\n\t\t\tconst pathImages = (0, react.useMemo)(() => {\n\t\t\t\treturn { resolve: (value) => localPathMediaUrl(document.baseURI, value, fileImages) };\n\t\t\t}, [fileImages]);"
+      ],
+      [
+        "const cwd=ctx.sessions.list.getSnapshot().byId[sessionId]?.cwd;const url=fileAddressFor(sessionId,cwd,resolveWorkspacePath(session.projections.faceOf(`workingDirectory`).getSnapshot()??void 0,path));",
+        "const target = options?.workspaceRelative ? path : resolveWorkspacePath(session.projections.faceOf(\"workingDirectory\").getSnapshot() ?? void 0, path);\n\t\t\t\t\t\t\t\tconst origin = session.projections.faceOf(\"sugarWorkspaceRoot\").getSnapshot() ?? void 0;\n\t\t\t\t\t\t\t\tconst url = fileAddressFor(sessionId, origin, target);"
+      ]
+    ]
+  },
+  "dsh-client-ui-deliverables/lib/client.js": {
+    "name": "dsh-client-ui-deliverables",
+    "hash": "aa7a30171ad0ba3b5c49df3d42e9bf6e5530a3b94c96d7a3c269dbc3278919c9",
+    "edits": [
+      [
+        "openFile(file.path)",
+        "openFile(file.path, { workspaceRelative: true });"
+      ],
+      [
+        "tab.actions.openResource(fileAddressFor(sessionId,cwd,file.path))",
+        "tab.actions.openResource(sessionFileAddress(sessionId, file.path));"
+      ]
+    ]
+  },
+  "dsh-client-modules/lib/index.js": {
+    "name": "dsh-client-modules",
+    "hash": "a1056961926b9524a3940db3fb1cd84b5880eed54f06b8efaafa7c120b0d7602",
+    "edits": [
+      [
+        "const rev = artifactRevision(baseline);",
+        "const rev = SUGAR_HOOK.clientRevision(id, artifactRevision(baseline));"
+      ],
+      [
+        "const bundle = readFileSync(record.meta.clientPath);",
+        "const bundle = SUGAR_HOOK.clientBundle(id, readFileSync(record.meta.clientPath));"
+      ],
+      [
+        "graphRow(packageName, artifactRevision(baseline), source.meta)",
+        "graphRow(packageName, SUGAR_HOOK.clientRevision(packageName, artifactRevision(baseline)), source.meta)"
+      ],
+      [
+        "bundle: this.readClientBundle(packageName, clientPath, () => readFileSync(clientPath)),",
+        "bundle: this.readClientBundle(packageName, clientPath, () => SUGAR_HOOK.clientBundle(packageName, readFileSync(clientPath))),"
+      ]
+    ]
+  },
+  "dsh-client-ui-sidebar-files/lib/client.js": {
+    "name": "dsh-client-ui-sidebar-files",
+    "hash": "b33da4c36cfe673e4eb83b330da538a9d336c6189d9b1ce06364d739ebdfd453",
+    "edits": [
+      [
+        "function underRoot(path,root){",
+        "function treeRequestPath(path, root) {\n\t\t\tif (path === root) return \".\";\n\t\t\tconst relative = underRoot(path, root);\n\t\t\tif (!relative) throw Error(\"Directory is outside the selected workspace\");\n\t\t\treturn relative;\n\t\t}\n\t\tfunction underRoot(path, root) {"
+      ],
+      [
+        "const load=async(paneId,path,signal)=>{",
+        "const load = async (paneId, path, signal, root) => {"
+      ],
+      [
+        "const result=await list(sessionId,path,signal);",
+        "const result = await list(sessionId, treeRequestPath(path, root), signal);"
+      ],
+      [
+        "(path,lifetime)=>load(paneId,path,lifetime),(path,lifetime)=>watch(sessionId,path,lifetime)",
+        "(path, lifetime) => load(paneId, path, lifetime, root), (path, lifetime) => watch(sessionId, treeRequestPath(path, root), lifetime)"
+      ],
+      [
+        "sessionId,path:entry.path}",
+        "sessionId,\n\t\t\t\t\t\t\tpath: treeRequestPath(entry.path, tree.root)\n\t\t\t\t\t\t}"
+      ],
+      [
+        "path:entry.path,paneId",
+        "path: treeRequestPath(entry.path, tree.root),\n\t\t\t\t\t\t\tpaneId"
+      ]
+    ]
+  },
+  "dsh-tool-bash/lib/index.js": {
+    "name": "dsh-tool-bash",
+    "hash": "8fb836a65eb633f85aa8b1b079fb306866e597fe8f4987c2205b5c4482df57de",
+    "edits": [
+      [
+        "proc = await ctx.shell.execute({\n\t\t\t\t\t\t\t\t...spec,\n\t\t\t\t\t\t\t\tsignal\n\t\t\t\t\t\t\t});",
+        "proc = await SUGAR_HOOK.deviceProcess(exec.agent,false, () => ctx.shell.execute({...spec,signal}));"
+      ],
+      [
+        "result = await (await ctx.shell.execute(spec)).result();",
+        "result = await (await SUGAR_HOOK.deviceProcess(exec.agent,false, () => ctx.shell.execute(spec))).result();"
+      ]
+    ]
+  },
+  "dsh-session-reference/lib/index.js": {
+    "name": "dsh-session-reference",
+    "hash": "cd7e925c56fe2a0725192ae14d07dea7dc2c6be1f6a8f099f32673d3053346fd",
+    "edits": [
+      [
+        "cwd: snapshot.session.cwd ?? null,",
+        "cwd: SUGAR_HOOK.sessionRoot(snapshot.session.cwd) ?? null,"
+      ]
+    ]
+  },
+  "dsh-tool-schedule/lib/index.js": {
+    "name": "dsh-tool-schedule",
+    "hash": "af717a4e8e3d48ff0a83266c1041c713784689c16eeec483251267c24a513852",
+    "edits": [
+      [
+        "...record,\n\t\tscheduledAtLocal: formatScheduleLocalTime(task, task.scheduledAt),",
+        "...record,\n\t\t...(record.target.create?.cwd === void 0 ? {} : {target: {\n\t\t\t...record.target,\n\t\t\tcreate: {...record.target.create, cwd: SUGAR_HOOK.sessionRoot(record.target.create.cwd)}\n\t\t}}),\n\t\tscheduledAtLocal: formatScheduleLocalTime(task, task.scheduledAt),"
+      ]
+    ]
+  },
+  "dsh-util-ripgrep/lib/index.js": {
+    "name": "dsh-util-ripgrep",
+    "hash": "58f06ddafed1680885a933bcdb0afa638bf08d5bd9b9689e39cfd82daf7f5822",
+    "edits": [
+      [
+        "function resolveRgPath() {",
+        "function resolveRgPath() {\n\tif (SUGAR_HOOK.current()) return Promise.resolve(\"/usr/bin/rg\");"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pet_service_active">桌宠运行中，点按打开 Sugar</string>
+    <string name="pet_idle">无所事事</string>
+    <string name="pet_phone">看手机</string>
+    <string name="pet_coding">写代码</string>
+    <string name="pet_thinking">思考</string>
+    <string name="pet_asking">询问</string>
+    <string name="pet_working">工作中</string>
+    <string name="pet_operation_complete">操作完成了。</string>
+    <string name="pet_operation_error">操作遇到了问题。</string>
+</resources>

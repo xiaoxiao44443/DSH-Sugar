@@ -1,0 +1,10 @@
+<resources>
+    <string name="storage_preview_empty">Empty file</string>
+    <string name="session_confirm_conversation">Delete this conversation? Its saved attachments will remain under Attachments only, listed by the original conversation title.</string>
+    <string name="session_confirm_attachments">Clear the saved attachments for this conversation? Attachments still in use by other conversations and original workspace files will be kept.</string>
+    <string name="session_confirm_both">Delete this conversation and its saved attachments? Attachments still in use by other conversations and original workspace files will be kept.</string>
+    <string name="storage_workspace_confirm_files">Delete selected items (%1$d)?</string>
+    <string name="storage_workspace_confirm_clear">Clear all %1$d items in this folder?</string>
+    <string name="storage_workspace_delete_contents">All contents of selected folders will also be deleted.</string>
+    <string name="storage_workspace_delete_phone">This workspace uses a phone folder. The original files on your phone will also be deleted.</string>
+</resources>

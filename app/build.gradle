@@ -1,0 +1,220 @@
+plugins {
+    id 'com.android.application'
+}
+
+def sucruneRoot = rootProject.file(providers.gradleProperty('sucruneDir').getOrElse('../Sucrune'))
+def sucruneModule = new File(sucruneRoot, 'android/probeapp')
+def runtimeApk = rootProject.file(providers.gradleProperty('sucruneApk').getOrElse(
+    new File(sucruneModule, 'build/outputs/apk/validation/probeapp-validation.apk').path))
+def generatedSources = layout.buildDirectory.dir('generated/sucrune/kotlin')
+def generatedLibs = layout.buildDirectory.dir('generated/sucrune/jniLibs')
+def guestAssets = layout.buildDirectory.dir('generated/sugarAssets')
+def webUiAssets = layout.buildDirectory.dir('generated/webUiAssets')
+def projectBridgeAssets = layout.buildDirectory.dir('generated/projectBridgeAssets')
+def prepareProjectBridgeAssets = tasks.register('prepareProjectBridgeAssets', Sync) {
+    def nodePty = new File(sucruneModule, 'src/androidTest/assets/linux-node-pty/files/opt/dsh/node_modules/node-pty')
+    from(nodePty) { into 'project/node-pty' }
+    into projectBridgeAssets
+    doFirst {
+        if (!new File(nodePty, 'prebuilds/linux-arm64/pty.node').isFile()) {
+            throw new GradleException('Missing the Sucrune ARM64 node-pty layer')
+        }
+    }
+}
+apply from: rootProject.file('gradle/project-landlock.gradle')
+def projectProcessAssets = layout.buildDirectory.dir('generated/projectProcessAssets')
+def prepareProjectProcessAssets = tasks.register('prepareProjectProcessAssets') {
+    def patchedLauncher = tasks.named('buildProjectLandlock')
+    inputs.files(patchedLauncher)
+    dependsOn 'verifyGuestAssets'
+    def rootfs = guestAssets.map { it.file('guest/rootfs.zip') }
+    inputs.file(rootfs)
+    outputs.dir(projectProcessAssets)
+    doLast {
+        def destination = projectProcessAssets.get().asFile
+        // Upstream chunk names and Creator resources can disappear between DSH releases.
+        if (destination.exists() && !destination.deleteDir()) throw new GradleException('Cannot replace generated project assets')
+        def packages = ['dsh-subprocess-local', 'dsh-subprocess', 'dsh-error', 'dsh-timeout', 'dsh-lazy-require',
+                        'dsh-ptc-runtime-node', 'dsh-http-proxy', 'cordis', 'cosmokit', 'dsh-win32-process'] as Set
+        def base = 'opt/dsh/node_modules/@deepseek-ai/'
+        def found = [] as Set
+        new java.util.zip.ZipFile(rootfs.get().asFile).withCloseable { archive ->
+            def runners = archive.entries().findAll { entry ->
+                !entry.directory && entry.name.startsWith(base) && entry.name.endsWith('-linux-arm64/bin/landlock-run')
+            }
+            if (runners.size() != 1) throw new GradleException('Expected one ARM64 Landlock launcher in the DSH distribution')
+            def launcher = new File(destination, 'project/sandbox')
+            launcher.mkdirs()
+            new File(launcher, 'path').setText('/' + runners.first().name, 'UTF-8')
+            java.nio.file.Files.copy(patchedLauncher.get().outputs.files.singleFile.toPath(),
+                new File(launcher, 'landlock-run').toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            def rg = archive.getEntry('opt/dsh/node_modules/@vscode/ripgrep-linux-arm64/bin/rg')
+            if (rg == null) throw new GradleException('Missing ARM64 ripgrep')
+            def rgFile = new File(destination, 'project/tools/rg')
+            rgFile.parentFile.mkdirs()
+            archive.getInputStream(rg).withCloseable { input ->
+                rgFile.withOutputStream { input.transferTo(it) }
+            }
+            archive.entries().each { entry ->
+                if (!entry.name.startsWith(base)) return
+                def relative = entry.name.substring(base.length())
+                if (['dsh-agent-preset/skills/', 'dsh-creation-recommendations/references/',
+                     'dsh-creation-recommendations/skills/'].any { relative.startsWith(it) } && !entry.directory) {
+                    if (relative.split('/').any { !(it ==~ /[a-zA-Z0-9_.-]+/) || it == '..' || it == '.' }) {
+                        throw new GradleException('Unexpected Creator resource path')
+                    }
+                    def resource = new File(destination, 'project/creator/' + relative)
+                    resource.parentFile.mkdirs()
+                    archive.getInputStream(entry).withCloseable { input ->
+                        resource.withOutputStream { input.transferTo(it) }
+                    }
+                    return
+                }
+                def pieces = relative.split('/', 2)
+                if (pieces.size() != 2 || !packages.contains(pieces[0])) return
+                def file = pieces[1]
+                if (!(file in ['package.json', 'LICENSE'] || file ==~ /lib\/[a-zA-Z0-9_.-]+\.js/)) return
+                def out = new File(destination, 'project/process-packages/' + relative)
+                out.parentFile.mkdirs()
+                archive.getInputStream(entry).withCloseable { input ->
+                    out.withOutputStream { input.transferTo(it) }
+                }
+                if (file == 'package.json') found.add(pieces[0])
+            }
+        }
+        if (found != packages) throw new GradleException('Missing Linux subprocess packages: ' + (packages - found))
+    }
+}
+def runtimeFiles = ['GuestDirectory', 'NativeProbe', 'ExecutionInput', 'ExecutionStdout', 'ExecutionSecrets',
+                    'RuntimeClient', 'RuntimeWorkerService'].collect { "com/sucrune/probe/${it}.kt" }
+def runtimeLibraries = ['libsucrune_runner.so', 'libsucrune_probe.so', 'libsucrune_core.so']
+
+def prepareRuntimeSources = tasks.register('prepareSucruneSources', Sync) {
+    def source = new File(sucruneModule, 'src/main/kotlin')
+    from(source) { include runtimeFiles }
+    into generatedSources
+    doFirst {
+        runtimeFiles.each { path ->
+            if (!new File(source, path).isFile()) throw new GradleException("Missing Sucrune runtime source: ${path}")
+        }
+    }
+}
+
+def prepareRuntimeLibraries = tasks.register('prepareSucruneLibraries', Sync) {
+    inputs.file(runtimeApk)
+    from({ zipTree(runtimeApk) }) {
+        include runtimeLibraries.collect { "lib/arm64-v8a/${it}" }
+        eachFile { entry -> entry.path = "arm64-v8a/${entry.name}" }
+        includeEmptyDirs = false
+    }
+    into generatedLibs
+    doLast {
+        runtimeLibraries.each { library ->
+            if (!new File(destinationDir, "arm64-v8a/${library}").isFile())
+                throw new GradleException("Sucrune APK is missing ${library} for ARM64: ${runtimeApk}")
+        }
+    }
+}
+
+def checkGuestAssets = tasks.register('verifyGuestAssets') {
+    doLast {
+        ['guest/rootfs.zip', 'guest/bundle.json', 'pnpm/manifest.json', 'mobile-python/runtime.sha256', 'mobile-python/runtime.zip',
+         'network-tools/manifest.json', 'network-tools/tools.zip'].each { path ->
+            if (!guestAssets.get().file(path).asFile.isFile())
+                throw new GradleException("Missing ${path}. Run scripts/prepare-guest.py or scripts/build-android.ps1 first.")
+        }
+        new java.util.zip.ZipFile(guestAssets.get().file('network-tools/tools.zip').asFile).withCloseable { archive ->
+            if (archive.getEntry('usr/bin/npm') == null || archive.getEntry('usr/bin/npx') == null)
+                throw new GradleException('Stale guest tool bundle. Run scripts/prepare-network-tools.py first.')
+        }
+    }
+}
+
+def prepareWebUiAssets = tasks.register('prepareWebUiAssets') {
+    dependsOn checkGuestAssets
+    def rootfs = guestAssets.map { it.file('guest/rootfs.zip') }
+    def bundle = webUiAssets.map { it.file('web-ui/startup.zip') }
+    inputs.file(rootfs)
+    outputs.file(bundle)
+    doLast {
+        final String base = 'opt/dsh/node_modules/@deepseek-ai/dsh-web-frontend/dist/'
+        def output = bundle.get().asFile
+        output.parentFile.mkdirs()
+        new java.util.zip.ZipFile(rootfs.get().asFile).withCloseable { archive ->
+            def index = archive.getEntry(base + 'index.html')
+            if (index == null) throw new GradleException('Missing DSH Web frontend entry')
+            String html = archive.getInputStream(index).withCloseable { it.getText('UTF-8') }
+            def assets = new LinkedHashSet<String>()
+            def tags = html =~ /(?i)<(?:script|link)\b[^>]*>/
+            for (String tag : tags) {
+                def module = tag.startsWith('<script') && tag.contains('type="module"')
+                def preload = tag.startsWith('<link') && tag.contains('rel="modulepreload"')
+                def style = tag.startsWith('<link') && tag.contains('rel="stylesheet"')
+                if (!(module || preload || style)) continue
+                def attribute = tag =~ /(?:src|href)="\.\/(assets\/[A-Za-z0-9_-]+-[A-Za-z0-9_-]{8,}\.(?:js|css))"/
+                if (!attribute.find() || !attribute.group(1).endsWith(style ? '.css' : '.js')) {
+                    throw new GradleException("Unexpected DSH Web entry asset in ${tag}")
+                }
+                assets.add(attribute.group(1))
+            }
+            if (!assets.any { it.endsWith('.js') } || !assets.any { it.endsWith('.css') }) {
+                throw new GradleException('Missing initial scripts or styles in the DSH Web frontend')
+            }
+            // One compressed asset; no second copy of lazy chunks, fonts, or plugin resources.
+            new java.util.zip.ZipOutputStream(new BufferedOutputStream(new FileOutputStream(output))).withCloseable { zip ->
+                assets.each { name ->
+                    def entry = archive.getEntry(base + name)
+                    if (entry == null) throw new GradleException("Missing DSH Web resource ${name}")
+                    def copy = new java.util.zip.ZipEntry(name)
+                    copy.time = 0L
+                    zip.putNextEntry(copy)
+                    archive.getInputStream(entry).withCloseable { it.transferTo(zip) }
+                    zip.closeEntry()
+                }
+            }
+        }
+    }
+}
+
+android {
+    namespace 'app.dsh.sugar'
+    compileSdk { version = release(37) }
+    defaultConfig {
+        applicationId 'app.dsh.sugar'
+        minSdk 29
+        targetSdk 37
+        versionCode 1
+        versionName '0.1.0'
+        ndk { abiFilters 'arm64-v8a' }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets {
+        main {
+            kotlin.srcDir generatedSources.get().asFile
+            jniLibs.srcDir generatedLibs.get().asFile
+            assets.srcDirs += [guestAssets.get().asFile, webUiAssets.get().asFile, projectBridgeAssets.get().asFile, projectProcessAssets.get().asFile, new File(sucruneModule, 'src/main/assets')]
+        }
+    }
+    androidResources { noCompress += 'zip' }
+    // The native supervisor locates its executable alongside the extracted JNI library.
+    packaging { jniLibs { useLegacyPackaging = true } }
+}
+
+kotlin {
+    compilerOptions { jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17 }
+}
+dependencies {
+    implementation project(':shared')
+    implementation 'com.github.MuntashirAkon:libadb-android:3.1.1'
+    implementation 'org.conscrypt:conscrypt-android:2.5.3'
+    implementation 'org.bouncycastle:bcprov-jdk15to18:1.81'
+    testImplementation 'junit:junit:4.13.2'
+}
+tasks.named('preBuild').configure {
+    dependsOn prepareRuntimeSources, prepareRuntimeLibraries, checkGuestAssets, prepareWebUiAssets, prepareProjectBridgeAssets, prepareProjectProcessAssets
+}
+
+apply from: rootProject.file('gradle/project-filesystem.gradle')

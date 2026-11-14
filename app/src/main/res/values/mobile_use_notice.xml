@@ -1,0 +1,6 @@
+<resources>
+    <string name="mobile_use_running">Sugar 正在操作手机</string>
+    <string name="mobile_use_stop_main">停止主屏操作</string>
+    <string name="mobile_use_stop_virtual">停止虚拟屏操作</string>
+    <string name="mobile_use_kept_screens">虚拟屏已保留</string>
+</resources>

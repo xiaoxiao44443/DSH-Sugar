@@ -1,0 +1,15 @@
+<resources>
+    <string name="pet_note_preview_title">回答便签预览</string>
+    <string name="pet_note_preview_question">这回合优先做什么？</string>
+    <string name="pet_note_preview_result">已选：%1$s</string>
+    <string-array name="pet_note_preview_options">
+        <item>先领棋盘道具</item>
+        <item>把新合成的装备交给最适合的角色</item>
+        <item>用掉免费刷新</item>
+        <item>升星主力角色</item>
+        <item>保留金币</item>
+    </string-array>
+    <string name="pet_note_preview_transcript">模拟语音转写</string>
+    <string name="pet_note_preview_input">输入想预览的回答</string>
+    <string name="pet_note_preview_apply">放入便签</string>
+</resources>

@@ -1,0 +1,33 @@
+<resources>
+    <string name="diag_title">Diagnostics and recovery</string>
+    <string name="diag_back">Back</string>
+    <string name="diag_intro">Starting a diagnostic session, restoring DSH or resetting its configuration pauses your normal DSH server and stops running workspace tasks. DSH reconnects when you return. Temporary chats and settings are cleared when the session ends.</string>
+    <string name="diag_current">Start with a temporary configuration</string>
+    <string name="diag_current_note">Start the installed DSH with temporary settings. In the diagnostic workspace, repair/.dsh contains the original user data and repair/dsh contains the original program.</string>
+    <string name="diag_builtin">Diagnose with bundled DSH</string>
+    <string name="diag_builtin_note">Start a temporary session from the DSH bundled in the APK if the installed copy is damaged.</string>
+    <string name="diag_restore">Restore DSH program</string>
+    <string name="diag_restore_note">Replace the current DSH program with the version bundled in the app. This overwrites changes to the installed program files.</string>
+    <string name="diag_reset">Restore default configuration</string>
+    <string name="diag_reset_note">Reset the normal DSH configuration file. Custom model and plugin settings in this file return to their default values.</string>
+    <string name="diag_cancel">Cancel</string>
+    <string name="diag_confirm">Confirm restore</string>
+    <string name="diag_interrupted">The last diagnostic session was interrupted.</string>
+    <string name="diag_busy">Another recovery operation is running.</string>
+    <string name="diag_wait">Preparing…</string>
+    <string name="diag_closing">Closing the temporary session…</string>
+    <string name="diag_closed">Temporary session closed. DSH will restart when you leave diagnostics.</string>
+    <string name="diag_repaired">Restored. Go back to restart DSH.</string>
+    <string name="diag_display_failed">The diagnostic page could not open. The temporary session has ended.</string>
+    <string name="diag_failed">The operation did not finish. Try again.</string>
+    <string name="diag_end">End diagnostic session</string>
+    <string name="diag_nav_open">Open side navigation</string>
+    <string name="diag_nav_close">Close side navigation</string>
+    <string name="diag_nav_home">Go to DSH home</string>
+    <string name="diag_session_home">Diagnostic session home</string>
+    <string name="diag_forward">Forward</string>
+    <string name="diag_end_question">End this diagnostic session?</string>
+    <string name="diag_end_detail">The chats and settings in this temporary session will be cleared.</string>
+    <string name="diag_browser_problem">The diagnostic page could not open. Choose Diagnostic session home in the side navigation to retry.</string>
+    <string name="diag_profile_edit_hint">Saving updates the temporary file. The running session keeps its loaded settings. Ending diagnosis deletes this file.</string>
+</resources>

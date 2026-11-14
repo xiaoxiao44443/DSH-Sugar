@@ -1,0 +1,7 @@
+<resources>
+    <string name="pet_reply_preview_hint">Double-tap the pet to preview the note</string>
+    <string name="pet_reply_unavailable">Open the conversation to view this request</string>
+    <string name="pet_reply_send_error">Could not send. Check the conversation.</string>
+    <string name="pet_reply_empty">Add quick replies in pet settings</string>
+    <string name="pet_reply_to_session">Reply to %1$s</string>
+</resources>

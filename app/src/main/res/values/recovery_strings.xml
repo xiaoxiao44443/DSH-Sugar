@@ -1,0 +1,33 @@
+<resources>
+    <string name="diag_title">诊断与恢复</string>
+    <string name="diag_back">返回</string>
+    <string name="diag_intro">启动临时会话、恢复程序或重置配置会暂停常用 DSH，并停止正在运行的工作区任务。返回后会重新连接 DSH。临时会话的对话和配置会在退出时清除。</string>
+    <string name="diag_current">使用临时配置启动</string>
+    <string name="diag_current_note">用当前版本和临时配置启动 DSH。诊断工作区的 repair/.dsh 保存原用户数据，repair/dsh 保存原程序。</string>
+    <string name="diag_builtin">使用内置版本诊断</string>
+    <string name="diag_builtin_note">从安装包中的 DSH 启动临时会话，用于检查运行版本身损坏的情况。</string>
+    <string name="diag_restore">恢复 DSH 程序</string>
+    <string name="diag_restore_note">用安装包中的版本替换当前 DSH 程序。对运行版程序文件的修改将被覆盖。</string>
+    <string name="diag_reset">恢复默认配置</string>
+    <string name="diag_reset_note">重置常用 DSH 的配置文件。自定义模型、插件选项等配置将恢复为默认值。</string>
+    <string name="diag_cancel">取消</string>
+    <string name="diag_confirm">确认恢复</string>
+    <string name="diag_interrupted">上次诊断已中断。</string>
+    <string name="diag_busy">另一项恢复操作正在进行。</string>
+    <string name="diag_wait">正在准备…</string>
+    <string name="diag_closing">正在关闭临时会话…</string>
+    <string name="diag_closed">临时会话已关闭。离开诊断页后将重新启动 DSH。</string>
+    <string name="diag_repaired">已恢复，返回即可重新启动 DSH。</string>
+    <string name="diag_display_failed">诊断页面未能打开，临时会话已关闭。</string>
+    <string name="diag_failed">操作未完成，请重试。</string>
+    <string name="diag_end">结束诊断</string>
+    <string name="diag_nav_open">展开侧边导航</string>
+    <string name="diag_nav_close">收起侧边导航</string>
+    <string name="diag_nav_home">回到 DSH 主页</string>
+    <string name="diag_session_home">诊断会话主页</string>
+    <string name="diag_forward">前进</string>
+    <string name="diag_end_question">结束诊断？</string>
+    <string name="diag_end_detail">当前临时会话的对话和配置将被清除。</string>
+    <string name="diag_browser_problem">诊断页面未能打开。可以从侧栏回到诊断主页重试。</string>
+    <string name="diag_profile_edit_hint">保存会更新临时文件。当前会话继续使用已加载的设置，结束诊断时会清除该文件。</string>
+</resources>

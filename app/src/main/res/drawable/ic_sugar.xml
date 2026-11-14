@@ -1,0 +1,5 @@
+<!-- AdaptiveIconDrawable expands its layers by 25% on each side.
+     Keep the portrait in the visible launcher square, with a one-pixel edge. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android" android:inset="16.667%">
+    <inset android:drawable="@drawable/sugar_portrait" android:inset="1px" />
+</inset>

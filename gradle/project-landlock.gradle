@@ -1,0 +1,45 @@
+// Build the project runner from the same pinned npm distribution as DSH.
+def archive = layout.buildDirectory.file('generated/sugarAssets/guest/rootfs.zip')
+def binary = layout.buildDirectory.file('intermediates/projectLandlock/landlock-run')
+def patch = rootProject.file('guest/landlock-reported.patch')
+def compiler = providers.gradleProperty('sugarZig').orElse(providers.environmentVariable('ZIG')).orElse('zig')
+tasks.register('buildProjectLandlock') {
+    dependsOn 'verifyGuestAssets'
+    inputs.file(archive)
+    inputs.file(patch)
+    inputs.property('compiler', compiler)
+    outputs.file(binary)
+    doLast {
+        def scratch = temporaryDir
+        def main = new File(scratch, 'main.c')
+        new java.util.zip.ZipFile(archive.get().asFile).withCloseable { zip ->
+            def entry = zip.getEntry('opt/dsh/node_modules/@deepseek-ai/node-addon-system/src/main.c')
+            if (entry == null) throw new GradleException('Missing the pinned Landlock launcher source')
+            def source = zip.getInputStream(entry).withCloseable { it.bytes }
+            // @deepseek-ai/node-addon-system 0.1.2, before Sugar's diagnostic-only patch.
+            if (java.security.MessageDigest.getInstance('SHA-256').digest(source).encodeHex().toString() !=
+                    '0b3f13a6d19b809ea5a895a4873fe94cdea02471f928f214266dfd0a22a949b5') {
+                throw new GradleException('Review the updated upstream Landlock launcher before packaging it')
+            }
+            main.bytes = source
+        }
+        def run = { List args ->
+            def command = providers.exec {
+                workingDir scratch
+                commandLine args
+                environment 'GIT_CEILING_DIRECTORIES', scratch.parent
+                environment 'ZIG_LOCAL_CACHE_DIR', new File(scratch, 'zig-cache').absolutePath
+                ignoreExitValue = true
+            }
+            if (command.result.get().exitValue != 0) throw new GradleException(command.standardError.asText.get())
+            command.standardOutput.asText.get().trim()
+        }
+        if (run([compiler.get(), 'version']) != '0.17.1') throw new GradleException('Use Zig 0.17.1 for the Landlock launcher')
+        run(['git', '-c', 'core.autocrlf=false', 'apply', '--no-index', patch.absolutePath])
+        def dest = binary.get().asFile
+        dest.parentFile.mkdirs()
+        run([compiler.get(), 'cc', '-target', 'aarch64-linux-musl', '-std=c11', '-Wall', '-Wextra', '-Werror',
+             '-Os', '-static', '-fno-pie', '-no-pie', '-fstack-protector-strong', '-s',
+             '-Wl,--image-base=0x400000,-z,max-page-size=65536,--build-id=none', 'main.c', '-o', dest.absolutePath])
+    }
+}

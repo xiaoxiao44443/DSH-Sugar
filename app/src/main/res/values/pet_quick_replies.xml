@@ -1,0 +1,7 @@
+<resources>
+    <string-array name="pet_quick_replies">
+        <item>继续</item>
+        <item>先等一下</item>
+        <item>换个方法试试</item>
+    </string-array>
+</resources>

@@ -1,0 +1,8 @@
+{
+  "name": "dsh-sugar-notifications",
+  "version": "1.0.0",
+  "description": "Android Agent 消息通知",
+  "private": true,
+  "type": "module",
+  "exports": "./index.js"
+}

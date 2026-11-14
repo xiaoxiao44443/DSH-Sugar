@@ -1,0 +1,40 @@
+{
+  "opt/dsh/node_modules/@deepseek-ai/dsh-api-remotes/lib/client.js": {
+    "sha256": "da5871765c379d1f9bde23bd90fef48eafdd5d51a57459b31792736176582d34",
+    "edits": [
+      [
+        "parameters:[],result:{mode:`strict`,typeSymbol:`@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:result`",
+        "parameters:[{name:`includeHiddenRowMetadata`,description:`Include component display metadata for hidden bundles (default true).`,source:`json`,acceptsUndefined:true,codec:{mode:`strict`,typeSymbol:`@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:includeHiddenRowMetadata`,create:()=>zod.z.boolean().optional(),jsonSchema:{type:`boolean`}},strictCodec:{mode:`strict`,typeSymbol:`@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:includeHiddenRowMetadata`,create:()=>zod.z.boolean().optional(),jsonSchema:{type:`boolean`}}}],result:{mode:`strict`,typeSymbol:`@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:result`"
+      ],
+      [
+        "parameters:[],result:{mode:`strict`,typeSymbol:`@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:result`",
+        "parameters:[{name:`includeMetadata`,description:`Include plugin display metadata (default true).`,source:`json`,acceptsUndefined:true,codec:{mode:`strict`,typeSymbol:`@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:includeMetadata`,create:()=>zod.z.boolean().optional(),jsonSchema:{type:`boolean`}},strictCodec:{mode:`strict`,typeSymbol:`@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:includeMetadata`,create:()=>zod.z.boolean().optional(),jsonSchema:{type:`boolean`}}}],result:{mode:`strict`,typeSymbol:`@deepseek-ai/dsh-plugin-manager#pluginManager/listPlugins:result`"
+      ]
+    ]
+  },
+  "opt/dsh/node_modules/@deepseek-ai/dsh-client-ui-plugin-manager/lib/client.js": {
+    "sha256": "ec1e18683032730be2f97e76847fc1638e59f86df937af727e9b885991983064",
+    "edits": [
+      [
+        "rerun=false;generation=0;",
+        "rerun=false;activeChanges=0;inventoryAccess=false;generation=0;"
+      ],
+      [
+        "const inventory=await this.ctx.remote.pluginInventory.list();if(generation!==this.generation)return;if(!inventory.ok){this.patch({status:`error`});continue}if(inventory.value.managementAvailable!==true){this.hasCachedInventory=false;this.patch({status:`unavailable`,packages:[]});continue}const[bundles,plugins]=await Promise.all([this.ctx.remote.pluginManager.listBundles(),this.ctx.remote.pluginManager.listPlugins()]);if(generation!==this.generation)return;if(!bundles.ok||!plugins.ok){this.patch({status:`error`});continue}",
+        "if(!this.inventoryAccess){this.hasCachedInventory=false;this.patch({status:`error`,packages:[]});continue}const[bundles,plugins]=await Promise.all([this.ctx.remote.pluginManager.listBundles(false),this.ctx.remote.pluginManager.listPlugins(false)]);if(generation!==this.generation)return;if(!this.inventoryAccess)continue;if(!bundles.ok||!plugins.ok){const inventory=await this.ctx.remote.pluginInventory.list();if(generation!==this.generation)return;if(inventory.ok&&inventory.value.managementAvailable!==true){this.hasCachedInventory=false;this.patch({status:`unavailable`,packages:[]})}else this.patch({status:`error`});continue}"
+      ],
+      [
+        "this.patch({busy:[...this.getSnapshot().busy,key],notice:null});try{await action()}catch(error){this.patch({notice:failedNotice(error,subject,++this.noticeSeq)})}finally{this.patch({busy:this.getSnapshot().busy.filter(entry=>entry!==key)})}await this.load()",
+        "this.patch({busy:[...this.getSnapshot().busy,key],notice:null});this.activeChanges++;try{await action()}catch(error){this.patch({notice:failedNotice(error,subject,++this.noticeSeq)})}finally{this.activeChanges--;try{await this.load()}finally{this.patch({busy:this.getSnapshot().busy.filter(entry=>entry!==key)})}}"
+      ],
+      [
+        "ctx.remoteAccess.whenAccess(`pluginManager/listBundles`,function*(){",
+        "const inventoryAccess=allowed=>{controller.inventoryAccess=allowed;if(controller.getSnapshot().status!==`idle`)controller.load()};ctx.remoteAccess.whenAccess(`pluginInventory/list`,()=>{inventoryAccess(true);return ()=>inventoryAccess(false)});ctx.remoteAccess.whenAccess(`pluginManager/listBundles`,function*(){"
+      ],
+      [
+        "ctx.remote.$on(`plugin-manager/changed`,refresh)",
+        "ctx.remote.$on(`plugin-manager/changed`,()=>{if(controller.activeChanges===0)refresh();else controller.details.reset()})"
+      ]
+    ]
+  }
+}

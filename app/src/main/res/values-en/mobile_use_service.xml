@@ -1,0 +1,4 @@
+<resources>
+    <string name="mobile_use_accessibility_label">DSH Sugar main screen control</string>
+    <string name="mobile_use_accessibility_description">Lets an active Sugar phone task read and capture the current screen, tap, swipe, and enter text.</string>
+</resources>
