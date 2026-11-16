@@ -15,12 +15,15 @@ internal class AdbSettingsBridge(private val activity: Activity, private val pub
     private val app = activity.applicationContext
     private val main = Handler(Looper.getMainLooper())
     private val adb by lazy { WirelessAdb.get(app) }
+    private val root by lazy { RootAccess.get(app) }
     private var attached = false
     private var pendingDiscovery: Boolean? = null
     private val refresh: () -> Unit = { main.post { if (attached) report() }; Unit }
+    private val refreshRoot: () -> Unit = { main.post { if (attached) reportRoot() }; Unit }
     fun attach() {
         attached = true
         adb.addListener(refresh)
+        root.addListener(refreshRoot)
         AdbPairingNotice.listen(refresh)
     }
     fun detach() {
@@ -28,6 +31,7 @@ internal class AdbSettingsBridge(private val activity: Activity, private val pub
         attached = false
         pendingDiscovery = null
         adb.removeListener(refresh)
+        root.removeListener(refreshRoot)
         AdbPairingNotice.unlisten(refresh)
     }
     private fun report(error: String? = null) {
@@ -39,10 +43,13 @@ internal class AdbSettingsBridge(private val activity: Activity, private val pub
         (error ?: AdbPairingNotice.message(app))?.let { state.put("message", it) }
         publish(state)
     }
-    fun resumedLanguage() = report()
+    private fun reportRoot() {
+        if (attached) publish(root.status().put("type", "rootState"))
+    }
+    fun resumedLanguage() { report(); reportRoot() }
     fun resumed() {
         AdbPairingNotice.refresh()
-        if (attached) report()
+        if (attached) { report(); reportRoot() }
     }
     private fun openSettings() {
         for (target in listOf("android.settings.WIRELESS_DEBUG_SETTINGS", Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS, Settings.ACTION_SETTINGS)) {
@@ -74,6 +81,15 @@ internal class AdbSettingsBridge(private val activity: Activity, private val pub
     fun handle(data: JSONObject, focused: Boolean) {
         val op = data.optString("type")
         if (op == "adbStatus") { report(); return }
+        if (op == "rootStatus") { reportRoot(); return }
+        if (op == "rootSetEnabled" || op == "rootProbe") {
+            if (attached && focused) {
+                if (op == "rootProbe") root.probe()
+                else (data.opt("enabled") as? Boolean)?.let(root::setEnabled)
+            }
+            reportRoot()
+            return
+        }
         if (Build.VERSION.SDK_INT < 30 || !focused) { report(); return }
         when (op) {
             "openWirelessSettings" -> openSettings()

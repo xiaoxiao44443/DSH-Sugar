@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import app.dsh.sugar.WirelessAdb
+import app.dsh.sugar.RootAccess
 import app.dsh.sugar.mobile.LauncherAppNames
 import app.dsh.sugar.mobile.MobileScreen
 import app.dsh.sugar.mobile.MobileColors
@@ -45,6 +46,7 @@ internal object MobileUseTasks {
         var resumedAt = 0L
         var error: JSONObject? = null
         var capabilities = JSONObject()
+        var driver: String? = null
         var virtualKey = id
         var displayId: Int? = null
         var observationId: String? = null
@@ -73,7 +75,16 @@ internal object MobileUseTasks {
         uiListeners.toList().forEach { it() }
     }
 
-    fun initialize(app: Context) { context = app.applicationContext }
+    private var rootObserved = false
+    fun initialize(app: Context) {
+        context = app.applicationContext
+        synchronized(this) {
+            if (!rootObserved) {
+                rootObserved = true
+                RootAccess.get(app).addListener { deviceChanged("main"); deviceChanged("virtual") }
+            }
+        }
+    }
     private fun changed() {
         main.removeCallbacks(refreshNotice)
         main.post(refreshNotice)
@@ -86,6 +97,7 @@ internal object MobileUseTasks {
     fun setMainEnabled(app: Context, enabled: Boolean) = setEnabled(app, "main", enabled)
     fun setVirtualEnabled(app: Context, enabled: Boolean) = setEnabled(app, "virtual", enabled)
     fun accessibilityEnabled() = MobileScreen.available()
+    fun rootAvailable() = context?.let { RootAccess.get(it).isAvailable() } == true
     fun deviceChanged(screen: String) {
         main.post {
             synchronized(this) {
@@ -157,7 +169,10 @@ internal object MobileUseTasks {
         put("virtualEnabled", context?.let(::virtualEnabled) ?: false)
         put("virtualAvailable", virtualSupported())
         put("adbConnected", adbConnected())
+        put("rootAvailable", rootAvailable())
+        put("rootEnabled", context?.let { RootAccess.get(it).status().optBoolean("enabled") } == true)
         task?.error?.let { put("error", it) }
+        task?.driver?.let { put("driver", it) }
     }
     private fun stillOpen(task: Task) = when (task.screen) {
         "main" -> MobileScreen.isOpen(task.id)
@@ -203,8 +218,8 @@ internal object MobileUseTasks {
             return
         }
         if (!(if (virtual) virtualEnabled(app) else mainEnabled(app))) { task.phase = "disabled"; return }
-        val transport = if (virtual) WirelessAdb.get(app).currentTransport() else null
-        if (if (virtual) transport == null else !accessibilityEnabled()) { task.phase = "permission"; return }
+        val root = RootAccess.get(app).isAvailable()
+        val transport = if (virtual && !root) WirelessAdb.get(app).currentTransport() else null
         if (virtual) {
             val previous = parked.remove(task.owner)
             if (previous != null) {
@@ -212,6 +227,7 @@ internal object MobileUseTasks {
                     task.virtualKey = previous.virtualKey
                     task.displayId = previous.displayId
                     task.capabilities = previous.capabilities
+                    task.driver = previous.driver
                     previous.phase = "completed"
                     task.phase = "active"
                     changed()
@@ -220,6 +236,7 @@ internal object MobileUseTasks {
                 end(previous, "stopped")
             }
         }
+        if (if (virtual) transport == null && !root else !accessibilityEnabled() && !root) { task.phase = "permission"; return }
         if (!virtual && tasks.values.any { it !== task && it.screen == "main" && it.phase in setOf("starting", "active") }) {
             task.phase = "busy"
             return
@@ -229,8 +246,8 @@ internal object MobileUseTasks {
         starting.execute {
             if (!synchronized(this) { task.phase == "starting" }) return@execute
             val opened = try {
-                if (virtual) VirtualScreen.open(app, task.id, checkNotNull(transport)) { task.phase == "starting" }
-                else MobileScreen.open(task.id)
+                if (virtual) VirtualScreen.open(app, task.id, transport, { task.phase == "starting" })
+                else MobileScreen.open(app, task.id) { task.phase == "starting" }
             } catch (e: Exception) { failure("start_failed", e.localizedMessage ?: "Could not start screen control.") }
             synchronized(this) {
                 if (task.phase != "starting") {
@@ -239,6 +256,7 @@ internal object MobileUseTasks {
                     }
                 } else if (opened.optBoolean("ok")) {
                     task.capabilities = opened.optJSONObject("capabilities") ?: JSONObject()
+                    task.driver = opened.optString("driver").takeIf { it.isNotBlank() }
                     task.displayId = opened.optInt("display_id", -1).takeIf { virtual && it > 0 }
                     task.phase = "active"
                     changed()
@@ -250,7 +268,7 @@ internal object MobileUseTasks {
         }
     }
     private fun disconnected(task: Task) {
-        val message = if (task.screen == "main") "The main screen accessibility connection was lost."
+        val message = if (task.screen == "main") "The main screen connection was lost."
             else "The selected virtual display disconnected."
         task.error = JSONObject().put("code", "screen_disconnected")
             .put("message", "$message Phone control stopped for this turn. A new user request can start a new task.")
@@ -274,6 +292,7 @@ internal object MobileUseTasks {
                 val route = state(null)
                 return route.put("phase", if (route.optBoolean("adbConnected")) "adb" else "adb_disconnected")
                     .put("screen", "adb")
+                    .put("driver", "adb")
             }
             val task = Task(owner, id, screen.takeUnless { it == "ask" }, turn = turn)
             tasks[owner] = task
@@ -521,7 +540,7 @@ internal object MobileUseTasks {
             else if (receipt.has("gesture") && receipt.optString("gesture") != "completed")
                 failure("gesture_incomplete", "The gesture did not report completion.")
             else {
-                val frame = if (task.screen == "main") mainFeedback(task, options, allowed) else virtualFrame
+                val frame = if (task.screen == "main" && !MobileScreen.usesRoot(task.id)) mainFeedback(task, options, allowed) else virtualFrame
                 if (frame == null || (frame.optBoolean("ok") && !frame.has("image")))
                     failure("feedback_unavailable", "No post-action image was received.")
                 else storeObservation(task, frame, options, allowed)

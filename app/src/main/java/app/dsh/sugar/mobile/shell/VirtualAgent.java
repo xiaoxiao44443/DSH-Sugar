@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** One ADB-authenticated process multiplexes independent displays and one Android UiAutomation registration. */
+/** One authenticated process owns its display leases and one Android UiAutomation registration. */
 public final class VirtualAgent {
     private final Context shell;
     private final Map<String, Slot> slots = new HashMap<>();
@@ -44,6 +44,7 @@ public final class VirtualAgent {
         volatile boolean stopped;
         VirtualFrames frames;
         VirtualOperations operations;
+        boolean mainDisplay;
 
         Slot(String id) { this.id = id; }
 
@@ -55,7 +56,8 @@ public final class VirtualAgent {
                     try {
                         if (stopped) result = failed("session_closed",new IOException("The screen is closed."));
                         else if ("open".equals(op)) {
-                            frames = new VirtualFrames(shell, () -> stop(this,0,true));
+                            mainDisplay = args.optBoolean("main", false);
+                            frames = new VirtualFrames(shell, () -> stop(this,0,true), mainDisplay);
                             operations = new VirtualOperations(frames,shell,() -> stopped);
                             result = operations.ready();
                         } else if (operations == null) result = failed("session_closed",new IOException("The display did not start."));
@@ -93,7 +95,20 @@ public final class VirtualAgent {
         String op = message.getString("op");
         Slot slot = slots.get(id);
         if ("open".equals(op) && slot == null) {
+            if (message.getJSONObject("args").optBoolean("main", false)) {
+                if (android.os.Process.myUid() != 0) {
+                    reply(request,failed("permission_denied",new IOException("Root is required for this main display driver.")));
+                    return;
+                }
+                for (Slot existing : slots.values()) {
+                    if (existing.mainDisplay && !existing.stopped) {
+                        reply(request,failed("screen_busy",new IOException("The main display is already in use.")));
+                        return;
+                    }
+                }
+            }
             slot = new Slot(id);
+            slot.mainDisplay = message.getJSONObject("args").optBoolean("main", false);
             slots.put(id,slot);
             slot.command(request,op,message.getJSONObject("args"));
         } else if (slot == null || "open".equals(op)) {
@@ -104,7 +119,7 @@ public final class VirtualAgent {
 
     private void run() {
         try {
-            write(new JSONObject().put("ok",true).put("protocol",2));
+            write(new JSONObject().put("ok",true).put("protocol",2).put("runtime_uid",android.os.Process.myUid()));
             DataInputStream input = new DataInputStream(System.in);
             while (true) {
                 int length = input.readInt();
@@ -118,7 +133,8 @@ public final class VirtualAgent {
         } finally { System.exit(0); }
     }
     public static void main(String[] args) throws Exception {
-        if (android.os.Process.myUid() != 2000) throw new SecurityException("The Android shell UID is required.");
+        int uid = android.os.Process.myUid();
+        if (uid != 2000 && uid != 0) throw new SecurityException("An authorized Android shell or root process is required.");
         Looper.prepareMainLooper();
         Class<?> at = Class.forName("android.app.ActivityThread");
         Object thread = at.getMethod("systemMain").invoke(null);

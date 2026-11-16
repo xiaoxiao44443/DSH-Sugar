@@ -54,6 +54,7 @@ final class VirtualOperations implements AutoCloseable {
             android.util.Log.w("SugarVirtual","Display window observation unavailable",unavailable);
         }
         windows=w;
+        if (frames.mainDisplay) frames.mainWindows = windows;
     }
     public void close() { if(windows!=null) windows.close(); }
     private static JSONObject ok() throws Exception { return new JSONObject().put("ok",true); }
@@ -61,10 +62,13 @@ final class VirtualOperations implements AutoCloseable {
         return new JSONObject().put("ok",false).put("error",new JSONObject().put("code",code).put("message",message));
     }
     JSONObject ready() throws Exception {
-        return ok().put("display","virtual").put("display_id",display).put("driver","adb")
-                .put("capabilities",new JSONObject().put("tree",windows!=null).put("image",true)
+        if (frames.mainDisplay && windows == null)
+            return error("root_screen_unavailable", "Android did not allow Root screen observation. Enable Sugar Accessibility or close other UI automation sessions.");
+        return ok().put("display",frames.mainDisplay ? "main" : "virtual").put("display_id",display)
+                .put("driver",android.os.Process.myUid() == 0 ? "root" : "adb")
+                .put("capabilities",new JSONObject().put("tree",windows!=null).put("image",!frames.mainDisplay || windows!=null)
                         .put("node_action",windows!=null).put("gesture",true).put("drag",inject!=null).put("text",windows!=null)
-                        .put("launch",true).put("open_app",true).put("home",false).put("recents",false));
+                        .put("launch",true).put("open_app",true).put("home",frames.mainDisplay).put("recents",frames.mainDisplay));
     }
     private static int taskDisplay(ActivityManager.RunningTaskInfo t) throws Exception {
         return t.getClass().getField("displayId").getInt(t);
@@ -220,7 +224,7 @@ final class VirtualOperations implements AutoCloseable {
             return error("app_on_other_display","That activity already has a task on another display.");
         observation = null;
         // This launch belongs to the virtual display. Let Android discard its recent entry when its activity finishes.
-        int flags = Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK |
+        int flags = frames.mainDisplay ? Intent.FLAG_ACTIVITY_NEW_TASK : Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK |
                 Intent.FLAG_ACTIVITY_NEW_DOCUMENT | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS;
         List<String> command = new ArrayList<>(Arrays.asList("/system/bin/cmd","activity","start-activity"));
         if(byName) command.addAll(Arrays.asList("--user",Integer.toString(targetUser),"-a",Intent.ACTION_MAIN,"-c",Intent.CATEGORY_LAUNCHER));
@@ -259,13 +263,13 @@ final class VirtualOperations implements AutoCloseable {
     }
 
     private JSONObject executeOne(String op,JSONObject args) throws Exception {
-        if(!frames.display.isValid() || frames.display.getDisplayId()!=display || display<=Display.DEFAULT_DISPLAY)
+        if(!frames.display.isValid() || frames.display.getDisplayId()!=display || (!frames.mainDisplay && display<=Display.DEFAULT_DISPLAY))
             return error("display_lost","Virtual display is gone.");
         Point size=new Point(); frames.display.getRealSize(size);
-        if(size.x!=frames.width || size.y!=frames.height || frames.display.getRotation()!=Surface.ROTATION_0)
+        if(!frames.mainDisplay && (size.x!=frames.width || size.y!=frames.height || frames.display.getRotation()!=Surface.ROTATION_0))
             return error("unsupported_geometry","The virtual display changed orientation or size; reopen the task.");
         if(op.equals("preview")) return ok().put("image",frames.capture()).put("width",size.x).put("height",size.y)
-                .put("rotation",0).put("display","virtual").put("display_id",display);
+                .put("rotation",frames.display.getRotation()).put("display",frames.mainDisplay ? "main" : "virtual").put("display_id",display);
         if(op.equals("check_foreground"))
             return top().isEmpty() ? error("no_window","The selected virtual display has no foreground app.") : ok();
         if(op.equals("launch") || op.equals("open_app")) {
@@ -282,8 +286,8 @@ final class VirtualOperations implements AutoCloseable {
         String currentScope=scope(component,window);
         if(op.equals("observe")) {
             if(args.optBoolean("tree",true) && windows==null) return error("tree_unavailable","No virtual display tree; request image only.");
-            JSONObject result=ok().put("width",size.x).put("height",size.y).put("rotation",0)
-                    .put("display","virtual").put("display_id",display).put("package",packageOf(component))
+            JSONObject result=ok().put("width",size.x).put("height",size.y).put("rotation",frames.display.getRotation())
+                    .put("display",frames.mainDisplay ? "main" : "virtual").put("display_id",display).put("package",packageOf(component))
                     .put("window_id",window==null?-1:window.getId()).put("timestamp_ms",System.currentTimeMillis());
             if(args.optBoolean("tree",true)) result.put("tree_timestamp_ms",System.currentTimeMillis())
                     .put("tree",windows.tree(window==null?null:window.getRoot()));
@@ -299,7 +303,14 @@ final class VirtualOperations implements AutoCloseable {
             observation=UUID.randomUUID().toString(); previousScope=currentScope; timestamp=SystemClock.elapsedRealtime();
             return result.put("observation_id",observation);
         }
-        if(op.equals("home")) return error("unsupported","Virtual-display HOME is not available.");
+        if(op.equals("home") || op.equals("recents")) {
+            if (!frames.mainDisplay) return error("unsupported","This system navigation action is unavailable on the virtual display.");
+            if (args.has("observation_id") && (observation == null || !observation.equals(args.optString("observation_id")) ||
+                    !currentScope.equals(previousScope) || SystemClock.elapsedRealtime() - timestamp > 60000))
+                return error("stale_observation", "Observe the main display again.");
+            input("keyevent", op.equals("home") ? "3" : "187");
+            return sent();
+        }
         if(!op.equals("back") || args.has("observation_id")) {
             if(observation==null || !observation.equals(args.optString("observation_id")) || !currentScope.equals(previousScope) ||
                     SystemClock.elapsedRealtime()-timestamp>60000) return error("stale_observation","Observe the virtual display again.");

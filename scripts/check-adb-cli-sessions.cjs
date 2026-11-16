@@ -14,6 +14,7 @@ const projects = [{id:'one',path:'/workspace/aaa'},{id:'two',path:'/workspace/bb
 const mainToken = 'host-secret';
 let registration, onStart, workerPort, legacyAdb;
 const revokes = new Set();
+const rootRevokes = new Set();
 
 function adapter(name) {
   if (name === 'node:module') return {registerHooks:()=>{}};
@@ -42,7 +43,9 @@ async function management(_url,options) {
   if (body.op === 'adbCliReady') {
     registration = body;
     result = {port:41234};
-  } else if (body.op === 'adbCliRevoke') { revokes.add(body.token); result = {}; }
+  } else if (body.op === 'adbCliRevoke') {
+    (body.rootOnly ? rootRevokes : revokes).add(body.token); result = {};
+  }
   else if (body.op === 'registry') result = {};
   else if (body.op === 'adbShell') { legacyAdb = body; result = {exitCode:0}; }
   else if (body.op === 'mobileTask') result = {ok:true,taskId:body.taskId,phase:'active'};
@@ -51,9 +54,9 @@ async function management(_url,options) {
   else throw Error('Unexpected host operation ' + body.op);
   return Response.json({ok:true,result});
 }
-async function check(env,needGuide,valid=true,mobile=false,ui=false) {
+async function check(env,needGuide,valid=true,mobile=false,ui=false,extra={}) {
   const nonce = randomUUID();
-  const text = JSON.stringify({token:env.SUGAR_ADB_TOKEN,needGuide,nonce,...(mobile ? {mobile:true} : {}),...(ui ? {ui:true} : {})});
+  const text = JSON.stringify({token:env.SUGAR_ADB_TOKEN,needGuide,nonce,...(mobile ? {mobile:true} : {}),...(ui ? {ui:true} : {}),...extra});
   const sign = input => createHmac('sha256',registration.token).update(input).digest('hex');
   const reply = await fetch('http://127.0.0.1:'+registration.port+'/authorize',{
     method:'POST',headers:{'content-type':'application/json',authorization:'Sugar-HMAC ' +
@@ -154,6 +157,41 @@ async function main() {
     const manuallySigned=(await check(manual.env,true,true,false,true)).result;
     assert.equal(manuallySigned.manual,true);
     assert.equal(manuallySigned.route,undefined);
+    // Root uses the same authenticated lease, and its manual bit comes from
+    // deviceProcess's host scope, not the request body or child environment.
+    const rootRequest = {rootCommand:"printf '%s\\n' original"};
+    assert.match((await check(firstProc.env,false,true,false,false,rootRequest)).error.message,/未就绪/);
+    let rootRequestSeen, rootSignal, rootStarted;
+    let rootDecision = async () => {};
+    const stopRoot = router.registerRootPolicy(async (who,cmd,signal,manual) => {
+      rootRequestSeen = {who,cmd,manual}; rootSignal = signal;
+      rootStarted?.();
+      await rootDecision(signal);
+    });
+    assert((await check(firstProc.env,false,true,false,false,{...rootRequest,manual:true})).ok);
+    assert.deepEqual(rootRequestSeen,{who:first,cmd:rootRequest.rootCommand,manual:false});
+    assert((await check(manual.env,false,true,false,false,{...rootRequest,manual:false})).ok);
+    assert.deepEqual(rootRequestSeen,{who:other,cmd:rootRequest.rootCommand,manual:true});
+    // Permission changes cancel a waiting operation without retiring this
+    // persistent PTY. Its next call must authorize the command again.
+    let releaseRoot;
+    rootDecision = () => new Promise(resolve => {releaseRoot = resolve;});
+    const rootHasStarted = new Promise(resolve => {rootStarted = resolve;});
+    const pendingRoot = check(firstProc.env,false,true,false,false,rootRequest);
+    await rootHasStarted;
+    router.revokeRootSession(first.session);
+    assert(rootSignal.aborted);
+    assert(rootRevokes.has(firstProc.env.SUGAR_ADB_TOKEN));
+    releaseRoot();
+    assert.equal((await pendingRoot).ok,false);
+    rootDecision = async () => {};
+    rootStarted = undefined;
+    assert((await check(firstProc.env,false,true,false,false,rootRequest)).ok);
+    assert((await check(manual.env,false,true,false,false,rootRequest)).ok);
+    // Root revocation does not change ordinary ADB or mobile ownership.
+    assert((await check(firstProc.env,true)).ok);
+    stopRoot();
+    assert.match((await check(firstProc.env,false,true,false,false,rootRequest)).error.message,/未就绪/);
     const unbound=await spawn(other,false,false,false);
     assert.equal(unbound.env.SUGAR_ADB_TOKEN,undefined);
     assert.equal(unbound.env.SUGAR_ADB_PORT,undefined);

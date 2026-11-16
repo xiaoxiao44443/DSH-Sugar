@@ -9,6 +9,7 @@ import android.graphics.ImageDecoder
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.graphics.text.LineBreaker
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Base64
@@ -19,7 +20,6 @@ import android.view.ScaleGestureDetector
 import android.view.View.MeasureSpec
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.text.Layout
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.ScrollView
@@ -127,7 +127,7 @@ internal object StorageFilePreview {
             val body = TextView(activity).apply {
                 typeface = Typeface.MONOSPACE
                 textSize = 14f
-                breakStrategy = Layout.BREAK_STRATEGY_SIMPLE
+                breakStrategy = LineBreaker.BREAK_STRATEGY_SIMPLE
                 setPadding(inset, inset / 2, inset, inset / 2)
                 setTextIsSelectable(true)
                 text = content.ifEmpty { activity.sugarString(R.string.storage_preview_empty) }

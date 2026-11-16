@@ -16,7 +16,7 @@
   ];
   const pages = {
     dsh: {actions:[{id:'settings', label:'设置'}, {id:'forward', label:'前进'}]},
-    settings: {actions:[{id:'forward', label:'前进'}, {id:'overview', label:'概览'}, {id:'appearance', label:'外观'}, {id:'gestures', label:'手势'}, {id:'splash', label:'启动页'}, {id:'pet', label:'桌宠'}, {id:'adb', label:'无线 ADB'}]},
+    settings: {actions:[{id:'forward', label:'前进'}, {id:'overview', label:'概览'}, {id:'appearance', label:'外观'}, {id:'gestures', label:'手势'}, {id:'splash', label:'启动页'}, {id:'pet', label:'桌宠'}, {id:'adb', label:'手机连接'}]},
     overview: {parent:'settings', title:'设置'},
     general: {parent:'overview', title:'通用'},
     pet: {parent:'settings', title:'桌宠'},
@@ -24,7 +24,7 @@
     appearance: {parent:'settings', title:'外观'},
     gestures: {parent:'settings', title:'手势'},
     splash: {parent:'settings', title:'启动页'},
-    adb: {parent:'settings', title:'无线 ADB'},
+    adb: {parent:'settings', title:'手机连接'},
     mobile: {parent:'settings', slide:true, actions:[{id:'mobile-main',label:'主屏操作'}, {id:'mobile-virtual',label:'虚拟屏操作'}]},
     'mobile-main': {parent:'mobile', title:'主屏操作'},
     'mobile-virtual': {parent:'mobile', title:'虚拟屏操作'},
@@ -69,6 +69,7 @@
   let workspaceFilesPage, workspaceId, workspacePath = '';
   let recoveryPage, recoveryState = {};
   let profilePanel, adbState, adbPending, adbTimer, adbResumeTimer;
+  let deviceRootState;
   let adbAwaitingSince = 0, adbStale = false, adbTriedConnect = false;
   let nearStyles, nearNodes = new Set(), lastSampleAt = -Infinity;
   function listen(target, event, fn, options) {
@@ -400,6 +401,7 @@
     if (!port || disposed || tab !== 'adb' || document.hidden) return;
     adbAwaitingSince ||= Date.now();
     post({type:'adbStatus'});
+    post({type:'rootStatus'});
     scheduleAdbCheck();
   }
   function scheduleAdbCheck() {
@@ -417,6 +419,7 @@
   function paintAdb() {
     const pane = root?.querySelector('[data-pane=adb]');
     if (!pane) return;
+    paintRoot(pane);
     const ready = Boolean(port && adbState?.supported);
     const connected = Boolean(adbState?.connected);
     const phase = adbPending || adbState?.phase;
@@ -458,7 +461,48 @@
     disconnect.textContent = t(connected ? '断开连接' : '取消');
     disconnect.disabled = !ready || phase === 'disconnecting' || phase === 'canceling';
   }
+  function paintRoot(pane) {
+    const card = pane.querySelector('[data-root-controls]');
+    const enabled = Boolean(deviceRootState?.enabled);
+    const busy = Boolean(deviceRootState?.busy);
+    const toggle = card.querySelector('[data-root-enable]');
+    toggle.setAttribute('aria-checked', String(enabled));
+    toggle.disabled = !port || !deviceRootState;
+    const summary = card.querySelector('[data-root-status]');
+    const detail = card.querySelector('[data-root-message]');
+    const labels = {
+      disabled:'Root 未启用', checking:'等待 Root 管理器授权…', ready:'Sugar 已获 Root 授权',
+      unavailable:'Root 暂不可用', timeout:'Root 授权检查超时', disconnected:'Root 授权需要重新检查'
+    };
+    const failure = ['unavailable', 'timeout', 'disconnected'].includes(deviceRootState?.code) ? deviceRootState.code : 'unavailable';
+    const code = !enabled ? 'disabled' : busy ? 'checking' : deviceRootState?.available ? 'ready' : failure;
+    summary.textContent = t(deviceRootState ? labels[code] || labels.unavailable : '正在读取授权状态…');
+    detail.textContent = t(enabled && !busy && !deviceRootState?.available
+      ? '请确认设备已启用 Root，并在管理器中允许 DSH Sugar。' : '授权后，手机操作会自动使用 Root。工作区命令遵循会话权限。');
+    const check = card.querySelector('[data-root-check]');
+    check.hidden = !enabled;
+    check.disabled = !port || busy;
+    check.setAttribute('aria-busy', String(busy));
+    check.querySelector('span').textContent = t(busy ? '检查中' : '检查授权');
+    card.dataset.rootCode = code;
+  }
+  function mountRoot(pane) {
+    listen(pane.querySelector('[data-root-enable]'), 'click', event => {
+      if (!event.isTrusted || !port || !deviceRootState || tab !== 'adb' || travelling || scrub) return;
+      const enabled = !deviceRootState.enabled;
+      deviceRootState = {...deviceRootState, enabled, available:false, busy:enabled};
+      paintRoot(pane);
+      post({type:'rootSetEnabled', enabled});
+    });
+    listen(pane.querySelector('[data-root-check]'), 'click', event => {
+      if (!event.isTrusted || !port || !deviceRootState?.enabled || deviceRootState.busy || tab !== 'adb' || travelling || scrub) return;
+      deviceRootState = {...deviceRootState, busy:true};
+      paintRoot(pane);
+      post({type:'rootProbe'});
+    });
+  }
   function mountAdb(pane) {
+    mountRoot(pane);
     for (const button of pane.querySelectorAll('[data-adb-notification],[data-adb-repair]'))
       listen(button, 'click', () => submit({type:'adbPairNotification'}, 'requestingPair'));
     for (const button of pane.querySelectorAll('[data-adb-system],[data-adb-enable]'))
@@ -936,7 +980,7 @@
             <button type="button" data-go="mobile-main"><span class="notice-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg></span>
             <span>手机操作<small>无障碍主屏与虚拟屏</small></span><i aria-hidden="true">›</i></button>
             <button type="button" data-go="adb"><span class="notice-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d='M4 8a12 12 0 0 1 16 0M7 11a7.8 7.8 0 0 1 10 0M9 14h6v7H9z'/></svg></span>
-            <span>无线 ADB<small>配对并连接本机</small></span><i aria-hidden="true">›</i></button>
+            <span>手机连接<small>无线 ADB 与 Root</small></span><i aria-hidden="true">›</i></button>
             <button type="button" data-go="storage"><span class="notice-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v13c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></svg></span>
             <span>存储占用<small>工作区与共享工具</small></span><i aria-hidden="true">›</i></button>
             <button type="button" data-go="recovery"><span class="notice-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 3 8M3 5v6h6m1 2h5m-2.5-2.5v5"/></svg></span>
@@ -985,6 +1029,7 @@
           <dl><dt>收起后的边缘手势</dt><dd>从屏幕边缘向内快扫可展开导航。按住边缘再慢慢向内拖，可以预览历史页面；拖过中线后松手切换，拖回可取消。</dd><dt>横向切换</dt><dd>拖过屏幕中线，或在导航条展开后朝对侧快甩。从任一侧滑动都回到刚才的页面，再滑一次回到当前页。打开其他页面后，这两页随之更新。返回和前进按钮可以继续翻看更早的记录。只有一个页面时，拖动可调整导航停靠位置。</dd><dt>上下滑动设置页</dt><dd>在设置的相邻页面间切换。</dd></dl>
       `)}
       ${settingsPane('adb', `<div class="adb-controls">
+        <h2>无线 ADB</h2>
         <div role="status" aria-live="polite"><strong class="adb-status"></strong><p class="adb-message" hidden></p></div>
         <button type="button" data-adb-refresh hidden>刷新连接状态</button>
         <div class="adb-setup" hidden>
@@ -1013,7 +1058,15 @@
             </section></details>
           </div>
         </div>
-      </div>`)}
+      </div><details class="root-options"><summary>Root（可选）</summary>
+        <section class="root-controls" data-root-controls aria-labelledby="sugar-root-label">
+          <div class="row"><span id="sugar-root-label">使用 Root</span>
+            <button type="button" data-root-enable role="switch" aria-checked="false" aria-labelledby="sugar-root-label" aria-describedby="sugar-root-message" disabled></button></div>
+          <div class="root-status-row"><span data-root-status role="status" aria-live="polite"></span>
+            <button type="button" data-root-check hidden><i class="root-check-spinner" aria-hidden="true"></i><span>检查授权</span></button></div>
+          <p id="sugar-root-message" data-root-message></p>
+        </section>
+      </details>`)}
       ${settingsPane('notifications', `<fieldset class="notification-controls" aria-label="消息通知" disabled>
           <div class="system-notice" hidden><span>系统通知已关闭</span><button type="button" data-system-notifications>打开系统通知设置</button></div>
           <div class="group"><div class="row"><div><label id="notice-label" for="notice-completion">轮次完成通知</label><small>Agent 完成本轮任务时提醒</small></div>
@@ -1243,6 +1296,9 @@
             adbAwaitingSince = 0; adbStale = false;
             if (message.connected) adbTriedConnect = true;
             paintAdb(); scheduleAdbCheck();
+          } else if (message.type === 'rootState' && typeof message.enabled === 'boolean') {
+            deviceRootState = message;
+            paintAdb();
           } else if (message.type === 'splashState' && message.splash) {
             initialSplash = message.splash;
             splashSettings?.receive(message);

@@ -136,6 +136,7 @@ internal class SugarMobileUi(private val activity: Activity, private val openSet
                 reply(JSONObject().put("type", "mobileSettings").put("mainEnabled", MobileUseTasks.mainEnabled(activity))
                     .put("accessibilityEnabled", MobileUseTasks.accessibilityEnabled())
                     .put("virtualEnabled", MobileUseTasks.virtualEnabled(activity)).put("showTouches", MobileUseTasks.showTouches(activity))
+                    .put("rootAvailable", RootAccess.get(activity).isAvailable())
                     .put("adbConnected", WirelessAdb.get(activity).status().optBoolean("connected")))
             }
             "mobileAccessibility" -> openAccessibility()

@@ -9,6 +9,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
+import android.view.Display;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.lang.reflect.Constructor;
@@ -76,7 +77,10 @@ final class VirtualWindows implements AutoCloseable {
         if (windows == null) return null;
         AccessibilityWindowInfo best=null;
         for (AccessibilityWindowInfo w : windows) {
-            if (w.getDisplayId() != displayId || w.getType() != AccessibilityWindowInfo.TYPE_APPLICATION) continue;
+            if (w.getDisplayId() != displayId) continue;
+            int type = w.getType();
+            if (type != AccessibilityWindowInfo.TYPE_APPLICATION && (displayId != Display.DEFAULT_DISPLAY ||
+                    (type != AccessibilityWindowInfo.TYPE_SYSTEM && type != AccessibilityWindowInfo.TYPE_INPUT_METHOD))) continue;
             if (w.isFocused()) return w;
             if (best == null || w.getLayer() > best.getLayer()) best=w;
         }

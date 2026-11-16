@@ -19,6 +19,9 @@
     '无线 ADB 已连接':['Wireless ADB connected','ワイヤレス ADB 接続済み'],
     '无线 ADB 尚未连接':['Wireless ADB disconnected','ワイヤレス ADB 未接続'],
     '无线 ADB 设置':['Wireless ADB settings','ワイヤレス ADB 設定'],
+    '手机连接':['Phone connection','端末の接続'],
+    'Root 已连接':['Root connected','Root 接続済み'],
+    '连接 Root 或无线 ADB':['Connect Root or wireless ADB','Root またはワイヤレス ADB に接続'],
     '管理虚拟屏':['Manage virtual screens','仮想画面の管理'],
   });
   const row = (key, label, hint='') => '<div class="row"><span id="mobile-pref-' + key + '">' + label +
@@ -26,9 +29,10 @@
     key + '" aria-checked="false" aria-labelledby="mobile-pref-' + key + '" disabled></button></div>';
   const controls = {
     main:'<div class="group">' + row('main','允许主屏操作') + row('touches','显示触点','在主屏操作位置显示短暂的圆环') +
-      '</div><div class="links"><button type="button" data-mobile-system><span>系统无障碍服务<small data-mobile-grant></small></span><i aria-hidden="true">›</i></button></div>',
+      '</div><div class="links"><button type="button" data-mobile-system><span>系统无障碍服务<small data-mobile-grant></small></span><i aria-hidden="true">›</i></button>' +
+      '<button type="button" data-go="adb"><span>手机连接<small data-mobile-connection></small></span><i aria-hidden="true">›</i></button></div>',
     virtual:'<div class="group">' + row('virtual','允许虚拟屏操作') +
-      '</div><div class="links"><button type="button" data-go="adb"><span>无线 ADB 设置<small data-mobile-connection></small></span><i aria-hidden="true">›</i></button>' +
+      '</div><div class="links"><button type="button" data-go="adb"><span>手机连接<small data-mobile-connection></small></span><i aria-hidden="true">›</i></button>' +
       '<button type="button" data-mobile-preview><span>管理虚拟屏</span><i aria-hidden="true">›</i></button></div>'
   };
   function mount(post, navigate) {
@@ -67,12 +71,15 @@
         button.setAttribute('aria-checked',String(Boolean(prefs[{main:'mainEnabled',virtual:'virtualEnabled',touches:'showTouches'}[key]])));
       }
       root.querySelector('[data-mobile-grant]').textContent = i18n.text(prefs.accessibilityEnabled ? '已开启' : '未开启');
-      root.querySelector('[data-mobile-connection]').textContent = i18n.text(prefs.adbConnected ? '无线 ADB 已连接' : '无线 ADB 尚未连接');
+      root.querySelectorAll('[data-mobile-connection]').forEach(node => {
+        node.textContent = i18n.text(prefs.rootAvailable ? 'Root 已连接' : prefs.adbConnected ? '无线 ADB 已连接' : '连接 Root 或无线 ADB');
+      });
     }
     function openAccessibility() { post({type:'mobileAccessibility'}); }
     function preview() { post({type:'mobilePreview'}); }
     function receive(message) {
       if (message.type === 'mobileSettings') { prefs = message; paint(); }
+      if (message.type === 'rootState' && prefs) { prefs.rootAvailable = message.available; paint(); }
       if (message.type === 'mobileTitleWatch' && typeof message.watch === 'string' && Array.isArray(message.conversations)) {
         stopTitles?.();
         stopTitles = undefined;

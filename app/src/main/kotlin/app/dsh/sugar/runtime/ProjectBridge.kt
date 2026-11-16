@@ -127,7 +127,7 @@ internal class ProjectBridge(val context: Context, private val client: RuntimeCl
     }
 
     private val mobileScope = Any()
-    private val adbCli = ProjectAdbCli(WirelessAdb.get(context), mobileScope, ::hasWorkspace)
+    private val adbCli = ProjectAdbCli(WirelessAdb.get(context), app.dsh.sugar.RootAccess.get(context), mobileScope, ::hasWorkspace)
 
     fun credential() = key.toCharArray()
 
@@ -225,7 +225,7 @@ internal class ProjectBridge(val context: Context, private val client: RuntimeCl
             return JSONObject().put("port", adbCli.register(request.getInt("port"), request.getString("token")))
         }
         if (op == "adbCliRevoke") {
-            adbCli.revoke(request.getString("token"))
+            adbCli.revoke(request.getString("token"), request.optBoolean("rootOnly"))
             return JSONObject()
         }
         if (op == "pickerReady") {

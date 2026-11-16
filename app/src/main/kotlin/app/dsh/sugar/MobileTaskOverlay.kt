@@ -364,8 +364,7 @@ internal class MobileTaskOverlay(
                     add(words.virtual,"selectVirtual",MobileIcon.DISPLAYS,state.virtualAvailable)
                 }
                 "disabled" -> add(words.settings, if (state.virtual) "virtualSettings" else "mainSettings", MobileIcon.SETTINGS)
-                "permission" -> add(if (state.virtual) words.connect else words.accessibility,
-                    if (state.virtual) "adb" else "accessibility", MobileIcon.SETTINGS)
+                "permission" -> add(words.connect, if (state.virtual) "adb" else "mainSettings", MobileIcon.SETTINGS)
                 "active","running","ready","parked" -> if (state.virtual) add(words.preview,"preview",MobileIcon.PREVIEW)
             }
             val available = (size.width - size.artWidth - dp(7) - buttonInset).coerceAtLeast(1)
@@ -665,15 +664,15 @@ internal class MobileTaskOverlay(
         val livePhases = setOf("choosing", "disabled", "permission", "busy", "starting", "active", "ready", "running", "parked")
         val hex = Regex("#[0-9a-fA-F]{6}")
         val zh = Words("手机操作", "主屏", "虚拟屏", "在哪块屏幕上操作？", "主屏操作已关闭", "虚拟屏操作已关闭",
-            "等待连接无线 ADB", "等待开启无障碍服务", "另一项任务正在使用此屏幕", "正在连接…", "已连接，就绪", "操作进行中",
-            "操作设置", "连接 ADB", "无障碍设置", "查看画面", "取消", "停止", "收起手机操作", "展开手机操作", "本轮已完成，画面已保留")
+            "等待连接 Root 或无线 ADB", "等待无障碍或 Root 授权", "另一项任务正在使用此屏幕", "正在连接…", "已连接，就绪", "操作进行中",
+            "操作设置", "连接设置", "无障碍设置", "查看画面", "取消", "停止", "收起手机操作", "展开手机操作", "本轮已完成，画面已保留")
         val en = Words("Phone control", "Main screen", "Virtual screen", "Which screen should the agent use?",
-            "Main screen control is off", "Virtual screen control is off", "Waiting for wireless ADB", "Waiting for accessibility access",
+            "Main screen control is off", "Virtual screen control is off", "Waiting for Root or wireless ADB", "Waiting for accessibility or Root access",
             "Another task is using this screen", "Connecting…", "Connected and ready", "Task in progress",
-            "Settings", "Connect ADB", "Accessibility", "Preview", "Cancel", "Stop", "Collapse phone controls", "Expand phone controls", "Turn complete · screen kept open")
+            "Settings", "Connection settings", "Accessibility", "Preview", "Cancel", "Stop", "Collapse phone controls", "Expand phone controls", "Turn complete · screen kept open")
         val ja = Words("スマートフォン操作", "メイン画面", "仮想画面", "どの画面を操作しますか？", "メイン画面の操作はオフです",
-            "仮想画面の操作はオフです", "ワイヤレス ADB の接続を待っています", "ユーザー補助機能の有効化を待っています",
-            "別のタスクがこの画面を使用中です", "接続中…", "接続完了・準備完了", "操作中", "操作設定", "ADB に接続",
+            "仮想画面の操作はオフです", "Root または ADB の接続待ち", "ユーザー補助または Root の許可待ち",
+            "別のタスクがこの画面を使用中です", "接続中…", "接続完了・準備完了", "操作中", "操作設定", "接続設定",
             "ユーザー補助", "プレビュー", "キャンセル", "停止", "操作パネルを折りたたむ", "操作パネルを開く", "操作が完了しました。画面は開いたままです")
     }
 }

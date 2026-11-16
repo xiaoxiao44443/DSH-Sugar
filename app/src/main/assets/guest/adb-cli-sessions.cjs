@@ -6,7 +6,7 @@ const capability = () => randomBytes(32).toString('base64url');
 
 // Only the DSH control process holds the callback credential and conversation objects.
 // Project children receive one bearer for the lifetime of their Bash or PTY.
-module.exports.create = function create(management, authorizeOwner) {
+module.exports.create = function create(management, authorizeOwner, authorizeRoot) {
   const tickets = new Map();
   let service, starting, retryAfter = 0;
 
@@ -27,7 +27,7 @@ module.exports.create = function create(management, authorizeOwner) {
         return reply(403,{ok:false});
       }
       const size = Number(req.headers['content-length']);
-      if (!Number.isInteger(size) || size < 1 || size > 512 || req.headers['transfer-encoding'] ||
+      if (!Number.isInteger(size) || size < 1 || size > 65536 || req.headers['transfer-encoding'] ||
           req.headers['content-type']?.split(';')[0] !== 'application/json') return reply(400,{ok:false});
       let nonce;
       try {
@@ -43,8 +43,29 @@ module.exports.create = function create(management, authorizeOwner) {
         const ticket = tickets.get(token);
         if (!ticket || typeof needGuide !== 'boolean') throw Error('本次终端的 ADB 凭据已失效。');
         const ui = request.ui === true;
-        const route = authorizeOwner(ticket.owner, ticket.project, needGuide, ui);
         ticket.used = true;
+        const route = authorizeOwner(ticket.owner, ticket.project, needGuide, ui);
+        if (request.rootCommand !== undefined) {
+          if (typeof request.rootCommand !== 'string' || !request.rootCommand.trim() ||
+              request.rootCommand.includes('\0') || Buffer.byteLength(request.rootCommand) > 16384)
+            throw Error('Root 脚本无效或超过 16 KiB。');
+          if (!authorizeRoot) throw Error('Root 会话权限服务未就绪。');
+          const pending = new AbortController();
+          const disconnected = () => pending.abort(Error('Root 请求已取消。'));
+          ticket.rootRequests.add(pending);
+          res.once('close', disconnected);
+          // A human approval may take longer than the header deadline.
+          req.socket.setTimeout(0);
+          try {
+            await authorizeRoot(ticket.owner, ticket.project, request.rootCommand, pending.signal);
+            pending.signal.throwIfAborted();
+            if (tickets.get(token) !== ticket) throw Error('本次终端凭据已失效。');
+            authorizeOwner(ticket.owner, ticket.project, false, false);
+          } finally {
+            ticket.rootRequests.delete(pending);
+            res.off('close', disconnected);
+          }
+        }
         const result = {id:ticket.project.id,root:ticket.project.root};
         if (ui) result.route = route;
         if (request.mobile === true || ui) {
@@ -81,9 +102,11 @@ module.exports.create = function create(management, authorizeOwner) {
   function issue(owner, project, taskId = '') {
     if (!service || !owner || tickets.size >= 2048) return undefined;
     const token = capability();
-    const ticket = {owner,project,taskId,used:false};
+    const ticket = {owner,project,taskId,used:false,rootRequests:new Set()};
     ticket.revoke = () => {
-      if (!tickets.delete(token) || !ticket.used) return;
+      if (!tickets.delete(token)) return;
+      for (const request of ticket.rootRequests) request.abort(Error('本次终端凭据已失效。'));
+      if (!ticket.used) return;
       // Unused leases never reached an Android stream. A used lease can have
       // an in-flight transfer even when the native client closes abruptly.
       const notify = () => management({op:'adbCliRevoke',token}, AbortSignal.timeout(3000));
@@ -95,5 +118,16 @@ module.exports.create = function create(management, authorizeOwner) {
   function revokeProject(id) {
     for (const ticket of tickets.values()) if (ticket.project.id === id) ticket.revoke();
   }
-  return {start, issue, revokeProject};
+  function revokeRootSession(session) {
+    for (const [token,ticket] of tickets) {
+      if (session && ticket.owner.agent.session !== session) continue;
+      if (session && ticket.owner.manual) continue;
+      for (const request of ticket.rootRequests) request.abort(Error('会话结束或权限改变，Root 操作已取消。'));
+      if (ticket.used) {
+        const notify = () => management({op:'adbCliRevoke',token,rootOnly:true}, AbortSignal.timeout(3000));
+        notify().catch(() => notify().catch(() => {}));
+      }
+    }
+  }
+  return {start, issue, revokeProject, revokeRootSession};
 };

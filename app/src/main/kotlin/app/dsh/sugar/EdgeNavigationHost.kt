@@ -69,6 +69,7 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
         if (petVisible) channel?.postMessage(WebMessage(payload.toString()))
     }
     private var settingsVisible = false
+    private var connectionSettingsVisible = false
     private var recoveryVisible = false
     private var embeddedPanelOpen = false
     private var embeddedGesture: EmbeddedPreviewGesture? = null
@@ -163,6 +164,8 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
                             }
                         "adbStatus", "adbPairNotification", "adbAutoConnect", "adbPair", "adbConnect",
                         "adbDisconnect", "openWirelessSettings" -> adbSettings.handle(data, view.hasWindowFocus())
+                        "rootStatus", "rootSetEnabled", "rootProbe" -> adbSettings.handle(data,
+                            connectionSettingsVisible && view.isShown && view.hasWindowFocus())
                         "setLanguage" -> {
                             val tag = data.optString("language")
                             if (SugarLanguage.set(activity, tag)) {
@@ -265,6 +268,7 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
                             if (previous != canHandleBack || wasExpanded != expanded) historyChanged()
                             // A scrub can stage the neighbour and then cancel. Only act on a settled route.
                             val route = data.optString("settingsRoute")
+                            connectionSettingsVisible = nowSettings && route == "adb"
                             if (route.isNotEmpty() && route.length <= 40) {
                                 val previousRecovery = recoveryVisible
                                 recoveryVisible = nowSettings && route == "recovery"
@@ -542,6 +546,7 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
         channel?.close()
         channel = null
         settingsVisible = false
+        connectionSettingsVisible = false
         recoveryVisible = false
         storageUsage.cancel()
         storageVisible = false

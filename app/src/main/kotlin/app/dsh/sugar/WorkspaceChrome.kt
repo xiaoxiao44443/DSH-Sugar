@@ -220,6 +220,9 @@ internal class WorkspaceChrome(
               const sheet = document.createElement('style');
               sheet.id = 'dsh-sugar-safe-area';
               sheet.textContent = `
+                /* Approval reasons may contain the complete Android shell script.
+                   Preserve its lines inside the upstream scrollable detail region. */
+                html [data-approval-scroll] { white-space: pre-wrap; overflow-wrap: anywhere; }
                 html { --dsh-frame-overlay-top: calc(var(--sugar-safe-top) + 20px); }
                 html .pI_x6G_frame { padding-left: var(--sugar-safe-left); padding-right: var(--sugar-safe-right); }
                 html .pI_x6G_centerCol, html .pI_x6G_sidebarCol, html [data-sidebar-right-panel] {

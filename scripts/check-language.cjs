@@ -26,7 +26,7 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
     await evaluate(`SugarShell.mount(${JSON.stringify(prefs)},${JSON.stringify([read('sugar-settings.css'),read('sugar-pets.css'),read('sugar-workspace-files.css')].join('\n'))});
       window.rail=document.querySelector('#sugar-edge-navigation').shadowRoot;
       window.settings=()=>document.querySelector('#sugar-shell-settings').shadowRoot;
-      window.writes=[]; window.storageRequests=[]; window.sessionMessages=[]; window.workspaceMessages=[]; window.editingSignals=0;
+      window.writes=[]; window.storageRequests=[]; window.sessionMessages=[]; window.workspaceMessages=[]; window.rootMessages=[]; window.editingSignals=0;
       new Promise(ok=>{const c=new MessageChannel(); window.native=c.port1;
         native.onmessage=({data})=>{const msg=JSON.parse(data);if(msg.type==='state')ok();
           if(msg.type==='state'||msg.type==='sessionStorageQuery'||msg.type==='sessionStorageDelete'||msg.type==='sessionStorageOpen')sessionMessages.push(msg);
@@ -34,6 +34,7 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
           if(msg.type==='editingInteraction')window.editingSignals++;
           if(msg.type==='storageQuery')storageRequests.push(msg);
           if(msg.type.startsWith('workspaceFiles'))workspaceMessages.push(msg);
+          if(msg.type.startsWith('root'))rootMessages.push(msg);
           if(msg.type==='recoveryAction')window.recoveryRequested=true;
           if(msg.type==='setLanguage')writes.push(msg.language)};
         postMessage('dsh-sugar/edge-shell','*',[c.port2]);})`);
@@ -493,6 +494,64 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
     await reply({usage});
     await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:false});
   }
+  async function checkRootSettings() {
+    await evaluate("settings().querySelector('[data-go=adb]').click()");
+    await paint();
+    const query = selector => `settings().querySelector(${JSON.stringify(selector)})`;
+    const reply = async state => {
+      await evaluate(`native.postMessage(JSON.stringify(${JSON.stringify({type:'rootState',...state})}))`);
+      await paint();
+    };
+    const click = async selector => {
+      const center = await evaluate(`(() => { const element=${query(selector)}; element.scrollIntoView({block:'nearest'});
+        const box=element.getBoundingClientRect(); return {x:box.x+box.width/2,y:box.y+box.height/2}; })()`);
+      await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...center});
+      await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...center});
+      await paint();
+    };
+    const writes = () => evaluate("rootMessages.filter(message=>message.type!=='rootStatus')");
+    const switchState = () => evaluate(query('[data-root-enable]')+".getAttribute('aria-checked')");
+    const summary = () => evaluate(query('[data-root-status]')+'.textContent');
+    await reply({enabled:false,available:false,busy:false,code:'disabled'});
+    assert.equal(await switchState(),'false');
+    assert.equal(await evaluate(query('.root-options')+'.open'),false,'optional Root settings start collapsed');
+    assert.equal(await evaluate(query('.adb-controls')+'.nextElementSibling.matches(".root-options")'),true,'wireless ADB comes first');
+    await click('.root-options > summary');
+    await click('.root-options > summary');
+    assert.equal(await switchState(),'false','collapsing Root preserves its setting');
+    assert.deepEqual(await writes(),[],'opening and closing Root settings never requests authority');
+    await click('.root-options > summary');
+    await evaluate(query('[data-root-enable]')+'.click()'); await paint();
+    assert.deepEqual(await writes(),[],'page-generated clicks cannot enable host Root');
+    await click('[data-root-enable]');
+    assert.deepEqual((await writes()).at(-1),{type:'rootSetEnabled',enabled:true});
+    assert.equal(await switchState(),'true');
+    assert.match(await summary(),/承認を待っています/,'enabling Root waits for native authorization');
+    await reply({enabled:true,available:false,busy:true,code:'checking'});
+    assert.equal(await evaluate(query('[data-root-check]')+'.disabled'),true);
+    await click('[data-root-enable]');
+    assert.deepEqual((await writes()).at(-1),{type:'rootSetEnabled',enabled:false},'Root can be disabled while awaiting authorization');
+    await reply({enabled:false,available:false,busy:false,code:'disabled'});
+    await click('[data-root-enable]');
+    await reply({enabled:true,available:false,busy:false,code:'unavailable'});
+    assert.match(await summary(),/利用できません/);
+    await click('[data-root-check]');
+    assert.deepEqual((await writes()).at(-1),{type:'rootProbe'});
+    await reply({enabled:true,available:true,busy:false,code:'ready'});
+    for (const [language,text] of [['zh','Sugar 已获 Root 授权'],['en','Sugar has Root access'],['ja','Sugar に Root 権限があります']]) {
+      await evaluate(`native.postMessage(JSON.stringify({type:'languageState',language:'${language}'}))`);
+      await paint();
+      assert.equal(await summary(),text);
+    }
+    await reply({enabled:true,available:false,busy:false,code:'disconnected'});
+    assert.match(await summary(),/再確認/,'lost root access updates the visible state');
+    assert.equal(await evaluate(query('[data-root-check]')+'.disabled'),false);
+    await reply({enabled:true,available:false,busy:false,code:'ready'});
+    assert.match(await summary(),/利用できません/,'unavailable always wins over a stale ready label');
+    assert.equal((await writes()).length,4,'state updates and language changes never request new authority');
+    await evaluate("rail.querySelector('[data-action=back]').click()");
+    await paint();
+  }
   try {
     await load(undefined,1);
     await state('zh');
@@ -512,6 +571,7 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
     await evaluate("rail.querySelector('[data-action=back]').click()");
     await paint();
     assert.equal(await evaluate("settings().querySelector('[data-pane=overview]').hidden"),false,'Back from General returns to overview');
+    await checkRootSettings();
     await checkStorage();
     await checkWorkspaceSelection();
     const writes = await evaluate('writes');

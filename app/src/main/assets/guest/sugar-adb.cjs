@@ -150,18 +150,23 @@ async function destinationPath(name, remote) {
   return name;
 }
 
-async function run(args) {
-  const {request, source, destination, help:showHelp} = parse(args);
+async function runRequest({request, source, destination, help:showHelp}) {
   if (showHelp) { await write(process.stdout, help); return 0; }
   const token = process.env.SUGAR_ADB_TOKEN, port = Number(process.env.SUGAR_ADB_PORT);
   if (!token || !Number.isInteger(port) || port < 1 || port > 65535) {
-    throw Error('当前进程没有 Sugar ADB 通道。请使用工作区终端或 DSH 的工作区命令；Agent 请先读取 android-adb 技能。');
+    throw Error('当前进程没有 Sugar 设备通道。请从当前会话的工作区命令或终端调用，参阅 android-adb 或 android-root 技能。');
   }
   let input, output, temp, target, interrupted;
   const socket = new net.Socket();
-  const stop = () => { interrupted = Error('ADB 操作已取消。'); socket.destroy(interrupted); };
+  const root = request.op === 'root-exec' || request.op === 'root-status';
+  const stop = () => { interrupted = Error((root ? 'Root' : 'ADB') + ' 操作已取消。'); socket.destroy(interrupted); };
   const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'];
   signals.forEach(signal => process.once(signal, stop));
+  // Sucrune may queue an external signal while Node's guest epoll loop is
+  // idle. Bound that wait only for an active Root request, without keeping
+  // the process alive. Socket closure then cancels the Android-side command.
+  const signalWake = root ? setInterval(() => {}, 250) : null;
+  signalWake?.unref();
   // Streams also emit 'error' after a failed write callback (e.g. a closed local pipe).
   const onError = err => socket.destroy(err);
   process.stdout.on('error', onError);
@@ -205,6 +210,7 @@ async function run(args) {
     }
     return code < 0 || code > 255 ? 1 : code;
   } finally {
+    if (signalWake) clearInterval(signalWake);
     socket.destroy();
     try { await input?.close(); }
     finally {
@@ -219,7 +225,8 @@ async function run(args) {
   }
 }
 
-run(process.argv.slice(2)).then(code => { process.exitCode = code; }, err => {
+module.exports = {runRequest};
+if (require.main === module) Promise.resolve().then(() => runRequest(parse(process.argv.slice(2)))).then(code => { process.exitCode = code; }, err => {
   process.exitCode = 1;
   if (err.code !== 'EPIPE') process.stderr.write('adb: ' + err.message + '\n');
 });

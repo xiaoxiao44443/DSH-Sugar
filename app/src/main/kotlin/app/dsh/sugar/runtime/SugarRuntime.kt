@@ -94,6 +94,7 @@ object SugarRuntime {
             client.makeDirectory(id, pluginDir)
             val hostFiles = if (plugin == "dsh-sugar-notifications")
                 listOf("package.json", "index.js", "pet-replies.js", "pet-voice.js")
+            else if (plugin == "dsh-sugar-adb") listOf("package.json", "index.js", "root-permissions.js")
             else listOf("package.json", "index.js")
             for (name in hostFiles) {
                 app.assets.open("guest/$plugin/$name").use { client.writeFile(id, "$pluginDir/$name", it.readBytes()) }

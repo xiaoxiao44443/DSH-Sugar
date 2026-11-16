@@ -87,7 +87,7 @@ internal object ProjectUserland {
         val runner = sandboxLauncher(app)
         for ((guest, bytes) in bundle.files) {
             client.makeDirectory(env, guest.substringBeforeLast('/'))
-            if (guest == runner.guestPath || guest == ADB || guest == "/usr/bin/mobile_use") {
+            if (guest == runner.guestPath || guest == ADB || guest == "/usr/bin/sugar-root" || guest == "/usr/bin/mobile_use") {
                 val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
                 client.importFile(env, guest, bytes.inputStream(), bytes.size.toLong(), hash, executable = true)
             } else client.writeFile(env, guest, bytes)
@@ -101,7 +101,9 @@ internal object ProjectUserland {
         val files = sortedMapOf<String, ByteArray>()
         fun visit(asset: String, guest: String) {
             val entries = app.assets.list(asset).orEmpty()
-            if (entries.isEmpty()) files[guest] = app.assets.open(asset).use { it.readBytes() }
+            if (entries.isEmpty()) files[guest] = app.assets.open(asset).use {
+                GuestExecutableScript.normalize(it.readBytes())
+            }
             else entries.forEach { visit("$asset/$it", "$guest/$it") }
         }
         visit("project/node-pty", "/opt/sugar/node_modules/node-pty")
@@ -110,6 +112,7 @@ internal object ProjectUserland {
         val runner = launcherAsset(app)
         files[runner.file.guestPath] = runner.bytes
         visit("guest/sugar-adb.cjs", ADB)
+        visit("guest/sugar-root.cjs", "/usr/bin/sugar-root")
         visit("guest/mobile_use", "/usr/bin/mobile_use")
         visit("guest/mobile_use.py", "/opt/sugar/mobile-use/mobile_use.py")
         for (name in listOf("project-fs.mjs", "project-worker.cjs", "project-process-worker.cjs")) {

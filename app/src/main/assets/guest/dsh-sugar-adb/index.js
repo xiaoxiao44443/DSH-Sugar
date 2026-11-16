@@ -1,6 +1,7 @@
 import { defineTool } from '/opt/dsh/node_modules/@deepseek-ai/dsh-tools/lib/index.js';
+import { authorizeRoot } from './root-permissions.js';
 
-export const inject = ['tools', 'skills'];
+export const inject = ['tools', 'skills', 'permissionPresets', 'approval'];
 const skillName = 'android-adb';
 const previousGuide = [
   'Control the Android phone running DSH Sugar. Start with adb_status. If disconnected, ask the user to open Sugar’s ADB settings and finish wireless debugging pairing/connection there. Keep the pairing code out of the conversation.',
@@ -73,6 +74,15 @@ export function apply(ctx) {
   const bridge = globalThis[Symbol.for('dsh.sugar.projects')];
   const sessions = new WeakMap();
   ctx.effect(() => bridge.registerAdbGuide(session => hasReadGuide(session,sessions)), 'Sugar: ADB guide reader');
+  ctx.effect(() => bridge.registerRootPolicy((agent, command, signal, manual) => authorizeRoot(ctx,agent,command,signal,manual)), 'Sugar: Root session permissions');
+  ctx.on('session/event', (session, event) => {
+    if (['turn/end','permission/preset','sandbox/mode','approval/policy'].includes(event.type))
+      bridge.revokeRootSession(session);
+  });
+  ctx.on('agent/disposed', ({agent}) => bridge.revokeRootSession(agent.session));
+  ctx.skills.register({name:'android-root', provider:'dsh-sugar-adb', source:'bundled',
+    description:'Run user-requested Android system administration through Sugar Root from workspace Bash or Python. Check sugar-root --status first.',
+    content:'For user-requested Android root administration, run sugar-root --status in workspace Bash. Sugar must be enabled and authorized by the phone’s root manager. Run sugar-root -c "COMMAND" or sugar-root --script ./script.sh. A script file is read in the workspace and its exact normalized UTF-8 contents are approved and executed by Android /system/bin/sh. Its paths refer to Android, including /data and /storage. Workspace /workspace and its Python/Linux executables are separate. Use Python subprocess.run(["sugar-root", "-c", command], capture_output=True, text=True) to orchestrate from a workspace script. stdout, stderr and exit status return to the caller. Agent commands in ordinary sessions request approval for each complete root command. Full-access sessions use their existing permission. Commands typed by the user in the Sugar manual terminal use direct user authorization while Sugar Root is enabled. An approval rejection or unavailable approval stops the command. Cancellation, turn end or permission changes terminate active root requests. Verify actual state after an interruption because prior changes may already have completed. The shared .dsh directory and installed host plugins are trusted control-plane code. Existing adb shell su -c uses the ADB Shell user’s separate root-manager authorization. Prefer mobile_use for screen selection, screenshots and input.'});
   ctx.skills.register({name:skillName, provider:'dsh-sugar-adb', source:'bundled',
     description:'Device diagnostics, transfers, explicit ADB requests and missing phone-driver capabilities. For ordinary UI use mobile_use({}) on the selected screen.',
     content:guide});

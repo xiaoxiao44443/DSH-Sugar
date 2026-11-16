@@ -42,9 +42,13 @@
 
 | 手机操作方式 | 设备要求 | 如何启用 |
 | --- | --- | --- |
-| 主屏 | Android 10+；主屏截图需 Android 11+ | 在系统设置中启用 Sugar 的无障碍服务。 |
+| 主屏 | Android 10+；主屏截图及 Root 驱动需 Android 11+ | 在系统设置中启用 Sugar 的无障碍服务；已授权 Root 时也可直接操作主屏。 |
 | 本机无线 ADB | Android 11+ | 开启无线调试，在 Sugar 里完成配对并点「连接本机」。 |
-| 虚拟屏 | Android 14+ | 连接本机无线 ADB，开启 Sugar 的虚拟屏开关。 |
+| 虚拟屏 | Android 14+ | 连接本机无线 ADB，或在「手机连接」中启用 Root；再开启虚拟屏开关。 |
+
+已 Root 的设备可以在 **Sugar 设置 → 手机连接 → Root** 中启用，并在 Root 管理器中允许 **DSH Sugar**。授权后，手机操作复用同一授权；无障碍服务可用时主屏继续使用无障碍，否则使用 Root。新建虚拟屏优先使用 Root，无需无线 ADB。已有虚拟屏会继续使用原连接，全部关闭后再切换。
+
+工作区仍保留原来的文件隔离。需要系统管理时，Agent 可通过 `sugar-root -c '命令'` 或 `sugar-root --script ./脚本.sh` 请求执行 Android Root 命令，按当前 DSH 会话权限审批；完全访问模式直接执行。手动终端使用用户授予 Sugar 的授权。`adb shell su -c ...` 则使用 **Shell 的独立授权**，与 Sugar 的授权互不替代。[Root 使用与权限](docs/root-access.md)
 
 ## 从源码构建
 
@@ -86,6 +90,7 @@ python scripts/prepare-toolbox-fixture.py
 - [Android 使用与开发记录](docs/android-notes.md)　配置文件、首次启动、构建参数与历史真机验证。
 - [工作区与文件](docs/projects-and-files.md)　项目隔离、共享 DSH 数据、手机目录与系统文件管理器。
 - [手机操作脚本](app/src/main/assets/guest/mobile-use-guide.md)　使用 `mobile_use` 观察屏幕、执行动作、等待事件或接受用户插话。
+- [Root 使用与权限](docs/root-access.md)　手机连接、工作区提权脚本与授权生命周期。
 - [桌宠制作](docs/desktop-pets.md)　六种动作、上下气泡与主题回答便签的资源约定。
 - [升级 DeepSeek Harness](docs/dsh-upgrades.md)　升级打包版本时需要检查的适配点。
 

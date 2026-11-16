@@ -130,11 +130,25 @@ button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 .notice-mark { width:35px; height:35px; flex:none; border-radius:11px; display:grid; place-items:center; background:var(--tray); }
 .notice-mark svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.root-controls { padding-bottom:14px; }
+.root-controls .row { min-height:44px; gap:16px; font-weight:600; }
+.root-controls [role=switch] { flex:none; }
+.root-status-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 12px; min-height:40px; }
+.root-status-row [role=status] { font-size:13px; color:var(--dim); }
+.root-controls[data-root-code=ready] [role=status] { color:var(--ink); }
+.root-controls p { margin:6px 0 0; color:var(--dim); font-size:12px; line-height:1.65; }
+.root-controls [data-root-check] { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; padding:7px 12px;
+  border:1px solid var(--line); border-radius:9px; background:var(--choice); font-size:12px; }
+.root-controls :disabled { cursor:default; opacity:.65; }
+.root-check-spinner { display:none; width:12px; height:12px; border:1.5px solid var(--line); border-top-color:var(--ink); border-radius:50%; }
+[data-root-check][aria-busy=true] .root-check-spinner { display:block; animation:recovery-orbit .9s linear infinite; }
+:host([data-reduced]) .root-check-spinner { animation:none !important; }
+@media (prefers-reduced-motion:reduce) { .root-check-spinner { animation:none !important; } }
 .adb-controls p { margin:5px 0 10px; font-size:13px; color:var(--dim); }
 .adb-controls .adb-message { overflow-wrap:anywhere; }
-.adb-controls details,.adb-controls section { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
-.adb-controls summary,.adb-controls h2 { font-size:15px; font-weight:600; color:var(--ink); }
-.adb-controls summary { cursor:pointer; padding-block:6px; }
+.root-options,.adb-controls details,.adb-controls section { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
+.root-options > summary,.adb-controls summary,.adb-controls h2 { font-size:15px; font-weight:600; color:var(--ink); }
+.root-options > summary,.adb-controls summary { cursor:pointer; padding-block:6px; }
 .adb-controls fieldset { display:flex; flex-wrap:wrap; align-items:end; gap:8px; padding:0; margin:0; border:0; min-width:0; }
 .adb-controls label { display:grid; flex:1 1 7em; gap:4px; min-width:0; color:var(--dim); font-size:13px; }
 .adb-controls input,.adb-controls button { box-sizing:border-box; min-height:44px; padding:7px 10px; color:var(--ink);

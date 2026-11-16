@@ -2,6 +2,7 @@ package app.dsh.sugar.runtime
 
 import android.os.CancellationSignal
 import app.dsh.sugar.WirelessAdb
+import app.dsh.sugar.RootAccess
 import org.json.JSONObject
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
@@ -31,6 +32,7 @@ import javax.crypto.spec.SecretKeySpec
 /** Data plane for project adb commands. DSH alone vouches for the calling shell's project and skill. */
 internal class ProjectAdbCli(
     private val adb: WirelessAdb,
+    private val rootAccess: RootAccess,
     private val mobileScope: Any,
     private val hasWorkspace: (String, String) -> Boolean
 ) : Closeable {
@@ -39,8 +41,11 @@ internal class ProjectAdbCli(
         val signal = CancellationSignal()
         var token: String? = null
         var workspace: Pair<String, String>? = null
+        var rootCommand = false
+        @Volatile var authorizing: HttpURLConnection? = null
         fun cancel() {
             runCatching { socket.close() }
+            authorizing?.disconnect()
             signal.cancel()
         }
     }
@@ -55,6 +60,11 @@ internal class ProjectAdbCli(
     private val workers = Executors.newCachedThreadPool { task ->
         Thread(task, "sugar-adb-cli").apply { isDaemon = true }
     }
+    private val rootChanged: () -> Unit = {
+        if (!rootAccess.status().optBoolean("enabled")) cancelMatching { it.rootCommand }
+    }
+
+    init { rootAccess.addListener(rootChanged) }
 
     fun register(port: Int, token: String): Int {
         require(port in 1..65535 && TOKEN.matches(token))
@@ -74,9 +84,9 @@ internal class ProjectAdbCli(
         return dataPort
     }
 
-    fun revoke(token: String) {
-        cancelMatching { it.token == token }
-        MobileUseTasks.revoke(token)
+    fun revoke(token: String, rootOnly: Boolean = false) {
+        cancelMatching { it.token == token && (!rootOnly || it.rootCommand) }
+        if (!rootOnly) MobileUseTasks.revoke(token)
     }
     fun prune() = cancelMatching { call -> call.workspace?.let { !hasWorkspace(it.first, it.second) } == true }
     fun remove(id: String) = cancelMatching { it.workspace?.first == id }
@@ -128,22 +138,26 @@ internal class ProjectAdbCli(
         }
     }
 
-    private fun authorize(validator: Validator, token: String, needGuide: Boolean, mobile: Boolean, ui: Boolean): JSONObject {
+    private fun authorize(validator: Validator, token: String, needGuide: Boolean, mobile: Boolean,
+                          ui: Boolean, call: Call, rootCommand: String? = null): JSONObject {
         val url = URL("http://127.0.0.1:${validator.port}/authorize")
         val http = url.openConnection(Proxy.NO_PROXY) as HttpURLConnection
+        call.authorizing = http
         try {
+            call.signal.throwIfCanceled()
             http.requestMethod = "POST"
             http.instanceFollowRedirects = false
             http.useCaches = false
             http.doOutput = true
             http.connectTimeout = 5000
-            http.readTimeout = 5000
+            http.readTimeout = if (rootCommand == null) 5000 else 0
             http.setRequestProperty("Content-Type", "application/json")
             val nonce = UUID.randomUUID().toString()
             val body = JSONObject().put("token", token).put("needGuide", needGuide).put("nonce", nonce)
                 .apply {
                     if (mobile) put("mobile", true)
                     if (ui) put("ui", true)
+                    if (rootCommand != null) put("rootCommand", rootCommand)
                 }.toString()
             http.setRequestProperty("Authorization", "Sugar-HMAC " + proof(validator, "request\n$body"))
             val bytes = body.toByteArray()
@@ -161,7 +175,10 @@ internal class ProjectAdbCli(
                 response.optJSONObject("error")?.optString("message")?.take(300) ?: "当前终端无权使用 ADB。"
             }
             return response.getJSONObject("result")
-        } finally { http.disconnect() }
+        } finally {
+            call.authorizing = null
+            http.disconnect()
+        }
     }
 
     private fun serve(call: Call, onAuthorized: () -> Unit) {
@@ -169,25 +186,45 @@ internal class ProjectAdbCli(
         socket.tcpNoDelay = true
         val input = BufferedInputStream(socket.getInputStream())
         val output = Frames(socket.getOutputStream())
+        var clientName = "adb"
         try {
             val args = JSONObject(readMessage(input, 65536, true, socket))
             val token = args.getString("token")
             require(TOKEN.matches(token)) { "ADB 凭据无效。" }
             val op = args.getString("op")
             require(op in OPERATIONS) { "不支持此 adb 命令。" }
+            val root = op == "root-exec" || op == "root-status"
+            if (root) clientName = "sugar-root"
             val authority = synchronized(lock) {
                 check(!closed)
                 call.token = token // Register before calling DSH so a simultaneous revoke can cancel this request.
+                call.rootCommand = op == "root-exec"
                 checkNotNull(validator)
             }
             val mobile = op == "mobileUse"
-            val needsDevice = !mobile && op != "devices" && op != "get-state"
+            val needsDevice = !root && !mobile && op != "devices" && op != "get-state"
             val device = if (needsDevice) adb.currentTransport() else null
-            val command = if (op == "shell" || op == "exec-out") args.getString("command").also {
-                require(it.isNotBlank() && '\u0000' !in it && it.toByteArray().size <= 8192) { "ADB 命令过长或无效。" }
+            val command = if (op == "shell" || op == "exec-out" || op == "root-exec") args.getString("command").also {
+                val limit = if (root) 16384 else 8192
+                require(it.isNotBlank() && '\u0000' !in it && it.toByteArray().size <= limit) { "设备命令过长或无效。" }
             } else null
-            val inspection = command?.let(AdbUiCommands::inspect)
-            val identity = authorize(authority, token, needsDevice, mobile, inspection?.action != null)
+            if (op == "root-exec") check(rootAccess.status().optBoolean("enabled")) {
+                "请先在 Sugar 的连接设置中启用 Root，并在 Root 管理器中允许 Sugar。"
+            }
+            // Root scripts are explicit Android shell requests. Keep existing ADB
+            // inspection separate so adb shell su retains Shell's own grant.
+            val inspection = if (root) null else command?.let(AdbUiCommands::inspect)
+            fun watchClient() {
+                socket.soTimeout = 0
+                thread(isDaemon = true, name = "sugar-adb-cli-peer") {
+                    runCatching { input.read() }
+                    call.cancel()
+                }
+            }
+            // Ctrl-C while the user is reading an approval must withdraw it too.
+            if (root) watchClient()
+            val identity = authorize(authority, token, needsDevice, mobile, inspection?.action != null,
+                call, if (op == "root-exec") command else null)
             val owner = identity.getString("id") to identity.getString("root")
             synchronized(lock) {
                 call.signal.throwIfCanceled()
@@ -200,19 +237,20 @@ internal class ProjectAdbCli(
             val size = if (op == "push") args.getLong("size").also { require(it >= 0) } else 0
             // After the upload body the client keeps its write side open until the exit frame.
             // EOF then means Ctrl-C, a lost PTY, or a downstream pipe which has gone away.
-            fun watchClient() {
-                socket.soTimeout = 0
-                thread(isDaemon = true, name = "sugar-adb-cli-peer") {
-                    runCatching { input.read() }
-                    call.cancel()
-                }
-            }
-            socket.soTimeout = 30000
+            if (!root) socket.soTimeout = 30000
             val body = Upload(input, size, ::watchClient)
-            if (size == 0L) watchClient()
+            if (size == 0L && !root) watchClient()
             val stdout = output.channel(1)
             val stderr = output.channel(2)
-            if (mobile) {
+            if (root) {
+                call.signal.throwIfCanceled()
+                if (op == "root-status") {
+                    stdout.write((rootAccess.status().toString() + "\n").toByteArray(Charsets.UTF_8))
+                    output.exit(0)
+                } else {
+                    output.exit(rootAccess.execOut(checkNotNull(command), stdout, stderr, call.signal))
+                }
+            } else if (mobile) {
                 val actor = MobileUseTasks.Owner(mobileScope, owner.first, owner.second, identity.getString("conversation"))
                 val result = MobileUseTasks.command(actor, token, identity.getBoolean("manual"),
                     identity.optString("taskId"), args) { call.signal.isCanceled }
@@ -252,8 +290,8 @@ internal class ProjectAdbCli(
             }
         } catch (failure: Exception) {
             if (socket.isClosed) return
-            val message = failure.localizedMessage?.take(400)?.ifBlank { null } ?: "ADB 请求失败。"
-            output.channel(2).write(("adb: " + message + "\n").toByteArray())
+            val message = failure.localizedMessage?.take(400)?.ifBlank { null } ?: "请求失败。"
+            output.channel(2).write(("$clientName: " + message + "\n").toByteArray())
             output.exit(1)
         }
     }
@@ -307,6 +345,7 @@ internal class ProjectAdbCli(
     }
 
     override fun close() {
+        rootAccess.removeListener(rootChanged)
         synchronized(lock) {
             closed = true
             server?.close()
@@ -328,7 +367,7 @@ internal class ProjectAdbCli(
             }
         }
         private val TOKEN = Regex("[A-Za-z0-9_-]{43}")
-        private val OPERATIONS = setOf("devices", "get-state", "shell", "exec-out", "push", "pull", "mobileUse")
+        private val OPERATIONS = setOf("devices", "get-state", "shell", "exec-out", "push", "pull", "mobileUse", "root-status", "root-exec")
         private fun readMessage(input: InputStream, limit: Int, newline: Boolean, headerSocket: Socket? = null): String {
             val data = ByteArrayOutputStream()
             val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)

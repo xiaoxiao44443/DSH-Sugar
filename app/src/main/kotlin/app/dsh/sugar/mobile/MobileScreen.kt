@@ -1,7 +1,9 @@
 package app.dsh.sugar.mobile
 
+import android.content.Context
 import android.os.Looper
 import android.os.SystemClock
+import app.dsh.sugar.RootAccess
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -12,45 +14,68 @@ internal fun screenError(code: String, message: String): JSONObject =
 
 /** A lease owns the main display until the task closes it or the service disconnects. */
 internal object MobileScreen {
-    private class Session(val id: String, val driver: MobileAccessibilityService) {
+    private class Session(val id: String, val driver: MobileAccessibilityService?) {
+        val root get() = driver == null
+        val rootKey = "main-$id"
         var observation: MainObservation? = null
     }
 
     private val gate = Any()
     private var service: MobileAccessibilityService? = null
-    private var active: Session? = null
+    @Volatile private var active: Session? = null
 
     fun available(): Boolean = synchronized(gate) { service != null }
 
     internal fun connected(driver: MobileAccessibilityService) = synchronized(gate) {
-        if (service !== driver) active = null
+        if (service !== driver && active?.root != true) active = null
         service = driver
     }
 
     internal fun disconnected(driver: MobileAccessibilityService) = synchronized(gate) {
         if (service === driver) {
-            active = null
+            if (active?.root != true) active = null
             service = null
         }
     }
 
-    fun open(sessionId: String): JSONObject = synchronized(gate) {
-        if (sessionId.isBlank()) return screenError("invalid_session", "A session id is required.")
-        val driver = service ?: return screenError("accessibility_unavailable", "Enable Sugar in Accessibility settings.")
-        val previous = active
-        if (previous != null && sessionId != previous.id)
-            return screenError("screen_busy", "Another session is using the main display.")
-        if (previous == null) active = Session(sessionId, driver)
+    fun open(context: Context, sessionId: String, allowed: () -> Boolean): JSONObject {
+        val session = synchronized(gate) {
+            if (sessionId.isBlank()) return screenError("invalid_session", "A session id is required.")
+            if (!allowed()) return screenError("session_closed", "This phone control task stopped.")
+            val previous = active
+            if (previous != null && sessionId != previous.id)
+                return screenError("screen_busy", "Another session is using the main display.")
+            if (service == null && !RootAccess.get(context).isAvailable())
+                return screenError("accessibility_unavailable", "Enable Sugar Accessibility or connect Root in Sugar.")
+            previous ?: Session(sessionId, service).also { active = it }
+        }
+        if (session.root) {
+            val result = VirtualScreen.open(context, session.rootKey, null, {
+                active === session && allowed()
+            }, main = true)
+            if (!result.optBoolean("ok")) close(sessionId)
+            return result
+        }
+        val driver = checkNotNull(session.driver)
+        return accessibilityReady(driver)
+    }
+
+    private fun accessibilityReady(driver: MobileAccessibilityService): JSONObject =
         JSONObject().put("ok", true).put("display", "main").put("driver", "accessibility")
             .put("capabilities", JSONObject().put("tree", true).put("image", driver.supportsScreenshot())
                 .put("node_action", true).put("gesture", true).put("drag", true).put("text", true)
                 .put("launch", true).put("open_app", true).put("recents", true))
+    fun isOpen(sessionId: String): Boolean = synchronized(gate) {
+        active?.let { it.id == sessionId && (!it.root || VirtualScreen.isOpen(it.rootKey)) } == true
     }
 
-    fun isOpen(sessionId: String): Boolean = synchronized(gate) { active?.id == sessionId }
+    fun usesRoot(sessionId: String): Boolean = synchronized(gate) { active?.let { it.id == sessionId && it.root } == true }
 
     fun close(sessionId: String) = synchronized(gate) {
-        if (active?.id == sessionId) active = null
+        if (active?.id == sessionId) {
+            active?.takeIf { it.root }?.let { VirtualScreen.close(it.rootKey) }
+            active = null
+        }
     }
 
     fun preview(sessionId: String, allowed: () -> Boolean): JSONObject =
@@ -62,12 +87,16 @@ internal object MobileScreen {
             return screenError("wrong_thread", "Phone operations require a background worker.")
         val session = synchronized(gate) { active?.takeIf { it.id == sessionId } }
             ?: return screenError("session_closed", "This phone control session is no longer active.")
+        if (session.root) return VirtualScreen.execute(session.rootKey, op, args) {
+            active === session && allowed()
+        }
+        val driver = checkNotNull(session.driver)
         return try {
             synchronized(session) {
                 checked(session, allowed) {}
                 if (op == "observe" || op == "preview") {
                     val preview = op == "preview"
-                    fun capture() = session.driver.observe(args, preview) { checked(session, allowed) {} }
+                    fun capture() = driver.observe(args, preview) { checked(session, allowed) {} }
                     val observation = try {
                         capture()
                     } catch (error: ScreenProblem) {
@@ -93,7 +122,7 @@ internal object MobileScreen {
                         throw ScreenProblem("stale_observation", "Read the current display before acting.")
                     }
                     val activeSession = { synchronized(gate) { active === session && allowed() } }
-                    session.driver.act(op, args, if (requiresObservation) previous else null, activeSession) { dispatch ->
+                    driver.act(op, args, if (requiresObservation) previous else null, activeSession) { dispatch ->
                         checked(session, allowed) {
                             val sent = dispatch()
                             if (sent) session.observation = null

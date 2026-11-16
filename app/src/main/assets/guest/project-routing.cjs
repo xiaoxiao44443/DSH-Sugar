@@ -25,6 +25,7 @@ const deviceOwner = new AsyncLocalStorage();
 const mobileBindings = new Map();
 const {currentTurnId} = require('./sugar-user-turn.cjs');
 let hasReadAdbGuide;
+let rootPolicy;
 const adbCli = require('./adb-cli-sessions.cjs').create(management, (owner, project, needGuide, ui) => {
   const record = binding(owner.agent.session.header.cwd);
   pin(owner.agent.id, record);
@@ -32,6 +33,9 @@ const adbCli = require('./adb-cli-sessions.cjs').create(management, (owner, proj
   if (needGuide && !owner.manual && !hasReadAdbGuide?.(owner.agent.session))
     throw Error('请先在本对话调用 skill({name:"android-adb"}) 阅读 ADB 命令说明。');
   if (ui && !owner.manual) return {turn:currentTurnId(owner.agent.session)};
+}, (owner, project, command, signal) => {
+  if (!rootPolicy) throw Error('Root 会话权限服务未就绪。');
+  return rootPolicy(owner.agent, command, signal, owner.manual === true);
 });
 const opening = new Map();
 const latestWorker = new Map();
@@ -441,6 +445,15 @@ const api = { within, withinStream, workspaceMediaPath, serveSessionFile,
     hasReadAdbGuide = check;
     return () => { if (hasReadAdbGuide === check) hasReadAdbGuide = undefined; };
   },
+  registerRootPolicy(authorize) {
+    rootPolicy = authorize;
+    return () => {
+      if (rootPolicy !== authorize) return;
+      rootPolicy = undefined;
+      adbCli.revokeRootSession();
+    };
+  },
+  revokeRootSession(session) { adbCli.revokeRootSession(session); },
   deviceProcess(agent, manual, run) {
     if (!agent?.session) return deviceOwner.exit(run);
     return within(agent.session.header.cwd, async () => {
