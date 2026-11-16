@@ -1,0 +1,155 @@
+{
+  "apkDependencies": {
+    "android-direct-dependencies": [
+      "com.github.MuntashirAkon:libadb-android:3.1.1",
+      "org.bouncycastle:bcprov-jdk15to18:1.81",
+      "org.conscrypt:conscrypt-android:2.5.3"
+    ],
+    "android-notices": {
+      "files": 1,
+      "sha256": "a5a9f77d6b7f5b87ee99e2c014663b64f985451eab888308fb057dce3c5bbf0d"
+    },
+    "assets/guest/rootfs.zip": {
+      "files": 58894,
+      "sha256": "ea15ee56d2161bc1d8fa43343e0f7953e3bfe33e82b949532c8b2bdfa8f139d0"
+    },
+    "assets/guest/zoneinfo.zip": {
+      "files": 598,
+      "sha256": "73201f46f5314d7f252f04af03a5236ce9a4d0f64dcd0ff62c21315f760328d6"
+    },
+    "assets/mobile-python/runtime.zip": {
+      "files": 1284,
+      "sha256": "f54b7dd87aea02da1685216a569c6284849d40cdf4b040f9db14fd4180316de5"
+    },
+    "assets/network-tools/tools.zip": {
+      "files": 2049,
+      "sha256": "0c296f70d619cc524a42aac45942538bfa060d588ab429523c6ff9e35e84c650"
+    },
+    "dsh-lock": "3c27c74f5fb48b5b619b11242ee8c31b0d0508fa775d00b0f7d64c49456ccb19",
+    "native-third-party": {
+      "files": 2,
+      "sha256": "608f536b6c2705b42fa63510479dd1789e132b3d5dc1c6c24831fbc2094ebdee"
+    },
+    "pnpm": {
+      "files": 10,
+      "sha256": "b735a0afad42cbbaa93fd7266285bdc0bc7c2302cb10e2c2358bd78afcfc5e17"
+    },
+    "runtime-notices": {
+      "files": 5,
+      "sha256": "b179e39ba917be1097a85f166d91c4f0d58d80bb40ade53c45c88f4f52da6436"
+    },
+    "sucrune-libraries": [
+      "lib/arm64-v8a/libsucrune_core.so",
+      "lib/arm64-v8a/libsucrune_probe.so",
+      "lib/arm64-v8a/libsucrune_runner.so"
+    ],
+    "sucrune-source-commit": "f9eb0a1f51c256c151fd63e6d4503c7335c8c11a"
+  },
+  "debianSourcesSha256": "668ce98a7419d77cca6e063392afe458fbe9f80ec306d91cf65df82791e4a70b",
+  "readme": "Project source, build instructions and patch sets: https://github.com/xiaoxiao44443/DSH-Sugar\nSucrune source: https://github.com/xiaoxiao44443/Sucrune/tree/f9eb0a1f51c256c151fd63e6d4503c7335c8c11a\nDeepSeek Harness: https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.2-rc.3\nNode.js source: https://nodejs.org/download/release/v24.22.2/node-v24.22.2.tar.xz\nThe npm lock in this archive lists pinned DSH distribution packages and their integrity hashes. npm 11.19.1 and pnpm 10.28.2 are separate command-line programs.\n\nAndroid libraries: LibADB Android 3.1.1 (Apache-2.0 option, component files also carry BSD/MIT notices), SPAKE2 Java 2.2.1 (LGPL-3.0; source included), Conscrypt Android 2.5.3, Bouncy Castle 1.81 and AndroidX.\n\nThe companion debian-corresponding-source.zip includes Debian source packages; debian/index.json maps the packaged binaries to Debian source versions. The guest package includes the LibreOffice kit WASM build sources, exact upstream checkout identifiers and patch series below guest/opt/dsh/node_modules/@deepseek-ai/libreoffice-kit-wasm/sources. The sharp/libvips build scripts are provided below runtime/sharp-libvips. Component notices retain their original terms.\n",
+  "schema": 1,
+  "upstreamInputs": [
+    {
+      "archivePath": "android/bouncycastle/LICENSE",
+      "sha256": "edbbb10380b1271998b867a2e36b1cbee226e03d438726e1a91f80c5dde11849",
+      "size": 1175,
+      "url": "https://raw.githubusercontent.com/bcgit/bc-java/r1rv81/LICENSE.html"
+    },
+    {
+      "archivePath": "android/conscrypt/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "size": 11358,
+      "url": "https://raw.githubusercontent.com/google/conscrypt/2.5.3/LICENSE"
+    },
+    {
+      "archivePath": "android/conscrypt/NOTICE",
+      "sha256": "378a858f72823759ec0cff19b32e70b7d355dbf8f5810df484dc5e3d60ea8dbd",
+      "size": 1097,
+      "url": "https://raw.githubusercontent.com/google/conscrypt/2.5.3/NOTICE"
+    },
+    {
+      "archivePath": "android/conscrypt/licenses/LICENSE.harmony.txt",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "size": 11357,
+      "url": "https://raw.githubusercontent.com/google/conscrypt/2.5.3/licenses/LICENSE.harmony.txt"
+    },
+    {
+      "archivePath": "android/conscrypt/licenses/LICENSE.netty.txt",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "size": 11357,
+      "url": "https://raw.githubusercontent.com/google/conscrypt/2.5.3/licenses/LICENSE.netty.txt"
+    },
+    {
+      "archivePath": "android/libadb/COPYING",
+      "sha256": "dd5314a7504dc2c80aba35db43a8db2f9362bd5768af07e94539a3e2b6fc3275",
+      "size": 483,
+      "url": "https://raw.githubusercontent.com/MuntashirAkon/libadb-android/3.1.1/COPYING"
+    },
+    {
+      "archivePath": "android/libadb/LICENSES/Apache-2.0",
+      "sha256": "4557de501c3a82094c239a4d74e2e29993c188f6ebb28b668fedf942938e44f1",
+      "size": 10001,
+      "url": "https://raw.githubusercontent.com/MuntashirAkon/libadb-android/3.1.1/LICENSES/Apache-2.0"
+    },
+    {
+      "archivePath": "android/libadb/LICENSES/BSD-3-Clause",
+      "sha256": "8a094def3661adcb92d2e9f462052fe2bd6365ecf659f229ae9703bd4c412024",
+      "size": 1844,
+      "url": "https://raw.githubusercontent.com/MuntashirAkon/libadb-android/3.1.1/LICENSES/BSD-3-Clause"
+    },
+    {
+      "archivePath": "android/libadb/LICENSES/GPL-3.0-or-later",
+      "sha256": "4cf69a0c7c6f0eea4f323a85554a11cd2e16fa2a92c97a2d5de1d2c696d8e597",
+      "size": 35657,
+      "url": "https://raw.githubusercontent.com/MuntashirAkon/libadb-android/3.1.1/LICENSES/GPL-3.0-or-later"
+    },
+    {
+      "archivePath": "android/libadb/LICENSES/MIT",
+      "sha256": "57a5669100695db12465be9fb3995322e87da6aa64d06cccdbccbb53b1839821",
+      "size": 1568,
+      "url": "https://raw.githubusercontent.com/MuntashirAkon/libadb-android/3.1.1/LICENSES/MIT"
+    },
+    {
+      "archivePath": "android/spake2/LICENSE",
+      "sha256": "a5681bf9b05db14d86776930017c647ad9e6e56ff6bbcfdf21e5848288dfaf1b",
+      "size": 7651,
+      "url": "https://raw.githubusercontent.com/MuntashirAkon/spake2-java/2.2.1/LICENSE"
+    },
+    {
+      "archivePath": "android/spake2/spake2-java-2.2.1-source.tar.gz",
+      "sha256": "ee08d37d187eca2868a66aa49493fc5754e674e506cfeef03300d9b219860e59",
+      "size": 91633,
+      "url": "https://codeload.github.com/MuntashirAkon/spake2-java/tar.gz/refs/tags/2.2.1"
+    },
+    {
+      "archivePath": "deepseek/LICENSE",
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
+      "size": 1065,
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/dsh-v0.2.2-rc.3/LICENSE"
+    },
+    {
+      "archivePath": "runtime/Sucrune-LICENSE",
+      "sha256": "298e6f1d2e8dd05a78d1fc0d7a13953bd72bdd81706f39c40978823380608da4",
+      "size": 1077,
+      "url": "https://raw.githubusercontent.com/xiaoxiao44443/Sucrune/f9eb0a1f51c256c151fd63e6d4503c7335c8c11a/LICENSE"
+    },
+    {
+      "archivePath": "runtime/go/LICENSE",
+      "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "size": 1453,
+      "url": "https://raw.githubusercontent.com/golang/go/go1.24.0/LICENSE"
+    },
+    {
+      "archivePath": "runtime/sharp-libvips/build-source.tar.gz",
+      "sha256": "65fdb633c2d97626352a3771b7a0ce30b6a89af03d2a1238491c8b068e6b8dad",
+      "size": 24490,
+      "url": "https://codeload.github.com/lovell/sharp-libvips/tar.gz/ebb95f8add54eee8bed840e3fb587e4cbec857d7"
+    },
+    {
+      "archivePath": "runtime/zoneinfo/theory.html",
+      "sha256": "4c0b2353bf1dc53c6e79f66bb5affa04486e8ff74a49088034b939db0a9f1e77",
+      "size": 69361,
+      "url": "https://raw.githubusercontent.com/eggert/tz/9a4b820e3dc6b6f70ecc0080db9a43d99fe2469d/theory.html"
+    }
+  ]
+}

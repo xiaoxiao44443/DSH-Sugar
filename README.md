@@ -52,6 +52,8 @@
 
 ## 从源码构建
 
+也可以直接使用 **[GitHub Actions 云端打包](https://github.com/xiaoxiao44443/DSH-Sugar/actions/workflows/android-release.yml)**：手动运行生成已签名 APK，推送版本标签自动发布 Release。详见 [打包与发布说明](docs/github-builds.md)。
+
 项目包含 Android App、Kotlin Multiplatform 共享模块，以及将 DSH 与 Linux 工具打包到手机的脚本。当前打包的 DeepSeek Harness 版本为 **0.2.2-rc.3**。[DeepSeek Harness 上游](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-rc.3) · [Sucrune 运行时](https://github.com/xiaoxiao44443/Sucrune)
 
 <details>

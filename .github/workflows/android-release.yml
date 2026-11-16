@@ -1,0 +1,145 @@
+name: Build Android APK
+run-name: Android ${{ github.ref_name }} · ${{ github.event_name }}
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: sugar
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      artifact: ${{ steps.artifact.outputs.artifact-id }}
+    steps:
+      - name: Keep repository line endings
+        working-directory: .
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: sugar
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: xiaoxiao44443/Sucrune
+          ref: f9eb0a1f51c256c151fd63e6d4503c7335c8c11a
+          path: Sucrune
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17.0.20+101' # Adoptium SemVer for 17.0.20.1+1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.22.2'
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26.10'
+          cache: false
+      - name: Check version and signing availability
+        id: version
+        env:
+          HAS_SIGNING_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        run: |
+          if ($env:HAS_SIGNING_KEY -ne 'true') { throw 'Configure the four ANDROID signing secrets; see docs/github-builds.md.' }
+          python scripts/release/inspect-version.py
+      - name: Prepare Android and Zig toolchains
+        run: ./scripts/release/setup-tools.ps1
+      - name: Restore verified downloads and Gradle caches
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            Sucrune/.build/linux-package-cache
+            Sucrune/.build/dsh-tarballs
+            Sucrune/.build/gradle-home/caches
+            Sucrune/.build/gradle-home/wrapper
+            sugar/.build/package-tarballs
+            sugar/.build/network-packages
+            sugar/.build/gradle-user-home/caches
+            sugar/.build/gradle-user-home/wrapper
+            sugar/.build/release-downloads
+          key: windows-release-v1-${{ hashFiles('sugar/scripts/**', 'sugar/**/*.gradle', 'sugar/gradle/wrapper/gradle-wrapper.properties', 'Sucrune/scripts/**', 'Sucrune/go.sum') }}
+          restore-keys: windows-release-v1-
+      - name: Build pinned Sucrune runtime and Linux userland
+        run: ./scripts/release/build-runtime.ps1 -SucruneRoot ../Sucrune
+      - name: Build release APK, run unit tests and lint
+        run: ./scripts/build-android.ps1 -SucruneRoot ../Sucrune -Variant release
+      - name: Sign and verify upgrade compatibility
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./scripts/release/sign-apk.ps1 -SdkRoot $env:ANDROID_HOME -Out .build/release-dist
+      - name: Package third-party notices and corresponding sources
+        run: |
+          python scripts/release/package-companions.py --apk "$env:SUGAR_APK_PATH" --project-root . --sucrune-root ../Sucrune --version "$env:SUGAR_VERSION" --output-dir .build/release-dist --cache-dir .build/release-downloads
+          python scripts/release/checksums.py --dist .build/release-dist --version "$env:SUGAR_VERSION"
+      - name: Save signed APK and release attachments
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: DSH-Sugar-${{ steps.version.outputs.version }}-arm64-v8a
+          path: sugar/.build/release-dist/*
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+      - name: Save test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-test-reports
+          path: |
+            sugar/app/build/reports/
+            sugar/shared/build/reports/
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Write build summary
+        run: |
+          @"
+          ## DSH Sugar $env:SUGAR_VERSION
+          - ARM64 release APK, versionCode $env:SUGAR_VERSION_CODE
+          - Existing release signature verified; supports in-place upgrades
+          - APK SHA256: ``$env:SUGAR_APK_SHA256``
+          - Download the APK and companion files from this run's Artifacts (7 days)
+          - Tag builds publish a Release only after all assets are uploaded and verified
+          "@ >> $env:GITHUB_STEP_SUMMARY
+
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact }}
+          merge-multiple: true
+          path: dist
+      - name: Upload, verify and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 scripts/release/publish.py --dist dist --tag "$GITHUB_REF_NAME"
+          --notes "docs/releases/$GITHUB_REF_NAME.md"

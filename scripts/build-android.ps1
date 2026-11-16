@@ -11,6 +11,8 @@ param(
     [string]$ReadOnlyGradleCache,
     [switch]$SkipGuestPreparation,
     [switch]$Offline,
+    [ValidateSet('debug', 'release')]
+    [string]$Variant = 'debug',
     [string]$Zig = $(if ($env:ZIG) { $env:ZIG } else { 'zig' })
 )
 
@@ -74,9 +76,11 @@ try {
     foreach ($key in $settings.Keys) { [Environment]::SetEnvironmentVariable($key, $settings[$key], 'Process') }
     $gradleArgs = @('--no-daemon', "-PsucruneDir=$SucruneRoot", "-PsucruneApk=$SucruneApk", "-PsugarZig=$Zig")
     if ($Offline) { $gradleArgs += '--offline' }
-    & $Gradle @gradleArgs ':shared:jvmTest' ':app:testDebugUnitTest' ':app:assembleDebug' ':app:lintDebug'
+    $taskVariant = $Variant.Substring(0, 1).ToUpperInvariant() + $Variant.Substring(1)
+    & $Gradle @gradleArgs ':shared:jvmTest' ':app:testDebugUnitTest' ":app:assemble$taskVariant" ":app:lint$taskVariant"
     if ($LASTEXITCODE -ne 0) { throw "Android build failed ($LASTEXITCODE)." }
-    Write-Output (Join-Path $projectDir 'app/build/outputs/apk/debug/app-debug.apk')
+    $apkName = if ($Variant -eq 'release') { 'app-release-unsigned.apk' } else { 'app-debug.apk' }
+    Write-Output (Join-Path $projectDir "app/build/outputs/apk/$Variant/$apkName")
 } finally {
     Pop-Location
     foreach ($key in $previous.Keys) { [Environment]::SetEnvironmentVariable($key, $previous[$key], 'Process') }
