@@ -43,6 +43,6 @@
 
 Windows 2025 runner、Temurin JDK 17.0.20.1+1、Go 1.26.10、Node 24.22.2、Python 3.12、Zig 0.17.1；Android SDK 37.0、Build Tools 36.0.0、NDK 26.3.11579264、CMake 3.22.1。Gradle wrapper 固定为 9.3.1 并校验下载哈希。
 
-Sucrune 从 `f9eb0a1f51c256c151fd63e6d4503c7335c8c11a` 源码构建。Linux 用户态和 DSH 使用仓库中的版本锁和下载校验；不依赖开发者电脑上的预构建 APK。缓存只加速依赖下载与 Gradle，签名文件不缓存。
+Sucrune 从 `c21af1309a904c8ab916db2e22f35002b669a0e4` 源码构建。Linux 用户态和 DSH 使用仓库中的版本锁和下载校验；不依赖开发者电脑上的预构建 APK。缓存只加速依赖下载与 Gradle，签名文件不缓存。
 
 `scripts/release/` 包含签名、附件打包及发布校验脚本。升级 DSH、Sucrune、Linux 工具或 Android 依赖时，需要同时复核第三方许可证与对应源码锁；附件脚本发现未审核的依赖变化会停止发布。发行附件只读取本次 APK 和固定上游来源，不收集设备上的聊天、插件、凭据或工作区文件。

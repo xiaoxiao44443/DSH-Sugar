@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: xiaoxiao44443/Sucrune
-          ref: f9eb0a1f51c256c151fd63e6d4503c7335c8c11a
+          ref: c21af1309a904c8ab916db2e22f35002b669a0e4
           path: Sucrune
           persist-credentials: false
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4

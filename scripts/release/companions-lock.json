@@ -43,10 +43,10 @@
       "lib/arm64-v8a/libsucrune_probe.so",
       "lib/arm64-v8a/libsucrune_runner.so"
     ],
-    "sucrune-source-commit": "f9eb0a1f51c256c151fd63e6d4503c7335c8c11a"
+    "sucrune-source-commit": "c21af1309a904c8ab916db2e22f35002b669a0e4"
   },
   "debianSourcesSha256": "668ce98a7419d77cca6e063392afe458fbe9f80ec306d91cf65df82791e4a70b",
-  "readme": "Project source, build instructions and patch sets: https://github.com/xiaoxiao44443/DSH-Sugar\nSucrune source: https://github.com/xiaoxiao44443/Sucrune/tree/f9eb0a1f51c256c151fd63e6d4503c7335c8c11a\nDeepSeek Harness: https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.2-rc.3\nNode.js source: https://nodejs.org/download/release/v24.22.2/node-v24.22.2.tar.xz\nThe npm lock in this archive lists pinned DSH distribution packages and their integrity hashes. npm 11.19.1 and pnpm 10.28.2 are separate command-line programs.\n\nAndroid libraries: LibADB Android 3.1.1 (Apache-2.0 option, component files also carry BSD/MIT notices), SPAKE2 Java 2.2.1 (LGPL-3.0; source included), Conscrypt Android 2.5.3, Bouncy Castle 1.81 and AndroidX.\n\nThe companion debian-corresponding-source.zip includes Debian source packages; debian/index.json maps the packaged binaries to Debian source versions. The guest package includes the LibreOffice kit WASM build sources, exact upstream checkout identifiers and patch series below guest/opt/dsh/node_modules/@deepseek-ai/libreoffice-kit-wasm/sources. The sharp/libvips build scripts are provided below runtime/sharp-libvips. Component notices retain their original terms.\n",
+  "readme": "Project source, build instructions and patch sets: https://github.com/xiaoxiao44443/DSH-Sugar\nSucrune source: https://github.com/xiaoxiao44443/Sucrune/tree/c21af1309a904c8ab916db2e22f35002b669a0e4\nDeepSeek Harness: https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.2-rc.3\nNode.js source: https://nodejs.org/download/release/v24.22.2/node-v24.22.2.tar.xz\nThe npm lock in this archive lists pinned DSH distribution packages and their integrity hashes. npm 11.19.1 and pnpm 10.28.2 are separate command-line programs.\n\nAndroid libraries: LibADB Android 3.1.1 (Apache-2.0 option, component files also carry BSD/MIT notices), SPAKE2 Java 2.2.1 (LGPL-3.0; source included), Conscrypt Android 2.5.3, Bouncy Castle 1.81 and AndroidX.\n\nThe companion debian-corresponding-source.zip includes Debian source packages; debian/index.json maps the packaged binaries to Debian source versions. The guest package includes the LibreOffice kit WASM build sources, exact upstream checkout identifiers and patch series below guest/opt/dsh/node_modules/@deepseek-ai/libreoffice-kit-wasm/sources. The sharp/libvips build scripts are provided below runtime/sharp-libvips. Component notices retain their original terms.\n",
   "schema": 1,
   "upstreamInputs": [
     {
@@ -131,7 +131,7 @@
       "archivePath": "runtime/Sucrune-LICENSE",
       "sha256": "298e6f1d2e8dd05a78d1fc0d7a13953bd72bdd81706f39c40978823380608da4",
       "size": 1077,
-      "url": "https://raw.githubusercontent.com/xiaoxiao44443/Sucrune/f9eb0a1f51c256c151fd63e6d4503c7335c8c11a/LICENSE"
+      "url": "https://raw.githubusercontent.com/xiaoxiao44443/Sucrune/c21af1309a904c8ab916db2e22f35002b669a0e4/LICENSE"
     },
     {
       "archivePath": "runtime/go/LICENSE",
