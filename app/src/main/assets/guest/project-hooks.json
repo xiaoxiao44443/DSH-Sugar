@@ -421,7 +421,7 @@
   },
   "dsh-client-modules/lib/index.js": {
     "name": "dsh-client-modules",
-    "hash": "a1056961926b9524a3940db3fb1cd84b5880eed54f06b8efaafa7c120b0d7602",
+    "hash": "594dd2f17bd7f206b880c5657270343e37da66b27af40124525114ad1c3edadb",
     "edits": [
       [
         "const rev = artifactRevision(baseline);",

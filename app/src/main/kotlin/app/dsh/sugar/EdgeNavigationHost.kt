@@ -100,7 +100,10 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
         }
     }
 
+    private val appInfo by lazy { AboutApp.read(activity) }
+
     private fun settings(previewUrl: String) = JSONObject()
+        .put("appInfo", appInfo)
         .put("recoveryLabels", RecoveryController.labels(activity))
         .put("language", SugarLanguage.read(activity))
         .put("notifications", notificationPrefs.read())
@@ -220,6 +223,7 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
                         "notificationStatus" -> host.postMessage(WebMessage(JSONObject()
                             .put("type", "notificationStatus").put("enabled", notificationsEnabled()).toString()))
                         "openNotificationSettings" -> if (view.hasWindowFocus()) openNotificationSettings()
+                        "openSource" -> if (settingsVisible && view.isShown && view.hasWindowFocus()) BrowserLogin(activity).openSource()
                         "petStatus", "petChange", "petSpeech", "petAnswerPreview", "petVoiceStatus" -> if (petVisible)
                             petSettings.handle(data, view.hasWindowFocus())
                         "petVoiceSettings" -> if (petVisible && view.isShown && view.hasWindowFocus()) {

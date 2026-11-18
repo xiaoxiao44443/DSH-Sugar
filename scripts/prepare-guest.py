@@ -15,7 +15,7 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
 
-DSH_VERSION = "0.2.2-rc.3"
+DSH_VERSION = "0.2.2-rc.5"
 BASE_LAYERS = ("linux-rootfs", "linux-bash", "linux-stty", "linux-node-pty")
 HERE = Path(__file__).resolve().parents[1]
 DSH_PATCHES = (HERE / "guest/plugin-management.patch", HERE / "guest/profile-resolution.patch")

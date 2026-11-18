@@ -76,6 +76,8 @@ internal class BrowserLogin(private val activity: Activity) {
         handler.post { child.destroy() }
     }
 
+    fun openSource() = openBrowser(Uri.parse("https://github.com/xiaoxiao44443/DSH-Sugar"))
+
     @Suppress("DEPRECATION")
     private fun openBrowser(uri: Uri) {
         val intent = Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)

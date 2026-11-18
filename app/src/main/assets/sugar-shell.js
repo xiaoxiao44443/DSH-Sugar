@@ -19,6 +19,7 @@
     settings: {actions:[{id:'forward', label:'前进'}, {id:'overview', label:'概览'}, {id:'appearance', label:'外观'}, {id:'gestures', label:'手势'}, {id:'splash', label:'启动页'}, {id:'pet', label:'桌宠'}, {id:'adb', label:'手机连接'}]},
     overview: {parent:'settings', title:'设置'},
     general: {parent:'overview', title:'通用'},
+    about: {parent:'general', title:'关于'},
     pet: {parent:'settings', title:'桌宠'},
     'pet-preview': {parent:'pet', title:'动作预览'},
     appearance: {parent:'settings', title:'外观'},
@@ -69,7 +70,7 @@
   let workspaceFilesPage, workspaceId, workspacePath = '';
   let recoveryPage, recoveryState = {};
   let profilePanel, adbState, adbPending, adbTimer, adbResumeTimer;
-  let deviceRootState;
+  let deviceRootState, appInfo;
   let adbAwaitingSince = 0, adbStale = false, adbTriedConnect = false;
   let nearStyles, nearNodes = new Set(), lastSampleAt = -Infinity;
   function listen(target, event, fn, options) {
@@ -987,7 +988,7 @@
             <button type="button" data-go="recovery"><span class="notice-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 3 8M3 5v6h6m1 2h5m-2.5-2.5v5"/></svg></span>
             <span>诊断与恢复<small>检查启动问题与恢复 DSH</small></span><i aria-hidden="true">›</i></button></div>
       `)}
-      ${settingsPane('general', `<div class="group general-options">
+      ${settingsPane('general', `<h2>偏好设置</h2><div class="group general-options">
           <div class="row language-row"><span id="sugar-language-label">界面语言</span>
             <div class="choices" role="group" aria-labelledby="sugar-language-label" translate="no">
               <button type="button" data-language="zh" lang="zh">中文</button>
@@ -997,8 +998,18 @@
           <div class="row"><label for="sugar-task-screen"><span id="task-screen-label">任务时常亮</span>
               <small id="task-screen-hint">闲置后自动调暗</small></label>
             <button type="button" id="sugar-task-screen" name="dimScreenDuringTasks" role="switch" aria-labelledby="task-screen-label" aria-describedby="task-screen-hint"></button>
-          </div></div>`)}
-      ${settingsPane('mobile-main', window.SugarMobileControls.controls.main)}
+          </div></div>
+          <h2 class="splash-section">应用信息</h2>
+          <div class="links general-about"><button type="button" data-go="about"><span class="notice-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.5"/></svg></span>
+            <span>关于</span><i aria-hidden="true">›</i></button></div>`)}
+      ${settingsPane('about', `<div class="about-identity">
+          <img class="about-icon" alt="" width="96" height="96" hidden>
+          <div class="about-name" translate="no"></div>
+          <p class="about-version"><span>版本</span> <span data-app-version translate="no"></span></p>
+        </div>
+        <button type="button" class="about-source" data-about-source><span>在 GitHub 查看源码</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></svg></button>`)}
+      ${settingsPane('mobile-main' , window.SugarMobileControls.controls.main)}
       ${settingsPane('storage', window.SugarStorage.controls)}
       ${settingsPane('recovery', window.SugarRecoveryPage.controls)}
       ${settingsPane('storage-workspaces', window.SugarStorage.workspaces)}
@@ -1080,6 +1091,13 @@
       ${settingsPane('splash', window.SugarSplashSettings.controls)}
       ${settingsPane('splash-preview', window.SugarSplashPreview.controls)}
       </div>`;
+    const about = main.querySelector('[data-pane=about]');
+    about.querySelector('.about-name').textContent = appInfo?.name || 'DSH Sugar';
+    about.querySelector('[data-app-version]').textContent = appInfo?.version || '—';
+    if (typeof appInfo?.icon === 'string' && appInfo.icon.startsWith('data:image/png;base64,')) {
+      const icon = about.querySelector('.about-icon');
+      icon.src = appInfo.icon; icon.hidden = false;
+    }
     cleanups.push(i18n.bindStatic(main));
     root.append(main);
     recoveryPage = window.SugarRecoveryPage.mount(main.querySelector('[data-pane=recovery]'), action => {
@@ -1121,6 +1139,7 @@
     listen(main, 'click', e => {
       const button = e.target.closest('button');
       if (!button) return;
+      if (button.hasAttribute('data-about-source')) return post({type:'openSource'});
       if (button.dataset.language) return selectLanguage(button.dataset.language);
       if (button.dataset.go) {
         if (navigate(button.dataset.go) && button.dataset.go === 'palette') rail.setExpanded(true);
@@ -1158,7 +1177,8 @@
     }, {passive:true});
   }
   function mount(initial, styles) {
-    const {language = 'zh', splash, splashPreviewUrl:previewUrl, notifications, recoveryLabels, systemNotificationsEnabled:enabled, ...edgeSettings} = initial;
+    const {language = 'zh', appInfo:application, splash, splashPreviewUrl:previewUrl, notifications, recoveryLabels, systemNotificationsEnabled:enabled, ...edgeSettings} = initial;
+    appInfo = application;
     recoveryState = {labels:recoveryLabels};
     i18n.setLanguage(language);
     listenForEditing();

@@ -1,31 +1,27 @@
 {
   "apkDependencies": {
-    "android-direct-dependencies": [
-      "com.github.MuntashirAkon:libadb-android:3.1.1",
-      "org.bouncycastle:bcprov-jdk15to18:1.81",
-      "org.conscrypt:conscrypt-android:2.5.3"
-    ],
-    "android-notices": {
-      "files": 1,
-      "sha256": "a5a9f77d6b7f5b87ee99e2c014663b64f985451eab888308fb057dce3c5bbf0d"
-    },
     "assets/guest/rootfs.zip": {
-      "files": 58894,
-      "sha256": "ea15ee56d2161bc1d8fa43343e0f7953e3bfe33e82b949532c8b2bdfa8f139d0"
-    },
-    "assets/guest/zoneinfo.zip": {
-      "files": 598,
-      "sha256": "73201f46f5314d7f252f04af03a5236ce9a4d0f64dcd0ff62c21315f760328d6"
-    },
-    "assets/mobile-python/runtime.zip": {
-      "files": 1284,
-      "sha256": "f54b7dd87aea02da1685216a569c6284849d40cdf4b040f9db14fd4180316de5"
+      "files": 58898,
+      "sha256": "8e9a19d14ddc0505662677ae375ae28df2d94a18452a54a4a2dfd99c36f402a1"
     },
     "assets/network-tools/tools.zip": {
       "files": 2049,
       "sha256": "0c296f70d619cc524a42aac45942538bfa060d588ab429523c6ff9e35e84c650"
     },
-    "dsh-lock": "3c27c74f5fb48b5b619b11242ee8c31b0d0508fa775d00b0f7d64c49456ccb19",
+    "assets/mobile-python/runtime.zip": {
+      "files": 1284,
+      "sha256": "f54b7dd87aea02da1685216a569c6284849d40cdf4b040f9db14fd4180316de5"
+    },
+    "assets/guest/zoneinfo.zip": {
+      "files": 598,
+      "sha256": "73201f46f5314d7f252f04af03a5236ce9a4d0f64dcd0ff62c21315f760328d6"
+    },
+    "sucrune-source-commit": "c21af1309a904c8ab916db2e22f35002b669a0e4",
+    "sucrune-libraries": [
+      "lib/arm64-v8a/libsucrune_core.so",
+      "lib/arm64-v8a/libsucrune_probe.so",
+      "lib/arm64-v8a/libsucrune_runner.so"
+    ],
     "native-third-party": {
       "files": 2,
       "sha256": "608f536b6c2705b42fa63510479dd1789e132b3d5dc1c6c24831fbc2094ebdee"
@@ -38,15 +34,19 @@
       "files": 5,
       "sha256": "b179e39ba917be1097a85f166d91c4f0d58d80bb40ade53c45c88f4f52da6436"
     },
-    "sucrune-libraries": [
-      "lib/arm64-v8a/libsucrune_core.so",
-      "lib/arm64-v8a/libsucrune_probe.so",
-      "lib/arm64-v8a/libsucrune_runner.so"
-    ],
-    "sucrune-source-commit": "c21af1309a904c8ab916db2e22f35002b669a0e4"
+    "android-notices": {
+      "files": 1,
+      "sha256": "a5a9f77d6b7f5b87ee99e2c014663b64f985451eab888308fb057dce3c5bbf0d"
+    },
+    "dsh-lock": "5cbfbd15eb821acadd0c7c6c5ebe7b0ab25d529101aba8cb9ecb348bccaf72d7",
+    "android-direct-dependencies": [
+      "com.github.MuntashirAkon:libadb-android:3.1.1",
+      "org.bouncycastle:bcprov-jdk15to18:1.81",
+      "org.conscrypt:conscrypt-android:2.5.3"
+    ]
   },
   "debianSourcesSha256": "668ce98a7419d77cca6e063392afe458fbe9f80ec306d91cf65df82791e4a70b",
-  "readme": "Project source, build instructions and patch sets: https://github.com/xiaoxiao44443/DSH-Sugar\nSucrune source: https://github.com/xiaoxiao44443/Sucrune/tree/c21af1309a904c8ab916db2e22f35002b669a0e4\nDeepSeek Harness: https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.2-rc.3\nNode.js source: https://nodejs.org/download/release/v24.22.2/node-v24.22.2.tar.xz\nThe npm lock in this archive lists pinned DSH distribution packages and their integrity hashes. npm 11.19.1 and pnpm 10.28.2 are separate command-line programs.\n\nAndroid libraries: LibADB Android 3.1.1 (Apache-2.0 option, component files also carry BSD/MIT notices), SPAKE2 Java 2.2.1 (LGPL-3.0; source included), Conscrypt Android 2.5.3, Bouncy Castle 1.81 and AndroidX.\n\nThe companion debian-corresponding-source.zip includes Debian source packages; debian/index.json maps the packaged binaries to Debian source versions. The guest package includes the LibreOffice kit WASM build sources, exact upstream checkout identifiers and patch series below guest/opt/dsh/node_modules/@deepseek-ai/libreoffice-kit-wasm/sources. The sharp/libvips build scripts are provided below runtime/sharp-libvips. Component notices retain their original terms.\n",
+  "readme": "Project source, build instructions and patch sets: https://github.com/xiaoxiao44443/DSH-Sugar\nSucrune source: https://github.com/xiaoxiao44443/Sucrune/tree/c21af1309a904c8ab916db2e22f35002b669a0e4\nDeepSeek Harness: https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.2-rc.5\nNode.js source: https://nodejs.org/download/release/v24.22.2/node-v24.22.2.tar.xz\nThe npm lock in this archive lists pinned DSH distribution packages and their integrity hashes. npm 11.19.1 and pnpm 10.28.2 are separate command-line programs.\n\nAndroid libraries: LibADB Android 3.1.1 (Apache-2.0 option, component files also carry BSD/MIT notices), SPAKE2 Java 2.2.1 (LGPL-3.0; source included), Conscrypt Android 2.5.3, Bouncy Castle 1.81 and AndroidX.\n\nThe companion debian-corresponding-source.zip includes Debian source packages; debian/index.json maps the packaged binaries to Debian source versions. The guest package includes the LibreOffice kit WASM build sources, exact upstream checkout identifiers and patch series below guest/opt/dsh/node_modules/@deepseek-ai/libreoffice-kit-wasm/sources. The sharp/libvips build scripts are provided below runtime/sharp-libvips. Component notices retain their original terms.\n",
   "schema": 1,
   "upstreamInputs": [
     {
@@ -125,7 +125,7 @@
       "archivePath": "deepseek/LICENSE",
       "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
       "size": 1065,
-      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/dsh-v0.2.2-rc.3/LICENSE"
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/dsh-v0.2.2-rc.5/LICENSE"
     },
     {
       "archivePath": "runtime/Sucrune-LICENSE",

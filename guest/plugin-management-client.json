@@ -1,6 +1,6 @@
 {
   "opt/dsh/node_modules/@deepseek-ai/dsh-api-remotes/lib/client.js": {
-    "sha256": "da5871765c379d1f9bde23bd90fef48eafdd5d51a57459b31792736176582d34",
+    "sha256": "6a81888db9a95237e2ec87f148c8db24ff4fc6eee1daef9918cbda2172395ef7",
     "edits": [
       [
         "parameters:[],result:{mode:`strict`,typeSymbol:`@deepseek-ai/dsh-plugin-manager#pluginManager/listBundles:result`",

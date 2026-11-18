@@ -11,7 +11,7 @@ import java.security.MessageDigest
 internal object SettingsDocumentPatch {
     private const val directory = "/opt/dsh/node_modules/@deepseek-ai/dsh-client-ui-settings-general/lib"
     private const val originalSize = 89954L
-    private const val originalDigest = "8c97e21e236706cdd0185e5a1a75aeb17cc26352b50e0cec4bfd0a8583b51055"
+    private const val originalDigest = "8afa93d21c3c695eb0b3a33672eaa72042a4052e5084f79ab221b4ac82052a51"
     private const val delegate = "onClick:()=>{controller.open()},"
     private const val adapted = "onClick:()=>{if(typeof window.__dshSugarOpenProfile===\"function\")window.__dshSugarOpenProfile();else controller.open()},\"data-sugar-open-settings\":true,"
 

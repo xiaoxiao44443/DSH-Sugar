@@ -4,7 +4,7 @@
 
 **在 Android 手机上运行 DeepSeek Harness。** 在熟悉的 DSH 对话里写代码、开终端、交付文件，也可以把当前屏幕或一块独立的虚拟屏交给 Agent 操作。DSH 和项目的 Linux 环境都运行在手机上，首次使用时在 WebUI 中配置模型供应商即可。
 
-**[下载 v0.2.0 APK](https://github.com/xiaoxiao44443/DSH-Sugar/releases/tag/v0.2.0)**　·　适用于 Android 10 及以上的 ARM64 手机，无需 root。
+**[下载 v0.2.1 APK](https://github.com/xiaoxiao44443/DSH-Sugar/releases/tag/v0.2.1)**　·　适用于 Android 10 及以上的 ARM64 手机，无需 root。
 
 [开始使用](#开始使用)　·　[从源码构建](#从源码构建)　·　[交流群](#交流群)
 
@@ -54,7 +54,7 @@
 
 也可以直接使用 **[GitHub Actions 云端打包](https://github.com/xiaoxiao44443/DSH-Sugar/actions/workflows/android-release.yml)**：手动运行生成已签名 APK，推送版本标签自动发布 Release。详见 [打包与发布说明](docs/github-builds.md)。
 
-项目包含 Android App、Kotlin Multiplatform 共享模块，以及将 DSH 与 Linux 工具打包到手机的脚本。当前打包的 DeepSeek Harness 版本为 **0.2.2-rc.3**。[DeepSeek Harness 上游](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-rc.3) · [Sucrune 运行时](https://github.com/xiaoxiao44443/Sucrune)
+项目包含 Android App、Kotlin Multiplatform 共享模块，以及将 DSH 与 Linux 工具打包到手机的脚本。当前打包的 DeepSeek Harness 版本为 **0.2.2-rc.5**。[DeepSeek Harness 上游](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-rc.5) · [Sucrune 运行时](https://github.com/xiaoxiao44443/Sucrune)
 
 <details>
 <summary><strong>Windows 构建步骤</strong></summary>
@@ -98,7 +98,7 @@ python scripts/prepare-toolbox-fixture.py
 
 ## 许可证
 
-DSH Sugar 的项目代码采用 MIT 许可证。DeepSeek Harness、Sucrune 和 APK 随附的 Linux 工具沿用各自的许可证。发布页随 APK 提供第三方告示和组件来源。[MIT 许可证](LICENSE) · [v0.2.0 发布页](https://github.com/xiaoxiao44443/DSH-Sugar/releases/tag/v0.2.0)
+DSH Sugar 的项目代码采用 MIT 许可证。DeepSeek Harness、Sucrune 和 APK 随附的 Linux 工具沿用各自的许可证。发布页随 APK 提供第三方告示和组件来源。[MIT 许可证](LICENSE) · [v0.2.1 发布页](https://github.com/xiaoxiao44443/DSH-Sugar/releases/tag/v0.2.1)
 
 ## 交流群
 

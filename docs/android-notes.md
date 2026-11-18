@@ -56,7 +56,7 @@ KMP 模块声明 Android、JVM、iOS 真机及 Apple Silicon 模拟器目标。�
 
 ## 首次启动与数据
 
-首次启动从 APK 解包并校验用户环境。DSH 0.2.2-rc.3 的基础 rootfs 展开后约占 942 MB（898 MiB）。附加工具层、APK 和用户数据需要额外空间。下次启动使用已安装环境。系统目录与 `/home/sugar`、`/workspace` 分开，DSH 的设置、会话和工作文件保存在 App 私有数据中。
+首次启动从 APK 解包并校验用户环境。DSH 0.2.2-rc.5 的基础 rootfs 展开后约占 942 MB（898 MiB）。附加工具层、APK 和用户数据需要额外空间。下次启动使用已安装环境。系统目录与 `/home/sugar`、`/workspace` 分开，DSH 的设置、会话和工作文件保存在 App 私有数据中。
 
 Sucrune 通过 `resident = true` 启动上游 `dsh web`。服务监听 `127.0.0.1` 的动态端口，宿主完成登录交换后才让 WebView 打开首页。首次使用模型时在 DSH 中配置供应商。APK 不含模型密钥。
 

@@ -22,16 +22,17 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
       if(performance.now()>until)return fail(Error('Missing DSH fixture'));setTimeout(next,10)}next()})`);
     if (round === 1) await evaluate(`localStorage.setItem(${JSON.stringify(storage)},'fr')`);
     for (const file of ['sugar-i18n.js','sugar-edge-nav.js','sugar-page-motion.js','sugar-pane-deck.js','sugar-splash-preview.js','sugar-splash-settings.js','sugar-mobile-controls.js','sugar-pets.js','sugar-storage.js','sugar-session-storage.js','sugar-workspace-files.js','sugar-recovery-page.js','sugar-shell.js']) await evaluate(read(file));
-    const prefs = {language,dimScreenDuringTasks,reducedMotion:true,splash:{showProgress:true,loadingText:'Custom 🐋',backgroundColor:'#FFFFFF'}};
+    const prefs = {language,dimScreenDuringTasks,reducedMotion:true,appInfo:{name:'DSH Sugar',version:'9.8.7-test',icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6C1sAAAAASUVORK5CYII='},splash:{showProgress:true,loadingText:'Custom 🐋',backgroundColor:'#FFFFFF'}};
     await evaluate(`SugarShell.mount(${JSON.stringify(prefs)},${JSON.stringify([read('sugar-settings.css'),read('sugar-pets.css'),read('sugar-workspace-files.css')].join('\n'))});
       window.rail=document.querySelector('#sugar-edge-navigation').shadowRoot;
       window.settings=()=>document.querySelector('#sugar-shell-settings').shadowRoot;
-      window.writes=[]; window.storageRequests=[]; window.sessionMessages=[]; window.workspaceMessages=[]; window.rootMessages=[]; window.editingSignals=0;
+      window.writes=[]; window.storageRequests=[]; window.sessionMessages=[]; window.workspaceMessages=[]; window.rootMessages=[]; window.editingSignals=0; window.sourceRequests=0;
       new Promise(ok=>{const c=new MessageChannel(); window.native=c.port1;
         native.onmessage=({data})=>{const msg=JSON.parse(data);if(msg.type==='state')ok();
           if(msg.type==='state'||msg.type==='sessionStorageQuery'||msg.type==='sessionStorageDelete'||msg.type==='sessionStorageOpen')sessionMessages.push(msg);
           if(msg.type==='settings')window.dimPreference=msg.dimScreenDuringTasks;
           if(msg.type==='editingInteraction')window.editingSignals++;
+          if(msg.type==='openSource')window.sourceRequests++;
           if(msg.type==='storageQuery')storageRequests.push(msg);
           if(msg.type.startsWith('workspaceFiles'))workspaceMessages.push(msg);
           if(msg.type.startsWith('root'))rootMessages.push(msg);
@@ -46,6 +47,30 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
     assert.equal(await evaluate(overview+".querySelector('[data-language],#sugar-task-screen')===null"),true);
     await evaluate(overview+".querySelector('[data-go=general]').click()");
     await paint();
+  }
+  async function checkAbout(language) {
+    await evaluate("settings().querySelector('[data-go=about]').click()");
+    await paint();
+    const info = await evaluate(`(() => { const page=settings().querySelector('[data-pane=about]');
+      return {visible:!page.hidden,name:page.querySelector('.about-name').textContent,
+        version:page.querySelector('[data-app-version]').textContent,
+        icon:page.querySelector('.about-icon').getAttribute('src'),iconVisible:!page.querySelector('.about-icon').hidden,
+        title:page.querySelector('h1').textContent,source:page.querySelector('[data-about-source]').textContent.trim()};})()`);
+    assert.equal(info.visible,true);
+    assert.equal(info.name,'DSH Sugar');
+    assert.equal(info.version,'9.8.7-test','About uses APK metadata rather than a hard-coded version');
+    assert.equal(info.iconVisible,true);
+    assert.match(info.icon,/^data:image\/png;base64,/);
+    assert.deepEqual([info.title,info.source],{
+      zh:['关于','在 GitHub 查看源码'],en:['About','View source on GitHub'],ja:['このアプリについて','GitHub でソースコードを見る']
+    }[language]);
+    const before=await evaluate('sourceRequests');
+    await evaluate("settings().querySelector('[data-about-source]').click()");
+    await paint();
+    assert.equal(await evaluate('sourceRequests'),before+1,'source link delegates to the native browser');
+    await evaluate("rail.querySelector('[data-action=back]').click()");
+    await paint();
+    assert.equal(await evaluate("settings().querySelector('[data-pane=general]').hidden"),false,'Back from About returns to General');
   }
   async function checkEditingInteraction() {
     await evaluate(`{
@@ -555,6 +580,7 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
   try {
     await load(undefined,1);
     await state('zh');
+    await checkAbout('zh');
     const screenSwitch = "settings().querySelector('#sugar-task-screen')";
     assert.equal(await evaluate(screenSwitch+".getAttribute('aria-checked')"),'true');
     await evaluate(screenSwitch+'.click()'); await paint();
@@ -564,6 +590,7 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
       await evaluate(`settings().querySelector('[data-language=${language}]').click()`);
       await paint();
       await state(language);
+      await checkAbout(language);
       assert.equal(await evaluate('writes.at(-1)'),language,'selection reaches the native preference');
       await evaluate(`native.postMessage(JSON.stringify({type:'languageState',language:'${language}'}))`);
       await paint();
