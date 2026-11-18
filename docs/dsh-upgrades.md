@@ -26,3 +26,11 @@ node scripts/check-recovery-profile.mjs
 解压测试 APK 随附的 `DSH-Sugar-recovery-qa.zip`，在连接 ADB 的真机上打开一个空白诊断环境，从解压目录运行 `node check-recovery-messages.cjs`（Node 22+，`adb` 在 PATH 或通过 `ADB` 指定）。换到另一种诊断模式后再运行一次。脚本会启动和关闭[本机测试模型](../scripts/recovery-test-model.cjs)，建立并清理本次端口转发；多台手机可通过 `ANDROID_SERIAL` 选择。涉及目录选择器、项目路由、文件交付或其他插件接口的上游改动，还应运行对应功能的专项验收。
 
 WebUI 更新后，还要在真机横竖屏查看预览说明页和登录页的安全区，从 HTML 预览 iframe 边缘拖动导航，确认目录选择器仍有手机目录入口，并检查文件菜单是否出现重复操作项。这些布局和触摸行为需在实际 WebView 中验收。
+
+## 普通主页面拖动
+
+插件管理、插件市场、自动化任务及第三方主面板共用 `main` slot。Sugar 从 `[data-slot="main"]` 的父级 MainPanel、再上一层 CenterColumn 定位稳定页面盒；升级时核对这层结构，不按插件 ID 添加手势分支。
+
+普通面板参与的拖动只预览内存中的静态副本，松手确认后才切换真实路由。DSH 切换 main entry 会卸载局部组件，不能先切页再在取消时切回，否则搜索、选中项和展开状态可能重置。副本不保留输入值，未缓存或不能安全捕获时保持原页到提交。抽屉、文档 dock 和 Sugar 设置继续使用各自容器策略。
+
+运行 `node scripts/check-mobile-navigation.cjs`、`node scripts/check-page-motion.cjs`、`node scripts/check-edge-nav.cjs --pane-deck` 和 `node scripts/check-edge-nav.cjs --shell-history`。真机分别进入上述三类页面，检查往返、拖过四分之一再反向拖回、取消、滚动后的预览，以及拖动中页面选择和输入内容不变。浏览器回归也覆盖未知第三方 panel ID 和缺少元素级 View Transition 的情况。

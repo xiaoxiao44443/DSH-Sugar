@@ -106,9 +106,19 @@
     handlers.push(() => object.removeEventListener(event, handler, options));
   }
 
+  function mainSurface() {
+    // DSH documents stable slot anchors. The main slot uses display:contents,
+    // inside MainPanel inside the persistent center column; never animate the anchor.
+    return document.querySelector('[data-slot="main"]')?.parentElement?.parentElement ||
+      document.querySelector('.pI_x6G_centerCol');
+  }
   function pageSurface() {
-    return document.querySelector('[data-sidebar-right-panel][data-sidebar-right-open]') ||
-      document.querySelector('.pI_x6G_centerCol') || document.querySelector('main');
+    return document.querySelector('[data-sidebar-right-panel][data-sidebar-right-open]:not([data-sidebar-right-open="false"])') ||
+      mainSurface() || document.querySelector('main');
+  }
+  function isMainSurface(node) {
+    return node && node !== document.body && node !== document.documentElement &&
+      (node === mainSurface() || node.matches('.pI_x6G_centerCol'));
   }
 
   // One small gradient travels with the focus pull. It never receives input or covers the rail.
@@ -350,7 +360,7 @@
       scrolled.add(node);
     const nodes = column.querySelectorAll('*'), copies = page.querySelectorAll('*');
     for (let i = 0; i < nodes.length; i++) {
-      if (!scrolled.has(nodes[i])) continue;
+      if (current >= 0 && !scrolled.has(nodes[i])) continue;
       const left = nodes[i].scrollLeft, top = nodes[i].scrollTop;
       if (left || top) scroll.push([copies[i], left, top]);
     }
@@ -381,19 +391,21 @@
     return {key, page, scroll:scroll.filter(([node]) => page.contains(node)), bottom:layout.paddingBottom,
       viewportWidth:innerWidth, height:column.getBoundingClientRect().height, paper:pagePaper(column)};
   }
-  // Only the most recent populated peer is retained, in this document's memory.
-  // Take it when leaving a conversation, never on each streaming token or pointer move.
+  // Only the most recent peer is retained, in this document's memory.
+  // Panels share this path with chats; no plugin IDs or per-page selectors are needed.
+  // Take it when leaving a page, never on each streaming token or pointer move.
   let peerPaper, homePaper, homeObserver, homeFrame = 0, homeKey;
   function rememberPeer(column, key) {
-    if (!key || !column?.matches('.pI_x6G_centerCol')) return;
+    if (!key || !isMainSurface(column)) return;
     const regions = [...column.querySelectorAll('[data-conversation-content]')];
     const current = regions.findIndex(el => el.matches(chatRegion) && el.getBoundingClientRect().height &&
       el.querySelector(chatRow) && getComputedStyle(el).visibility === 'visible');
-    if (current < 0) return;
-    // Very large chats can use the browser's scoped capture without cloning their DOM on input.
+    const panel = Boolean(column.querySelector('[data-global-panel]:not([data-global-panel="false"])'));
+    if (current < 0 && !panel) return;
+    // Bound the replica size. Large chats can use scoped capture; uncached panels wait for release.
     if (column.getElementsByTagName('*').length > 3500) { peerPaper = null; return; }
-    peerPaper = snapshot(column, current, key);
-    peerPaper.session = regions[current].getAttribute('data-conversation-session');
+    peerPaper = snapshot(column, panel ? -1 : current, key);
+    peerPaper.session = panel ? null : regions[current].getAttribute('data-conversation-session');
   }
   function stopWatchingHome() {
     homeObserver?.disconnect(); homeObserver = null;
@@ -408,7 +420,7 @@
     homePaper = null;
     function remember() {
       homeFrame = 0;
-      const column = document.querySelector('.pI_x6G_centerCol');
+      const column = mainSurface();
       if (!column) return;
       const regions = [...column.querySelectorAll('[data-conversation-content]')];
       const current = regions.indexOf(visibleHero(column));
@@ -460,8 +472,7 @@
       peerPaper.viewportWidth === innerWidth && Math.abs(peerPaper.height-original.getBoundingClientRect().height) < 1 ? peerPaper : null;
     const saved = savedHome || savedPeer;
     const fixedSurface = webRoute || Boolean(peerTarget || homeTarget);
-    const scope = !saved && captureScope === original && original.matches('.pI_x6G_centerCol') &&
-      original !== document.body && original !== document.documentElement &&
+    const scope = canStage && !saved && captureScope === original && isMainSurface(original) &&
       typeof original.startViewTransition === 'function' ? original : null;
     const bounds = (scope || original).getBoundingClientRect();
     const sourceSession = scope && populatedSession(scope);
@@ -682,7 +693,7 @@
     const gesture = {update, finish};
     drag = gesture;
     if (originKey && !quiet()) rememberPeer(original, originKey);
-    const source = !saved && !scope && originKey && (originKey === peerPaper?.key ? peerPaper :
+    const source = canStage && !saved && !scope && originKey && (originKey === peerPaper?.key ? peerPaper :
       originKey === homePaper?.key ? homePaper : null);
     if ((saved || source) && !quiet() && original.animate) showPaper(saved || source, Boolean(saved));
     else if (!scope && !fixedSurface) showLive(original, false);
@@ -701,7 +712,7 @@
   watch(document, 'compositionend', () => { composing = false; lastInput = performance.now(); }, true);
   watch(document, 'input', () => { lastInput = performance.now(); cancel(); }, true);
   const api = {
-    play, playBetween, register, releaseTiming, watchHome, rememberPeer, beginDrag, cancel: stopAll,
+    play, playBetween, register, releaseTiming, surface: pageSurface, watchHome, rememberPeer, beginDrag, cancel: stopAll,
     setReduced(value) {
       if (reduced === (value === true)) return;
       reduced = value === true;

@@ -85,7 +85,7 @@ window.__ModuleLoader__.load({
           canBack: Boolean(!busy && current && (drawer || parent(current) || peek(past))),
           canForward: Boolean(!busy && current && peek(future)),
           busy, drawerOpen: drawer, rightPanelOpen: Boolean(current?.right),
-          previewable: Boolean(current && !current.panel && !current.right && !drawer && !busy),
+          previewable: Boolean(current && !current.right && !drawer && !busy),
           isHome: Boolean(current?.home && !current.panel && !current.right && !drawer),
           routeKey: routeKey(current, drawer)
         };
@@ -253,7 +253,7 @@ window.__ModuleLoader__.load({
       function previewTarget(command) {
         if (disposed || busy || !current || drawerOpen()) return null;
         const target = command === 'back' ? backTarget(current) : command === 'forward' ? peek(future) : null;
-        return target ? {key: routeKey(target, false), previewable: !target.panel && !target.right} : null;
+        return target ? {key: routeKey(target, false), previewable: !target.right} : null;
       }
       function canStage(command) {
         if (disposed || busy) return false;
@@ -264,6 +264,9 @@ window.__ModuleLoader__.load({
         else if (command === 'back') target = backTarget(current);
         else if (command === 'forward') target = peek(future);
         if (!target || same(target, current)) return false;
+        // Selecting a main-slot panel unmounts its local React state. Preview an inert
+        // picture, but do not change the live route until the gesture is committed.
+        if (current.panel || target.panel) return false;
         if (!target.home || same(base(current), base(target))) return true;
         // An exact retained blank can be reopened without a remote create. A gesture that might
         // create a new session must wait for release, even if an old cached blank is listed.
@@ -512,9 +515,10 @@ window.__ModuleLoader__.load({
         const canReach = () => !disposed && reachable(page);
         const mark = {
           key: routeKey(page, drawer),
-          previewable: !page.right && !page.panel && !drawer,
+          previewable: !page.right && !drawer,
           reachable: canReach,
-          canStage: () => canReach() && !busy && (!page.home || same(base(read() || {}), base(page)) || canReopenBlank(page)),
+          canStage: () => canReach() && !busy && !page.panel && !read()?.panel &&
+            (!page.home || same(base(read() || {}), base(page)) || canReopenBlank(page)),
           async restore() {
             if (busy || !canReach()) return false;
             busy = true; publish();

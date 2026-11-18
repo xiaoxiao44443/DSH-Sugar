@@ -230,6 +230,27 @@ function fixture(host = '127.0.0.1', freshProfile = false) {
   assert.equal(nav.action('home'), false);
   assert.equal(fixture('example.test').window.SugarNavigation, undefined);
 
+  // Built-in and third-party global panels share the same page preview contract.
+  // A page-specific whitelist would make every newly installed panel regress.
+  for (const panelId of ['plugins','dsh-market','schedules','external.vendor.toolbox']) {
+    const panels=fixture(), pages=panels.window.SugarNavigation;
+    const conversation=pages.bookmark();
+    panels.setPanel(panelId);panels.publish();await settle();
+    const panel=pages.bookmark();
+    assert.equal(pages.state().previewable,true,panelId+' has a generic page surface');
+    assert.equal(panel.previewable,true,panelId+' can retain an inert visual bookmark');
+    assert.notEqual(panel.key,conversation.key);
+    assert.equal(panel.canStage(),false,'panel visits wait for commit');
+    assert.equal(conversation.canStage(),false,'leaving a panel must not unmount its form during preview');
+    assert.equal(pages.canStage('back'),false);
+    assert.equal(await conversation.restore(),true);
+    assert.equal(panel.canStage(),false,'entering a panel also waits for commit');
+    assert.equal(panels.panel(),null);
+    assert.equal(await panel.restore(),true);
+    assert.equal(panels.panel(),panelId,'panel identity survives round-trip history');
+    panels.dispose();
+  }
+
   const g = fixture(), other = g.window.SugarNavigation;
   assert.equal(other.canStage('back'), false, 'first-time fallback home must wait for drop');
   g.cancelNext();

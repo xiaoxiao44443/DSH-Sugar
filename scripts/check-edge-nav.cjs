@@ -1120,6 +1120,124 @@ async function checkScopedPages({evaluate, paint, send}) {
   assert.deepEqual(await evaluate("[unsafeChanges,scopedPage.textContent]"),[1,'next']);
   await evaluate("document.getElementById('home-inset-test').remove();SugarPageMotion.dispose();scopedPage.remove();document.body.style.removeProperty('background-color')");
 }
+// Global panels unmount their local editor state when another route is selected.
+// Exercise the inert preview path on both current and older WebViews; this check
+// deliberately does not depend on scoped view-transition support or a CSS hash.
+async function checkGlobalPages({evaluate, paint, send}) {
+  await evaluate(readFileSync(join(assets,'sugar-page-motion.js'),'utf8'));
+  await evaluate(`document.body.style.cssText='margin:0;background:rgb(140,55,40)';
+    document.body.innerHTML='<main class="upstream-column-renamed" style="width:100vw;height:100vh"><div data-global-panel="true" style="height:100%"><div data-slot="main" style="height:100%"></div></div></main>';
+    window.globalColumn=document.querySelector('[data-slot="main"]').parentElement.parentElement;
+    window.globalSlot=document.querySelector('[data-slot="main"]');
+    window.globalCommits=0;
+    window.renderGlobalPage=id=>{
+      globalSlot.innerHTML='<section data-panel-page="'+id+'" style="position:relative;height:100%;background:rgb(140,55,40)">'+
+        '<h1 style="margin:0">'+id+'</h1><input class="panel-query" value="unsaved panel text">'+
+        '<input type="password" value="private secret">'+
+        '<div class="panel-mark" style="position:absolute;left:4px;right:4px;top:130px;height:11px;background:rgb(238,38,53)"></div>'+
+        '<div class="panel-scroll" style="position:absolute;top:180px;height:40px;width:200px;overflow:auto"><div style="height:300px">panel list</div></div></section>';
+      const input=globalSlot.querySelector('.panel-query'), scroll=globalSlot.querySelector('.panel-scroll');
+      input.value='unsaved '+id;scroll.scrollTop=62;scroll.dispatchEvent(new Event('scroll'));
+      return input;
+    };
+    window.nativeGlobalTransition=globalColumn.startViewTransition;`);
+  const previewPositions=[.03,.24,.26,.55,.12,.8];
+  for (const legacy of [false,true]) {
+    await evaluate(`globalColumn.startViewTransition=${legacy?'undefined':'nativeGlobalTransition'};`);
+    for (const panelId of ['plugins','dsh-market','schedules','external.vendor.toolbox']) {
+      await evaluate(`renderGlobalPage(${JSON.stringify(panelId)});
+        SugarPageMotion.rememberPeer(globalColumn,${JSON.stringify('panel/'+panelId)});`);
+      for (const direction of ['back','forward']) {
+        await evaluate(`window.originalEditor=renderGlobalPage('source');
+          globalSlot.querySelector('.panel-mark').style.backgroundColor='rgb(140,55,40)';
+          window.originalPanel=globalSlot.firstElementChild;
+          window.panelPreview=SugarPageMotion.beginDrag({direction:'${direction}',target:()=>globalColumn,
+            peerTarget:${JSON.stringify('panel/'+panelId)},webRoute:true,canStage:false,
+            captureScope:globalColumn,captureAllowed:()=>true,
+            navigate:()=>{++globalCommits;renderGlobalPage(${JSON.stringify(panelId)});return true},
+            restore:()=>{throw Error('a cancelled global panel preview must not remount the editor')}});`);
+        const before=await evaluate('globalCommits');
+        for (const p of previewPositions) {
+          const pose=await evaluate(`(()=>{panelPreview.update(${p});
+            const layer=document.querySelector('[data-sugar-peer-preview]');
+            if(!layer)throw Error('No generic panel preview for ${panelId}');
+            const mark=layer.querySelector('.panel-mark').getBoundingClientRect();
+            return [layer.inert,layer.querySelector('[data-panel-page]').dataset.panelPage,
+              Math.round(mark.left),Math.round(mark.right),layer.querySelector('.panel-query').value,
+              !!layer.querySelector('input[type=password]'),layer.querySelector('.panel-scroll').scrollTop,
+              globalCommits,originalEditor===globalSlot.querySelector('.panel-query'),originalEditor.value,
+              globalSlot.querySelector('.panel-scroll').scrollTop,getComputedStyle(globalColumn).transform];})()`);
+          assert.deepEqual(pose,[true,panelId,4,386,'',false,62,before,true,'unsaved source',62,'none'],
+            `${panelId}: ${legacy?'legacy':'current'} ${direction} at ${p} keeps the editor mounted and the preview fixed`);
+          await paint();
+          const {data}=await send('Page.captureScreenshot',{format:'png',clip:{x:0,y:133,width:390,height:4,scale:1}});
+          const edges=await evaluate(`(async()=>{const img=new Image();img.src='data:image/png;base64,${data}';await img.decode();
+            const c=new OffscreenCanvas(img.width,img.height).getContext('2d');c.drawImage(img,0,0);
+            return [8,382].map(x=>[...c.getImageData(x,1,1,1).data].slice(0,3))})()`);
+          const old=[140,55,40], next=[238,38,53];
+          assert.deepEqual(edges,direction==='back'?[next,old]:[old,next],
+            `${panelId}: no duplicate page or jump around the former 25% route threshold`);
+        }
+        await evaluate('panelPreview.finish(false,true)');
+        assert.deepEqual(await evaluate(`[globalCommits,originalPanel===globalSlot.firstElementChild,
+          originalEditor===globalSlot.querySelector('.panel-query'),originalEditor.value,
+          globalSlot.querySelector('.panel-scroll').scrollTop,!!document.querySelector('[data-sugar-peer-preview]')]`),
+          [before,true,true,'unsaved source',62,false],'cancel preserves the exact source form and its scroll');
+      }
+      await evaluate(`window.committedPanel=SugarPageMotion.beginDrag({direction:'back',target:()=>globalColumn,
+        peerTarget:${JSON.stringify('panel/'+panelId)},webRoute:true,canStage:false,
+        navigate:()=>{++globalCommits;renderGlobalPage(${JSON.stringify(panelId)});return true}});
+        committedPanel.update(.6);`);
+      const before=await evaluate('globalCommits');
+      await evaluate('Promise.all([committedPanel.finish(true,true),committedPanel.finish(true,true)])');
+      assert.deepEqual(await evaluate(`[globalCommits,globalSlot.firstElementChild.dataset.panelPage,
+        !!document.querySelector('[data-sugar-peer-preview]')]`),[before+1,panelId,false],
+        'a committed panel route is selected once, after release');
+    }
+  }
+  // Retaining the page being left is independent of permission to stage its route.
+  // A cancelled first visit must not show a clipped copy of the source over itself,
+  // yet that retained picture should be usable for a later return to the panel.
+  for (const legacy of [false,true]) {
+    const origin='retained-origin-'+legacy, key='panel/'+origin;
+    await evaluate(`globalColumn.startViewTransition=${legacy?'undefined':'nativeGlobalTransition'};
+      window.retainedEditor=renderGlobalPage(${JSON.stringify(origin)});window.retainedChanges=0;
+      window.retaining=SugarPageMotion.beginDrag({direction:'back',target:()=>globalColumn,
+        originKey:${JSON.stringify(key)},peerTarget:'uncached-return-target',webRoute:true,canStage:false,
+        captureScope:globalColumn,captureAllowed:()=>true,
+        navigate:()=>{++retainedChanges;renderGlobalPage('uncached-return-target');return true},
+        restore:()=>{throw Error('retaining an inert panel picture must not switch routes')}});
+      retaining.update(.24);retaining.update(.26);retaining.update(.7);`);
+    assert.deepEqual(await evaluate(`[retainedChanges,retainedEditor===globalSlot.querySelector('.panel-query'),
+      retainedEditor.value,!!document.querySelector('[data-sugar-peer-preview]'),
+      globalColumn.hasAttribute('data-sugar-drag-scope'),getComputedStyle(globalColumn).transform]`),
+      [0,true,'unsaved '+origin,false,false,'none'],
+      'canStage=false caches the source without manufacturing a source-only transition');
+    await evaluate('retaining.finish(false,true)');
+    assert.deepEqual(await evaluate(`[retainedChanges,retainedEditor===globalSlot.querySelector('.panel-query'),
+      globalSlot.querySelector('.panel-scroll').scrollTop]`),[0,true,62]);
+    await evaluate(`renderGlobalPage('after-cancel');window.returningToPanel=SugarPageMotion.beginDrag({
+      direction:'forward',target:()=>globalColumn,peerTarget:${JSON.stringify(key)},webRoute:true,canStage:false,
+      navigate:()=>{throw Error('the cached return remains a preview')}});returningToPanel.update(.4);`);
+    assert.deepEqual(await evaluate(`(()=>{const layer=document.querySelector('[data-sugar-peer-preview]');return [
+      layer?.querySelector('[data-panel-page]').dataset.panelPage,layer?.querySelector('.panel-query').value,
+      layer?.querySelector('.panel-scroll').scrollTop,globalSlot.firstElementChild.dataset.panelPage,retainedChanges]})()`),
+      [origin,'',62,'after-cancel',0],
+      'originKey refreshes the panel cache even when the earlier drag could not stage and was cancelled');
+    await evaluate('returningToPanel.finish(false,true)');
+  }
+  await evaluate(`window.originalEditor=renderGlobalPage('source');window.missingCommit=0;
+    window.missingPanel=SugarPageMotion.beginDrag({direction:'forward',target:()=>globalColumn,
+      peerTarget:'uncached-panel',webRoute:true,canStage:false,
+      navigate:()=>{++missingCommit;renderGlobalPage('uncached-panel');return true}});
+    missingPanel.update(.24);missingPanel.update(.26);missingPanel.update(.8);`);
+  assert.deepEqual(await evaluate(`[missingCommit,originalEditor===globalSlot.querySelector('.panel-query'),
+    getComputedStyle(globalColumn).transform,!!document.querySelector('[data-sugar-peer-preview]')]`),
+    [0,true,'none',false],'an uncached global panel waits for release without staging or shifting the live editor');
+  await evaluate('missingPanel.finish(true,true)');
+  assert.deepEqual(await evaluate('[missingCommit,globalSlot.firstElementChild.dataset.panelPage]'),[1,'uncached-panel']);
+  await evaluate('SugarPageMotion.dispose();globalColumn.remove();document.body.style.removeProperty("background")');
+}
 async function checkPaneDeck({evaluate, paint, send}) {
   await evaluate(readFileSync(join(assets,'sugar-page-motion.js'),'utf8'));
   await evaluate(readFileSync(join(assets,'sugar-pane-deck.js'),'utf8'));
@@ -1919,6 +2037,7 @@ async function run() {
   await evaluate(readFileSync(join(assets,'sugar-i18n.js'),'utf8'));
   if (historyMode) return checkShellHistory({evaluate,touch,tap,swipeAt,paint,screen,send});
   if (deckMode) {
+    await checkGlobalPages({evaluate,paint,send});
     await checkScopedPages({evaluate,paint,send});
     return checkPaneDeck({evaluate,paint,send});
   }

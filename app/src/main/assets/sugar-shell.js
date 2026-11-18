@@ -748,7 +748,7 @@
   }
   function surface() {
     return tab ? root.querySelector('[data-pane="' + tab + '"]') :
-      document.querySelector('[data-sidebar-right-panel][data-sidebar-right-open]:not([data-sidebar-right-open="false"])') || document.querySelector('.pI_x6G_centerCol');
+      motion?.surface?.() || document.querySelector('.pI_x6G_centerCol');
   }
   // Only settle the scrub after the DSH session/panel change has actually committed.
   function dshAction(direction) {
@@ -865,11 +865,12 @@
         && navigation?.beginPanelDrag?.(direction, target?.mark, revealSide, draw);
       const pair = panel || settingsDrag(target, revealSide, motionDirection, draw);
       const previewable = !pair && !tab && target?.mark?.previewable && canPreviewPage();
-      const scope = previewable && canStage && canCaptureContent() ? surface() : null;
+      const remember = previewable && canCaptureContent();
+      const scope = remember && canStage ? surface() : null;
       const gesture = pair ? {update: p => pair.update(p), cancel: () => pair.cancel?.(),
         finish: (commit, _instantly, timing) => pair.finish(commit, traverse, timing)} : motion.beginDrag({direction:motionDirection, target:surface, canStage,
         captureScope: scope, homeTarget: previewable ? target.key : null,
-        peerTarget: previewable ? target.key : null, originKey: scope ? origin?.key : null,
+        peerTarget: previewable ? target.key : null, originKey: remember ? origin?.key : null,
         webRoute: !tab && nav.previewable && target?.mark?.previewable,
         captureAllowed: () => canPreviewPage() && canCaptureContent(), onProgress: draw,
         navigate: traverse,
