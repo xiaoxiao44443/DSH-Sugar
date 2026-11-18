@@ -37,7 +37,7 @@ WebUI 更新后，还要在真机横竖屏查看预览说明页和登录页的�
 
 ## 0.2.2-rc.5 适配记录
 
-本次固定 npm 官方发布的 328 个 DSH rc.5 包，保留其余依赖版本与 Linux ARM64 glibc 选择，共 671 个安装路径。使用 npm 11.16.0 的完整锁执行 `npm ci --os=linux --cpu=arm64 --libc=glibc --omit=dev --ignore-scripts` 验证后，记录各 tarball 的 SHA-512。
+本次固定 npm 官方发布的 327 个 DSH rc.5 包，保留其余依赖版本与 Linux ARM64 glibc 选择，共 671 个安装路径。使用 npm 11.16.0 的完整锁执行 `npm ci --os=linux --cpu=arm64 --libc=glibc --omit=dev --ignore-scripts` 验证后，记录各 tarball 的 SHA-512。
 
 适配逻辑保持不变，只更新三处编译摘要：设置模块显示版本、客户端发布 commit、远程接口的源码位置行号。28 个工作区/插件创建补丁的摘要与替换锚点均在最终镜像中核对；插件管理和配置解析补丁仍可严格应用。发布配套依赖清单同步更新，Sucrune、Node、工具链和第三方许可证保持不变。
 
