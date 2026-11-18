@@ -80,7 +80,8 @@ def project_patch_targets(project: Path) -> set[str]:
         for line in (project / relative).read_text(encoding="utf-8").splitlines():
             if line.startswith("+++ b/"):
                 targets.add(safe_name(line[6:]))
-    targets.update(read_json(project / "guest/plugin-management-client.json"))
+    for relative in ("guest/plugin-management-client.json", "guest/local-connection-client.json"):
+        targets.update(read_json(project / relative))
     for name in targets - {"opt/sugar/browser-handoff.cjs"}:
         if not name.startswith("opt/dsh/node_modules/@deepseek-ai/") or not name.endswith(".js"):
             raise ValueError(f"Unexpected declared Sugar patch target: {name}")

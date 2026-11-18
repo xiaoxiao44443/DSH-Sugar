@@ -19,7 +19,7 @@ DSH_VERSION = "0.2.2-rc.5"
 BASE_LAYERS = ("linux-rootfs", "linux-bash", "linux-stty", "linux-node-pty")
 HERE = Path(__file__).resolve().parents[1]
 DSH_PATCHES = (HERE / "guest/plugin-management.patch", HERE / "guest/profile-resolution.patch")
-DSH_CLIENT_PATCH = HERE / "guest/plugin-management-client.json"
+DSH_CLIENT_PATCHES = (HERE / "guest/plugin-management-client.json", HERE / "guest/local-connection-client.json")
 
 
 def digest(path, algorithm="sha256"):
@@ -71,7 +71,12 @@ class Rootfs:
             checked_name(line[6:]): None
             for line in self.patch.splitlines() if line.startswith("+++ b/")
         }
-        self.client_edits = json.loads(DSH_CLIENT_PATCH.read_bytes())
+        self.client_edits = {}
+        for manifest in DSH_CLIENT_PATCHES:
+            edits = json.loads(manifest.read_bytes())
+            if self.client_edits.keys() & edits.keys():
+                raise ValueError("Overlapping DSH client patch targets")
+            self.client_edits.update(edits)
         if not self.patch_targets or not self.client_edits or self.patch_targets.keys() & self.client_edits.keys():
             raise ValueError("Missing or overlapping DSH patch targets")
         if any(not checked_name(name).startswith("opt/dsh/node_modules/@deepseek-ai/")
@@ -199,7 +204,7 @@ def main():
     toolbox = repo / ".build/linux-test-assets/linux-toolbox/profile.bin"
     pin_path = HERE / "scripts/dsh-linux-arm64-lock.json"
     handoff = HERE / "guest/browser-handoff.cjs"
-    inputs = [Path(__file__), *DSH_PATCHES, DSH_CLIENT_PATCH, handoff, pin_path, toolbox] + [layer_root / layer / "manifest.json" for layer in BASE_LAYERS]
+    inputs = [Path(__file__), *DSH_PATCHES, *DSH_CLIENT_PATCHES, handoff, pin_path, toolbox] + [layer_root / layer / "manifest.json" for layer in BASE_LAYERS]
     input_hash = hashlib.sha256("".join(digest(path) for path in inputs).encode()).hexdigest()
     output = args.out / "guest"
     output.mkdir(parents=True, exist_ok=True)

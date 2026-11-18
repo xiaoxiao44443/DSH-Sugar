@@ -1,4 +1,4 @@
-"""Check Sugar's settings and recovery integration against the prepared DSH rootfs."""
+"""Check Sugar's settings, local connection and recovery integration against the prepared DSH rootfs."""
 import argparse
 import hashlib
 import json
@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 from zipfile import BadZipFile, ZipFile
 
 
@@ -76,6 +77,14 @@ def check_dependencies(bundle, unpacked):
     print(f"Recovery package entries OK: {len(paths)} checked", flush=True)
 
 
+def check_connection(bundle):
+    # Exercise the exact shipped browser module, including its real retry controller.
+    with tempfile.TemporaryDirectory(prefix="sugar-connection-") as directory:
+        browser = Path(directory) / "client.browser.js"
+        browser.write_bytes(bundle.read(MODULES + "@deepseek-ai/dsh-client-connection/lib/client.browser.js"))
+        subprocess.run(["node", ROOT / "scripts/check-local-connection.cjs", browser], check=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("rootfs", nargs="?", type=Path,
@@ -86,6 +95,7 @@ def main():
         version = json.loads(bundle.read(MODULES + "@deepseek-ai/dsh/package.json"))["version"]
         print(f"DSH {version} in {args.rootfs}", flush=True)
         check_settings(bundle)
+        check_connection(bundle)
         check_dependencies(bundle, args.host_dsh)
     if args.host_dsh:
         subprocess.run(["node", ROOT / "scripts/check-recovery-preset.mjs", args.host_dsh.resolve()], check=True)

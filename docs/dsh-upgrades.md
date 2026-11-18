@@ -1,6 +1,6 @@
 # DSH 升级验收
 
-从 DSH Sugar 项目根目录运行。Sugar 在 `scripts/dsh-linux-arm64-lock.json` 中固定 DSH 的发布版本和目标依赖。该锁记录 npm 11.16.0 按 `--os=linux --cpu=arm64 --libc=glibc --omit=dev --ignore-scripts` 安装时选中的包路径、版本、官方 tarball URL 和 SHA-512。准备脚本逐包校验，再应用 `guest/` 中的适配。Sucrune 提供 Linux 用户环境和 Node。`scripts/build-android.ps1` 会在准备镜像后、调用 Gradle 前自动检查实际打包的设置按钮和诊断依赖。`-SkipGuestPreparation` 会对现有镜像执行同一检查。直接使用 Gradle 时，先运行该入口。
+从 DSH Sugar 项目根目录运行。Sugar 在 `scripts/dsh-linux-arm64-lock.json` 中固定 DSH 的发布版本和目标依赖。该锁记录 npm 11.16.0 按 `--os=linux --cpu=arm64 --libc=glibc --omit=dev --ignore-scripts` 安装时选中的包路径、版本、官方 tarball URL 和 SHA-512。准备脚本逐包校验，再应用 `guest/` 中的适配。Sucrune 提供 Linux 用户环境和 Node。`scripts/build-android.ps1` 会在准备镜像后、调用 Gradle 前自动检查实际打包的设置按钮、本地连接恢复行为和诊断依赖。`-SkipGuestPreparation` 会对现有镜像执行同一检查。直接使用 Gradle 时，先运行该入口。
 
 ```sh
 python scripts/check-dsh-upgrade.py
@@ -46,3 +46,13 @@ rc.5 的搜索自动选择由 DSH 自身处理。用户显式保存的提供方�
 本机验收：最终镜像的设置/恢复入口、真实 Host 普通/恢复预设、恢复配置隔离、工作区路径/子智能体/终端/沙箱、手机操作插件，以及四项前端导航回归通过。
 
 真机验收（2026-11-18，PKR110 / Android 15）：同签名覆盖安装后确认运行 rc.5；主配置、会话文件名集合和工作区元数据摘要一致。会话历史、工作区文件及目录选择服务可读。临时配置和内置 DSH 两种恢复模式各完成两轮本地测试模型对话，重开与重载后的历史一致，结束后临时会话清理完成。插件管理、插件市场、自动化任务三页的取消保留 DOM 与往返导航通过。通用的关于页显示安装包名称/图标/版本，源码入口经手机默认浏览器打开仓库。
+
+## 本地连接与离线状态
+
+Sugar 的 WebUI 固定通过 `http://127.0.0.1:<port>/` 连接手机内的 DSH。Android WebView 可能保留 `navigator.onLine = false`，即使本地 Host 仍可达；上游据此暂停重试，显示「连接异常，刷新重试」。
+
+`guest/local-connection-client.json` 只为这个 HTTP 回环页面跳过浏览器在线状态监听，保持真实握手、WebSocket 断开、超时及退避重连逻辑。它不改全局 `navigator.onLine`、不伪造连接成功，也不改变远程页面的离线行为。打包对官方浏览器模块进行 SHA-256 和唯一替换锚点校验；升级 DSH 时需重新审查。
+
+`check-dsh-upgrade.py` 从最终 rootfs 取出浏览器模块，交给 `check-local-connection.cjs` 检查离线启动、离线事件、本地真实断线重试、远程离线暂停与上线恢复。运行时内容变化仍通过镜像摘要更新，现有配置、会话和工作区数据沿用。
+
+真机验收（2026-11-19，Android 15）：原签名覆盖安装后，在网页内模拟 `navigator.onLine = false` 与 offline 事件，既有本地连接保持；主动关闭真实 /api/remote.mux WebSocket 后，约 0.55 秒自动恢复到下一代连接，页面未刷新，未点击手动重连。测试结束还原网页标志并清理监听和调试转发。主配置、56 份会话文件名集合与 38 个工作区映射及元数据摘要均与安装前一致。

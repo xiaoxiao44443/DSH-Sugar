@@ -1,8 +1,8 @@
 {
   "apkDependencies": {
     "assets/guest/rootfs.zip": {
-      "files": 58898,
-      "sha256": "8e9a19d14ddc0505662677ae375ae28df2d94a18452a54a4a2dfd99c36f402a1"
+      "files": 58897,
+      "sha256": "c0f471eea58454fdd8f16aba69d2e36022fc005d92bc32a00e1b5be0501a4dfe"
     },
     "assets/network-tools/tools.zip": {
       "files": 2049,

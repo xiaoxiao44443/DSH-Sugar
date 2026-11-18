@@ -1,0 +1,11 @@
+{
+  "opt/dsh/node_modules/@deepseek-ai/dsh-client-connection/lib/client.browser.js": {
+    "sha256": "5f6107953fa764c80b6c06aa161be318ffa0b71e565ac81536fc4267d5d62412",
+    "edits": [
+      [
+        "function watchBrowserNetwork(controller){const browser=globalThis.window;",
+        "function watchBrowserNetwork(controller){const browser=globalThis.window;if(browser?.location?.protocol===`http:`&&browser.location.hostname===`127.0.0.1`)return()=>{};"
+      ]
+    ]
+  }
+}
