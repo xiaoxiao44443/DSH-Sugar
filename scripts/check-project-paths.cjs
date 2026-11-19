@@ -104,6 +104,16 @@ async function main(imageHome) {
   canceled.abort();
   await assert.rejects(pending, {name:'AbortError'});
   adbTransport = undefined;
+  const pluginFs=globalThis[Symbol.for('dsh.sugar.pluginBuiltins')].fs;
+  let pluginMode='workspace-write';
+  const pluginContext={get(name){assert.equal(name,'sandboxPolicy');return {resolve({session}){assert.equal(session,caller.session);return {mode:pluginMode};}};}};
+  await router.executeTools(caller,pluginContext,async()=>{
+    pluginMode='read-only';
+    assert.throws(()=>pluginFs.writeFileSync('/workspace/read-only.png','x'),e=>e.code==='EACCES'&&/read-only/.test(e.message));
+    await new Promise(resolve=>setTimeout(resolve,1));
+    assert.throws(()=>pluginFs.mkdirSync('/workspace/new'),e=>e.code==='EACCES'&&/read-only/.test(e.message));
+  });
+  assert.throws(()=>pluginFs.mkdirSync('/workspace/new'),e=>e.code==='EACCES'&&!/read-only/.test(e.message));
   const write = {mode:'workspace-write',workspaceRoot:'/workspace'};
   assert.equal(router.projectPolicy(knownRoot,write),write);
   assert.throws(()=>router.projectPolicy(knownRoot,{...write,workspaceRoot:'/workspace/sub'}),/two filesystems/);

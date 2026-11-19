@@ -43,7 +43,7 @@
     "edits": [
       [
         "return this.selectExecutor(input.agent).execute(input);",
-        "const run = () => this.selectExecutor(input.agent).execute(input);\n\t\treturn input.agent ? SUGAR_HOOK.within(input.agent.session.header.cwd, run, input.agent.id) : run();"
+        "const run = () => this.selectExecutor(input.agent).execute(input);\n\t\treturn SUGAR_HOOK.executeTools(input.agent,this.ctx,run);"
       ]
     ]
   },

@@ -20,6 +20,7 @@ if (!local.test(new URL(config.url).origin) || new URL(config.url).username || n
   throw Error('Invalid workspace coordinator configuration');
 }
 const active = new AsyncLocalStorage();
+const pluginExecution = new AsyncLocalStorage();
 const passiveWatch = new AsyncLocalStorage();
 const deviceOwner = new AsyncLocalStorage();
 const mobileBindings = new Map();
@@ -424,6 +425,20 @@ function adbRequest(agent, action, signal) {
   });
 }
 const api = { within, withinStream, workspaceMediaPath, serveSessionFile,
+  executeTools(agent, ctx, run) {
+    if (!agent) return pluginExecution.run(undefined,run);
+    return within(agent.session.header.cwd, () => {
+      const endpoint = active.getStore();
+      // Resolve policy at each operation, including continuations after a tool
+      // returns, so changing the session to read-only also affects its plugin.
+      const current = () => ({...endpoint,
+        writable: (() => {
+          const policy = ctx.get('sandboxPolicy')?.resolve({session:agent.session});
+          return !!policy && policy.mode !== 'read-only';
+        })()});
+      return pluginExecution.run(current,run);
+    },agent.id);
+  },
   async touchActiveWorkspace(root, sessionId) {
     // Only renew a running worker. In particular, a model-only turn in a cold project stays lazy.
     if (!registry || typeof root !== 'string' || !path.isAbsolute(root)) return;
@@ -603,8 +618,15 @@ function applyRecipe(recipe, bytes) {
   return source;
 }
 const modules = '/opt/dsh/node_modules/@deepseek-ai/';
-registerHooks({ load(url, context, nextLoad) {
-  const result = nextLoad(url,context);
+const pluginTransport = require('./plugin-file-transport.cjs').create();
+const pluginModules = require('./plugin-module-view.cjs').create({
+  current: () => pluginExecution.getStore()?.(),
+  transport: pluginTransport,
+  globalEndpoint: () => pluginTransport.managementSync(config,{op:'pluginGlobalWorker'})
+});
+registerHooks({ resolve: pluginModules.resolve, load(url, context, nextLoad) {
+  if (url.startsWith('sugar-plugin:')) return pluginModules.load(url,context,nextLoad);
+  const result = pluginModules.load(url,context,nextLoad);
   if (!url.startsWith('file://' + modules)) return result;
   const recipe = patches[fileURLToPath(url).slice(modules.length)];
   return recipe ? { ...result, source: applyRecipe(recipe, result.source) } : result;

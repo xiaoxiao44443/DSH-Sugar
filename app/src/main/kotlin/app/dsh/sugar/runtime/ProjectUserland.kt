@@ -115,7 +115,7 @@ internal object ProjectUserland {
         visit("guest/sugar-root.cjs", "/usr/bin/sugar-root")
         visit("guest/mobile_use", "/usr/bin/mobile_use")
         visit("guest/mobile_use.py", "/opt/sugar/mobile-use/mobile_use.py")
-        for (name in listOf("project-fs.mjs", "project-worker.cjs", "project-process-worker.cjs")) {
+        for (name in listOf("project-fs.mjs", "project-worker.cjs", "project-process-worker.cjs", "plugin-files-worker.cjs")) {
             visit("guest/$name", "/opt/sugar/$name")
         }
         val hash = MessageDigest.getInstance("SHA-256")

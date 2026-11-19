@@ -17,6 +17,7 @@ async function check(project, moduleFile) {
   try {
     await fs.copyFile(path.join(assets,'project-worker.cjs'),path.join(dir,'project-worker.cjs'));
     await fs.copyFile(moduleFile,path.join(dir,'project-fs.mjs'));
+    await fs.copyFile(path.join(assets,'plugin-files-worker.cjs'),path.join(dir,'plugin-files-worker.cjs'));
     // Process transport is tested separately. This probe also checks that modules installed
     // after startup and the children they launch cannot inherit the management capability.
     await fs.writeFile(path.join(dir,'project-process-worker.cjs'),

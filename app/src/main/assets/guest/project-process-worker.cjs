@@ -5,7 +5,9 @@ const { execFile } = require('node:child_process');
 const { once } = require('node:events');
 const { setTimeout: delay } = require('node:timers/promises');
 const live = new Map();
-const library = path.join(__dirname, 'node_modules/@deepseek-ai/dsh-subprocess-local/lib');
+const library = process.argv.includes('--sugar-plugin-global')
+  ? '/opt/dsh/node_modules/@deepseek-ai/dsh-subprocess-local/lib'
+  : path.join(__dirname, 'node_modules/@deepseek-ai/dsh-subprocess-local/lib');
 const terminalRuntime = { internals: {}, terminals: new Set(), selectContainmentMode: () => 'fallback' };
 
 // The manager supplies the same pinned launcher image to this worker and its children.

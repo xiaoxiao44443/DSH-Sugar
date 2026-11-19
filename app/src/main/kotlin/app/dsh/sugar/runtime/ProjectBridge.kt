@@ -37,6 +37,7 @@ import kotlin.concurrent.thread
 internal class ProjectBridge(val context: Context, private val client: RuntimeClient, val controlId: String) : Closeable {
     val projects = ProjectSandboxes(context, client, controlId, ::isRegisteredRoot)
     private val key = token()
+    private val globalPlugins = PluginGlobalWorker(context, client, controlId)
     private val listener = ServerSocket(0, 16, InetAddress.getByName("127.0.0.1"))
     private val threads = ThreadPoolExecutor(2, 8, 30, TimeUnit.SECONDS, ArrayBlockingQueue<Runnable>(16))
     private data class Worker(val envId: String, val execution: String, val port: Int, val token: String,
@@ -205,6 +206,7 @@ internal class ProjectBridge(val context: Context, private val client: RuntimeCl
 
     private fun dispatch(request: JSONObject): JSONObject {
         val op = request.getString("op")
+        if (op == "pluginGlobalWorker") return globalPlugins.endpoint()
         if (op == "petState") {
             val result = request.optJSONObject("result")?.let {
                 DesktopPetActivity.Result(it.getString("sessionId"), it.getString("id"),
@@ -396,6 +398,7 @@ internal class ProjectBridge(val context: Context, private val client: RuntimeCl
         }
         listener.close()
         adbCli.close()
+        globalPlugins.close()
         MobileUseTasks.remove(mobileScope) { false }
         threads.shutdownNow()
         synchronized(this) {

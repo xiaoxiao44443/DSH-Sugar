@@ -55,6 +55,7 @@ async function main() {
   const { LocalFileSystem } = await import(pathToFileURL(path.join(__dirname, 'project-fs.mjs')).href);
   const provider = new LocalFileSystem(null, { cwd: '/workspace', diffBasisMaxBytes: 1 << 20 });
   const processes = require('./project-process-worker.cjs');
+  const pluginFiles = require('./plugin-files-worker.cjs');
   const idleLimit = 30 * 60 * 1000;
   let requests = 0, lastActivity = Date.now();
   const server = http.createServer(async (req, res) => {
@@ -74,6 +75,7 @@ async function main() {
       if (req.method === 'POST' && route === '/activity') {
         res.writeHead(204).end(); return;
       }
+      if (route === '/plugin-fs') { await pluginFiles.handle(req,res); return; }
       if (route.startsWith('/process/')) {
         await processes.handle(req, res, route);
         return;
