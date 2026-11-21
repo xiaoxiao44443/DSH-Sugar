@@ -32,9 +32,10 @@ internal class WorkspaceMenus(private val activity: Activity) {
         view.evaluateJavascript("""
             (() => {
               if (window !== window.top || location.origin !== ${JSONObject.quote(endpoint.origin)}) return;
-              window.__dshSugarRevealFolder = (id, path) => {
-                if (!navigator.userActivation?.isActive || typeof id !== 'string' || typeof path !== 'string') return false;
-                location.href = $base + 'revealFile?' + new URLSearchParams({id, path});
+              window.__dshSugarRevealFolder = (id, path, kind = 'file') => {
+                if (!navigator.userActivation?.isActive || typeof id !== 'string' || typeof path !== 'string' ||
+                    (kind !== 'file' && kind !== 'directory')) return false;
+                location.href = $base + 'revealFile?' + new URLSearchParams({id, path, kind});
                 return true;
               };
               const pending = new Map();
@@ -70,8 +71,12 @@ internal class WorkspaceMenus(private val activity: Activity) {
         fun current() = browser === view && nonce == page && bound?.owns(view.url.orEmpty()) == true &&
             !activity.isFinishing && !activity.isDestroyed
         when (segments[1]) {
-            "revealFile" -> reveal.show(url.getQueryParameter("id"), url.getQueryParameter("path")) {
-                current() && activity.hasWindowFocus()
+            "revealFile" -> {
+                val kind = url.getQueryParameter("kind") ?: "file"
+                if (kind != "file" && kind != "directory") return true
+                reveal.show(url.getQueryParameter("id"), url.getQueryParameter("path"), kind == "directory") {
+                    current() && activity.hasWindowFocus()
+                }
             }
             "removeEmpty" -> {
                 val id = url.getQueryParameter("id") ?: return true

@@ -473,14 +473,14 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
     assert.equal((await latestFileRequest()).id,'w47');
     assert.equal((await latestFileRequest()).path,'');
     const directory = {path:'docs',name:'docs',kind:'directory',canDelete:true};
-    const note = {path:'info.txt',name:'info.txt',kind:'file',bytes:520,createdAt:1000,modifiedAt:2000,canDelete:true};
-    const readonly = {path:'locked',name:'locked',kind:'link',bytes:16,createdAt:1500,canDelete:false};
+    const note = {path:'info.txt',name:'info.txt',kind:'file',bytes:520,modifiedAt:2000,canDelete:true};
+    const readonly = {path:'locked',name:'locked',kind:'link',bytes:16,modifiedAt:3000,canDelete:false};
     const list = () => fileReply('workspaceFiles',{success:true,title:'Project 47',rows:[directory,note,readonly]});
     await list();
     assert.match(await get('[data-wsf-path]'),/Project 47/);
     assert.equal(await get('[data-wsf-rows] button','dataset.wsfEntry'),'info.txt');
-    await click('[data-wsf-sort=createdAt]'); await click('[data-wsf-direction]');
-    assert.equal(await get('[data-wsf-rows] button','dataset.wsfEntry'),'info.txt','files sort by creation time and direction');
+    await click('[data-wsf-sort=modifiedAt]'); await click('[data-wsf-direction]');
+    assert.equal(await get('[data-wsf-rows] button','dataset.wsfEntry'),'info.txt','files sort by modification time and direction');
     await click('[data-wsf-entry="info.txt"]');
     const open = await latestFileRequest();
     assert.deepEqual([open.type,open.entry],['workspaceFilesOpen','info.txt']);

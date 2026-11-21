@@ -3,6 +3,7 @@
   const i18n = window.SugarI18n, t = i18n.text;
   i18n.add({
     '工作区文件':['Workspace files','ワークスペースのファイル'],
+    '文件名':['Name','ファイル名'],
     '目录路径':['Folder path','フォルダのパス'],
     '选择':['Select','選択'],
     '全选':['Select all','すべて選択'],
@@ -31,7 +32,7 @@
   const controls = `<nav class="workspace-file-path" data-wsf-path aria-label="目录路径"></nav>
     <div class="storage-order workspace-file-order"><div class="choices" role="group" aria-label="排序方式">
       <button type="button" data-wsf-sort="bytes" aria-pressed="true">大小</button>
-      <button type="button" data-wsf-sort="createdAt" aria-pressed="false">创建时间</button>
+      <button type="button" data-wsf-sort="name" aria-pressed="false">文件名</button>
       <button type="button" data-wsf-sort="modifiedAt" aria-pressed="false">修改时间</button></div>
       <button type="button" class="workspace-file-direction" data-wsf-direction aria-label="降序">${svg('sort')}</button></div>
     <div class="workspace-file-toolbar"><span data-wsf-count></span><div>
@@ -108,6 +109,7 @@
       const collator = new Intl.Collator(i18n.language,{numeric:true});
       const key = row => Number.isFinite(row[fieldName]) && (fieldName === 'bytes' || row[fieldName] > 0) ? row[fieldName] : null;
       return [...rows].sort((a,b) => {
+        if (fieldName === 'name') return ascending ? collator.compare(a.name,b.name) : collator.compare(b.name,a.name);
         const av = key(a), bv = key(b);
         if (av == null && bv != null) return 1;
         if (bv == null && av != null) return -1;
@@ -133,9 +135,9 @@
       if (row.kind === 'directory') parts.push(t('文件夹'));
       else if (row.kind === 'link') parts.push(t('符号链接'));
       if (Number.isFinite(row.bytes)) parts.push(bytesLabel(row.bytes));
-      const time = row[fieldName === 'createdAt' ? 'createdAt' : 'modifiedAt'];
-      if (Number.isFinite(time) && time > 0) parts.push(new Date(time).toLocaleDateString(i18n.language));
-      else if (fieldName !== 'bytes') parts.push(t('时间未知'));
+      const time = row.modifiedAt;
+      if (Number.isFinite(time) && time > 0) parts.push(new Date(time).toLocaleString(i18n.language,{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}));
+      else if (fieldName === 'modifiedAt') parts.push(t('时间未知'));
       if (row.canDelete === false) parts.push(t('只读'));
       return parts.join(' · ');
     }
@@ -209,7 +211,7 @@
     remove.addEventListener('click',() => deleteFiles(false)); clear.addEventListener('click',() => deleteFiles(true));
     retry.addEventListener('click',() => { failure = ''; needList = true; sync(); paint(); });
     for (const b of sortButtons) b.addEventListener('click',() => {
-      if (fieldName !== b.dataset.wsfSort) { fieldName = b.dataset.wsfSort; ascending = false; page = 0; paint(); }
+      if (fieldName !== b.dataset.wsfSort) { fieldName = b.dataset.wsfSort; ascending = fieldName === 'name'; page = 0; paint(); }
     });
     direction.addEventListener('click',() => { ascending = !ascending; page = 0; paint(); });
     function turn(n) { page += n; paint(); entries.scrollIntoView({block:'start',behavior:'instant'}); }

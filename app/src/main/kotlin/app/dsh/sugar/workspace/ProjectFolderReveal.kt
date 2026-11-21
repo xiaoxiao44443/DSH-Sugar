@@ -20,7 +20,7 @@ internal class ProjectFolderReveal(private val activity: Activity) {
 
     fun showInternal() = open(WorkspaceDocumentsProvider.internalRoot(activity))
 
-    fun show(id: String?, path: String?, current: () -> Boolean) {
+    fun show(id: String?, path: String?, directory: Boolean = false, current: () -> Boolean) {
         if (resolving || !current()) return
         resolving = true
         thread(name = "sugar-reveal-directory") {
@@ -31,7 +31,7 @@ internal class ProjectFolderReveal(private val activity: Activity) {
                     // A project may have been registered just now, before any tool requested its workspace.
                     checkNotNull(SugarRuntime.activeProjects).workspace(id)
                     emptyList()
-                } else path.split('/').onEach(::checkedName).dropLast(1)
+                } else folderRevealComponents(path, directory)
                 // Resolves the live project ID, rechecks the disk root and opens every ancestor without symlinks.
                 val root = checkNotNull(SugarRuntime.activeProjects?.registeredRoot(id))
                 val local = LocalFolderWorkspaces.treeFor(activity, id, root)

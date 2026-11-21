@@ -73,7 +73,7 @@ window.__ModuleLoader__.load({
       function update() {
         restore();
         const kind = menus.active.getSnapshot()?.kind;
-        if (kind !== 'file' && kind !== 'image' && kind !== 'workspace') return;
+        if (!['file', 'image', 'directory', 'workspace'].includes(kind)) return;
         observer = new MutationObserver(hide);
         observer.observe(document.body, {childList:true, subtree:true, characterData:true});
         hide();
@@ -147,8 +147,37 @@ window.__ModuleLoader__.load({
           }
           return actions;
         }
+        // Directories have their own menu target and cannot use stat(), which
+        // only accepts regular files. list() verifies the session's access and
+        // returns a workspace-relative path, including '' for the root.
+        function workspaceOf(sessionId) {
+          const rows = ctx.workspaces.list.getSnapshot().items.filter(row => row.sessionIds.includes(sessionId));
+          return rows.length === 1 ? rows[0] : undefined;
+        }
+        async function resolveDirectory(target, signal) {
+          if (typeof window.__dshSugarRevealFolder !== 'function' || !target.sessionId || typeof target.path !== 'string') return [];
+          const owner = workspaceOf(target.sessionId);
+          if (!owner) return [];
+          // The Files page header still names the registered Host root; rows
+          // already carry project-relative paths. Never strip an arbitrary prefix.
+          const path = target.path === owner.path || target.path === '' ? '.' : target.path;
+          const found = await files.list(target.sessionId, path, signal);
+          signal.throwIfAborted();
+          if (!found.ok || typeof found.value.path !== 'string' || owner.workspaceId !== workspaceOf(target.sessionId)?.workspaceId) return [];
+          return [{id:'reveal', icon:{key:'sugar-file.reveal'}, label:t('reveal'), failureLabel:t('revealFailed'),
+            run() {
+              if (access.signal.aborted || owner.workspaceId !== workspaceOf(target.sessionId)?.workspaceId ||
+                  !window.__dshSugarRevealFolder(owner.workspaceId, found.value.path, 'directory')) {
+                throw Error('Workspace unavailable');
+              }
+            }
+          }];
+        }
         const remove = ['file', 'image'].map(target => ctx.contextMenus.register({
           id:'sugar-file-actions.' + target, target, order:190, resolve
+        }));
+        remove.push(ctx.contextMenus.register({
+          id:'sugar-file-actions.directory', target:'directory', order:90, resolve:resolveDirectory
         }));
         remove.push(ctx.contextMenus.register({
           id:'sugar-file-actions.workspace', target:'workspace', order:190,
