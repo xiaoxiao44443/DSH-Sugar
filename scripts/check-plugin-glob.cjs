@@ -48,7 +48,10 @@ if (!isMainThread && workerData?.sugarGlobServer) {
 
   async function main() {
     assert.equal(typeof fs.globSync, 'function', 'Run with Node 24 or newer');
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sugar-plugin-glob-'));
+    // Windows CI TEMP may use an 8.3 name or junction. Internal fixture links
+    // must target the same canonical root that the file backend validates.
+    const fixtureBase = fs.realpathSync(os.tmpdir());
+    const root = fs.mkdtempSync(path.join(fixtureBase, 'sugar-plugin-glob-'));
     const actualA = path.join(root, 'a');
     for (const directory of ['a', 'b', 'host', 'outside']) {
       fs.mkdirSync(path.join(root, directory));
@@ -160,19 +163,28 @@ if (!isMainThread && workerData?.sugarGlobServer) {
           options: { withFileTypes: true, exclude: skipDirectory } }
       ];
       async function differential(testCase) {
-        const nativeOptions = { ...testCase.options, cwd: testCase.nativeCwd ?? actualA };
-        const expected = normalize(fs.globSync(testCase.nativePattern ?? testCase.pattern, nativeOptions));
-        await active.run(a, async () => {
-          const actualSync = facade.globSync(testCase.pattern, testCase.options);
-          assert(Array.isArray(actualSync));
-          assert.deepEqual(normalize(actualSync), expected, testCase.label + ': sync');
-          assert.deepEqual(normalize(await callbackGlob(facade, testCase.pattern, testCase.options)),
-            expected, testCase.label + ': callback');
-          const iterator = facade.promises.glob(testCase.pattern, testCase.options);
-          assert.equal(typeof iterator[Symbol.asyncIterator], 'function');
-          assert.equal(typeof iterator.then, 'undefined', 'promises.glob returns an iterator, not a Promise');
-          assert.deepEqual(normalize(await collect(iterator)), expected, testCase.label + ': async iterator');
-        });
+        let api = 'native baseline';
+        try {
+          const nativeOptions = { ...testCase.options, cwd: testCase.nativeCwd ?? actualA };
+          const expected = normalize(fs.globSync(testCase.nativePattern ?? testCase.pattern, nativeOptions));
+          await active.run(a, async () => {
+            api = 'sync';
+            const actualSync = facade.globSync(testCase.pattern, testCase.options);
+            assert(Array.isArray(actualSync));
+            assert.deepEqual(normalize(actualSync), expected, testCase.label + ': sync');
+            api = 'callback';
+            assert.deepEqual(normalize(await callbackGlob(facade, testCase.pattern, testCase.options)),
+              expected, testCase.label + ': callback');
+            api = 'async iterator';
+            const iterator = facade.promises.glob(testCase.pattern, testCase.options);
+            assert.equal(typeof iterator[Symbol.asyncIterator], 'function');
+            assert.equal(typeof iterator.then, 'undefined', 'promises.glob returns an iterator, not a Promise');
+            assert.deepEqual(normalize(await collect(iterator)), expected, testCase.label + ': async iterator');
+          });
+        } catch (cause) {
+          throw new Error('Glob differential "' + testCase.label + '" (' + api + ', Node ' +
+            process.version + ', ' + process.platform + ') failed', { cause });
+        }
       }
       for (const testCase of cases) await differential(testCase);
       checks.push(cases.length + ' native-glob differential cases across sync/callback/async iterator');
@@ -353,7 +365,7 @@ if (!isMainThread && workerData?.sugarGlobServer) {
         await exited;
       }
       const resolved = path.resolve(root);
-      const prefix = path.resolve(os.tmpdir()) + path.sep + 'sugar-plugin-glob-';
+      const prefix = fixtureBase + path.sep + 'sugar-plugin-glob-';
       if (!resolved.startsWith(prefix)) throw Error('Unsafe glob fixture cleanup');
       fs.rmSync(resolved, { recursive: true, force: true });
     }
