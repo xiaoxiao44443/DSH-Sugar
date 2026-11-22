@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pet_detail_updated">最終更新 · %1$s 前</string>
     <string name="pet_companion_ready">ここにいるよ。また声をかけてね。</string>
     <string name="pet_detail_waiting">スクリプト待機中 · 経過 %1$s</string>
     <string name="pet_detail_thinking">思考中 · 経過 %1$s</string>

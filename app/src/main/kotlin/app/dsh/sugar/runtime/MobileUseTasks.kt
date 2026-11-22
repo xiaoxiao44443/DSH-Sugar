@@ -32,14 +32,18 @@ internal fun mobileScriptPhaseError(phase: String, code: String?, message: Strin
 /** Command access belongs to one task. A conversation can keep its virtual display between tasks. */
 internal object MobileUseTasks {
     data class Owner(val host: Any, val project: String, val root: String, val conversation: String)
-    data class VirtualTask(val conversation: String, val taskId: String, val displayId: Int?, val phase: String, val project: String)
+    data class VirtualTask(val conversation: String, val taskId: String, val displayId: Int?, val phase: String, val project: String,
+        val controlState: String = "agent", val controlError: String? = null, val controlPackage: String? = null,
+        val controlForeground: Boolean? = null)
     data class NoticeTask(val id: String, val screen: String, val displayId: Int?, val parked: Boolean,
         val conversation: String, val caption: String? = null, val waiting: Boolean = false,
         val lastObservation: Long = 0L, val lastDispatch: Long = 0L, val captionAt: Long = 0L,
-        val awaitingCompanion: Boolean = false, val resumedAt: Long = 0L)
+        val awaitingCompanion: Boolean = false, val resumedAt: Long = 0L, val controlState: String = "agent")
     private data class ScriptCaption(val text: String, val atMicros: Long)
     private class Task(val owner: Owner, val id: String, var screen: String?, var manualToken: String? = null, val turn: Long = -1) {
         @Volatile var phase = "choosing"
+        var control = MobileControlGate()
+        var terminalPhase: String? = null
         val companion = MobileCompanion()
         @Volatile var caption: ScriptCaption? = null
         var awaitingCompanion = false
@@ -62,14 +66,20 @@ internal object MobileUseTasks {
     }
     private val tasks = mutableMapOf<Owner, Task>()
     private val parked = mutableMapOf<Owner, Task>()
+    @Volatile private var mainReservation: MobileControlGate? = null
+    @Volatile private var phoneControlGeneration = 0L
+    private val adbUiLock = Any()
+    private var rootCommands = 0
     private fun allTasks() = tasks.values + parked.values
     private val attachments = mutableMapOf<String, Attachment>()
     private val starting = Executors.newFixedThreadPool(2) { Thread(it, "sugar-mobile-start").apply { isDaemon = true } }
+    private val closing = Executors.newSingleThreadExecutor { Thread(it, "sugar-mobile-close").apply { isDaemon = true } }
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var context: Context? = null
     private val uiListeners = mutableSetOf<() -> Unit>() // Accessed on the main thread.
     fun addUiListener(listener: () -> Unit) { uiListeners.add(listener) }
     fun removeUiListener(listener: () -> Unit) { uiListeners.remove(listener) }
+    private val refreshUi = Runnable { uiListeners.toList().forEach { it() } }
     private val refreshNotice = Runnable {
         RuntimeForegroundService.refreshNotification()
         uiListeners.toList().forEach { it() }
@@ -101,7 +111,7 @@ internal object MobileUseTasks {
     fun deviceChanged(screen: String) {
         main.post {
             synchronized(this) {
-                allTasks().filter { it.screen == screen && it.phase in setOf("permission","active","parked") }
+                allTasks().filter { it.screen == screen && it.phase in setOf("permission","active","parked","closing","close_failed") }
                     .forEach(::refresh)
             }
             changed()
@@ -116,34 +126,62 @@ internal object MobileUseTasks {
     private fun adbConnected() = context?.let { WirelessAdb.get(it).status().optBoolean("connected") } == true
     private fun adbFallbackEnabled(): Boolean = context?.let { !mainEnabled(it) && !virtualEnabled(it) } == true
 
-    fun <T> withAdbUi(owner: Owner, route: JSONObject?, action: AdbUiCommand, command: String, execute: (String) -> T): T {
+    @Synchronized fun captureRootAdmission(): Long {
+        check(mainReservation == null) { "用户正在接管，Root 命令已暂停；归还后请重新规划操作。" }
+        return phoneControlGeneration
+    }
+
+    fun <T> withRootCommand(admission: Long, execute: () -> T): T {
+        synchronized(this) {
+            check(mainReservation == null && admission == phoneControlGeneration) {
+                "手机控制权已改变，此 Root 命令未执行；归还后请重新规划操作。"
+            }
+            rootCommands++
+        }
+        return try { execute() } finally { synchronized(this) { rootCommands-- } }
+    }
+
+    @Synchronized fun captureUiAdmission(): Long {
+        check(mainReservation == null) { "用户正在接管，手机操作已暂停。" }
+        return phoneControlGeneration
+    }
+
+    fun <T> withAdbUi(owner: Owner, route: JSONObject?, action: AdbUiCommand, command: String, execute: (String) -> T): T =
+        withAdbUiAdmitted(captureUiAdmission(), owner, route, action, command, execute)
+
+    fun <T> withAdbUiAdmitted(admission: Long, owner: Owner, route: JSONObject?, action: AdbUiCommand,
+        command: String, execute: (String) -> T): T = synchronized(adbUiLock) {
+        check(admission == phoneControlGeneration && mainReservation == null) { "用户正在接管虚拟屏，手机操作已暂停。请等待归还后重新观察。" }
         val turn = route?.optLong("turn", -1) ?: -1
         val task = synchronized(this) {
             val current = tasks[owner] ?: parked[owner]
             val active = AdbScreenFallback.usesSelectedScreen(turn, current?.turn, current?.phase, current?.error?.optString("message"))
             check(adbConnected()) { "请先在 Sugar 中连接本机无线调试。" }
             current?.takeIf { active }
-        } ?: return execute(command)
+        } ?: return@synchronized execute(command)
 
         // Keep input ordered with mobile_use. Stopping the task may still revoke a queued action.
-        return synchronized(task) {
+        synchronized(task) {
             synchronized(this) {
                 check(tasks[owner] === task && task.phase == "active" && stillOpen(task) && adbConnected()) {
                     "本轮的屏幕操作已结束或 ADB 已断开。"
                 }
             }
+            check(task.control.state == "agent") { "用户正在接管，手机操作已暂停。" }
+            val version = task.control.generation
             val virtual = task.screen == "virtual"
             val routed = if (virtual) {
                 check(action != AdbUiCommand.FORCE_STOP) { "强制停止会影响该应用的所有屏幕，无法限定在所选虚拟屏。" }
                 val bound = task.displayId?.let { AdbScreenFallback.virtualInput(command, it) }
                     ?: error("当前已选择虚拟屏。此 ADB 命令无法限定在该屏幕，可能影响主屏或整台手机。请使用 mobile_use，或发送仅作用于虚拟屏的单条 adb shell input 命令。")
-                val focus = VirtualScreen.execute(task.virtualKey, "check_foreground", JSONObject()) { task.phase == "active" }
+                val focus = VirtualScreen.execute(task.virtualKey, "check_foreground", JSONObject()) { task.phase == "active" && task.control.allows(version) }
                 check(focus.optBoolean("ok")) {
                     focus.optJSONObject("error")?.optString("message") ?: "无法确认所选虚拟屏有前台应用。"
                 }
                 bound
             } else command
-            check(task.phase == "active") { "本轮手机操作已结束。" }
+            check(task.phase == "active" && task.control.allows(version) && mainReservation == null) { "手机控制权已改变，请归还后重新观察。" }
+            check(!task.control.needsObservation) { "接管已归还，请先使用 mobile_use 重新观察屏幕。" }
             val changesScreen = virtual || !AdbScreenFallback.readsScreen(command)
             try { execute(routed) } finally {
                 if (changesScreen) {
@@ -163,6 +201,9 @@ internal object MobileUseTasks {
         put("taskId", task?.id ?: missingId ?: JSONObject.NULL)
         put("phase", task?.phase ?: if (missingId.isNullOrEmpty()) "idle" else "stopped")
         put("screen", task?.screen ?: JSONObject.NULL)
+        put("controlState", task?.control?.state ?: "agent")
+        put("controlGeneration", task?.control?.generation ?: 0L)
+        task?.control?.error?.let { put("controlError", it) }
         task?.displayId?.let { put("displayId", it); put("virtualScreenId", task.virtualKey) }
         put("accessibilityEnabled", accessibilityEnabled())
         put("mainEnabled", context?.let(::mainEnabled) ?: true)
@@ -181,7 +222,7 @@ internal object MobileUseTasks {
     }
     private fun release(handle: String) { attachments.remove(handle)?.valid = false }
     private fun end(task: Task, phase: String) {
-        if (task.ended) return
+        if (task.ended || task.phase == "closing" || (task.phase == "close_failed" && phase == "completed")) return
         task.companion.close()
         task.caption = null
         task.observedImage = null
@@ -193,18 +234,71 @@ internal object MobileUseTasks {
             tasks.remove(task.owner, task)
             parked[task.owner] = task
             task.phase = "parked"
+        } else if (task.screen == "virtual" && VirtualScreen.hasSession(task.virtualKey)) {
+            closeVirtualTask(task, phase)
         } else {
-            parked.remove(task.owner, task)
-            task.phase = phase
-            when (task.screen) {
-                "main" -> MobileScreen.close(task.id)
-                "virtual" -> VirtualScreen.close(task.virtualKey)
-            }
+            finishEnd(task, phase)
         }
         changed()
     }
+
+    /** Called with this object's lock held. Never wait for native task migration on the UI thread. */
+    private fun closeVirtualTask(task: Task, phase: String) {
+        if (!task.control.beginClose()) return
+        task.terminalPhase = task.terminalPhase ?: phase
+        task.phase = "closing"
+        val version = task.control.generation
+        if (task.error?.optString("code") in setOf("close_restore_failed", "close_cleanup_failed", "close_reply_unavailable", "screen_busy")) task.error = null
+        closing.execute {
+            // Queue closes so Stop All can safely return several displays without competing reservations.
+            synchronized(this) {
+                if (task.phase != "closing" || task.control.generation != version) return@execute
+                if (rootCommands > 0 || (mainReservation != null && mainReservation !== task.control) || tasks.values.any {
+                        it !== task && it.screen == "main" && it.phase in setOf("starting", "active") }) {
+                    val message = "Another phone operation is using the main screen. Finish it, then retry closing this virtual screen."
+                    task.error = JSONObject().put("code", "screen_busy").put("message", message)
+                    task.control.closeFailed(version, message)
+                    task.phase = "close_failed"
+                    changed()
+                    return@execute
+                }
+                phoneControlGeneration++
+                mainReservation = task.control
+            }
+            val result = synchronized(adbUiLock) {
+                synchronized(task) { VirtualScreen.closeAndAwait(task.virtualKey) }
+            }
+            synchronized(this) {
+                if (task.phase != "closing" || task.control.generation != version) return@synchronized
+                if (result.optBoolean("closed") || !VirtualScreen.hasSession(task.virtualKey)) {
+                    if (!result.optBoolean("ok")) task.error = result.optJSONObject("error")
+                    finishEnd(task, task.terminalPhase ?: phase)
+                } else {
+                    val problem = result.optJSONObject("error") ?: JSONObject().put("code", "close_failed")
+                        .put("message", "The original app could not be returned. The virtual screen is retained; retry closing it in Sugar.")
+                    task.error = problem
+                    task.control.closeFailed(version, problem.optString("message"))
+                    task.phase = "close_failed"
+                }
+                changed()
+            }
+        }
+    }
+
+    private fun finishEnd(task: Task, phase: String) {
+        parked.remove(task.owner, task)
+        task.control.close()
+        if (mainReservation === task.control) mainReservation = null
+        task.phase = phase
+        if (task.screen == "main") MobileScreen.close(task.id)
+    }
+
     private fun refresh(task: Task) {
         if (task.ended || task.screen == null) return
+        if (task.phase in setOf("closing", "close_failed")) {
+            if (!VirtualScreen.hasSession(task.virtualKey)) finishEnd(task, task.terminalPhase ?: "stopped")
+            return
+        }
         if (task.phase == "active" || task.phase == "parked") {
             if (!stillOpen(task)) disconnected(task)
             return
@@ -221,23 +315,28 @@ internal object MobileUseTasks {
         val root = RootAccess.get(app).isAvailable()
         val transport = if (virtual && !root) WirelessAdb.get(app).currentTransport() else null
         if (virtual) {
-            val previous = parked.remove(task.owner)
+            val pendingClose = parked[task.owner]?.takeIf { it.phase in setOf("closing", "close_failed") }
+            if (pendingClose != null) { task.phase = "busy"; return }
+            val previous = parked[task.owner]
             if (previous != null) {
                 if (stillOpen(previous)) {
+                    parked.remove(task.owner, previous)
                     task.virtualKey = previous.virtualKey
                     task.displayId = previous.displayId
                     task.capabilities = previous.capabilities
                     task.driver = previous.driver
+                    task.control = previous.control
                     previous.phase = "completed"
                     task.phase = "active"
                     changed()
                     return
                 }
                 end(previous, "stopped")
+                if (previous.hasDisplay) { task.phase = "busy"; return }
             }
         }
         if (if (virtual) transport == null && !root else !accessibilityEnabled() && !root) { task.phase = "permission"; return }
-        if (!virtual && tasks.values.any { it !== task && it.screen == "main" && it.phase in setOf("starting", "active") }) {
+        if (!virtual && (mainReservation != null || tasks.values.any { it !== task && it.screen == "main" && it.phase in setOf("starting", "active") })) {
             task.phase = "busy"
             return
         }
@@ -285,7 +384,7 @@ internal object MobileUseTasks {
         if (method == "begin") {
             if (!validId(id) || screen !in setOf("ask","main","virtual")) return failure("invalid_target","Choose a valid screen.")
             if (current != null && (current.id == id || !current.ended)) return act(current, "status")
-            parked[owner]?.takeIf { it.id == id }?.let { return state(it) }
+            parked[owner]?.takeIf { it.id == id || it.phase in setOf("closing", "close_failed") }?.let { return state(it) }
             if (allTasks().any { it.id == id || it.virtualKey == id }) return failure("invalid_task","Task id is already in use.")
             if (turn >= 0 && current?.turn == turn && current.phase in setOf("stopped", "failed")) return state(current)
             if (screen == "ask" && adbFallbackEnabled()) {
@@ -334,26 +433,27 @@ internal object MobileUseTasks {
         } ?: current
         return if (task != null) act(task, method) else state(null, taskId.takeIf { it.isNotEmpty() })
     }
-    private val Task.hasDisplay get() = screen == "virtual" && phase in setOf("starting", "active", "parked")
+    private val Task.hasDisplay get() = screen == "virtual" && phase in setOf("starting", "active", "parked", "closing", "close_failed")
     @Synchronized fun activeVirtualScreens(): List<VirtualTask> = allTasks().filter { it.hasDisplay }
-        .map { VirtualTask(it.owner.conversation, it.virtualKey, it.displayId, it.phase, it.owner.project) }
+        .map { VirtualTask(it.owner.conversation, it.virtualKey, it.displayId, it.phase, it.owner.project, it.control.state, it.control.error, it.control.packageName, it.control.foregroundAt(SystemClock.elapsedRealtime())) }
     @Synchronized fun stopVirtualScreen(conversation: String, taskId: String) {
         allTasks().singleOrNull { it.hasDisplay && it.owner.conversation == conversation && it.virtualKey == taskId }
             ?.let { end(it, "stopped") }
     }
-    @Synchronized fun activeTasks(): List<NoticeTask> = allTasks().filter { it.phase == "active" || it.phase == "parked" }
+    @Synchronized fun activeTasks(): List<NoticeTask> = allTasks().filter { it.phase in setOf("active", "parked", "closing", "close_failed") }
         .map { task ->
             val caption = task.caption
             NoticeTask(task.id, task.screen!!, task.displayId, task.phase == "parked", task.owner.conversation,
                 caption?.text, task.scriptWaiters.get() > 0, task.observedAt, task.dispatchedAt, caption?.atMicros ?: 0L,
-                task.awaitingCompanion, task.resumedAt)
+                task.awaitingCompanion, task.resumedAt, task.control.state)
         }
     @Synchronized fun stopFromNotice(id: String) { allTasks().find { it.id == id }?.let { end(it, "stopped") } }
     @Synchronized fun stopAll() { allTasks().forEach { end(it, "stopped") } }
     @Synchronized fun remove(host: Any, keep: (Owner)->Boolean) {
         allTasks().filter { it.owner.host === host && !keep(it.owner) }.forEach { task ->
             end(task, "stopped")
-            tasks.remove(task.owner, task)
+            // Keep a failed close visible and retryable even if its DSH host has gone away.
+            if (!task.hasDisplay) tasks.remove(task.owner, task)
         }
     }
     @Synchronized fun revoke(token: String) {
@@ -369,8 +469,165 @@ internal object MobileUseTasks {
             } else active.singleOrNull { it.owner.conversation == conversation && (it.id == taskId || it.virtualKey == taskId) }
         }
             ?: return failure("inactive", "No active virtual screen.")
-        return VirtualScreen.preview(task.virtualKey)
+        controlFailure(task)?.let { return it }
+        val version = task.control.generation
+        return VirtualScreen.execute(task.virtualKey, "preview", JSONObject()) { task.control.allows(version) }
     }
+    private fun controlFailure(task: Task): JSONObject? {
+        if (task.control.state == "agent" && (task.screen != "main" || mainReservation == null)) return null
+        return failure("user_control", "The user is controlling an app on the main screen. Phone operations are paused. Wait for return, then observe again; never replay old actions.")
+            .put("controlState", task.control.state)
+    }
+
+    /** Called only while the user-control overlay is visible. Late replies never affect a replacement lease. */
+    fun refreshVirtualForeground(conversation: String, virtualKey: String, appearanceBounds: IntArray? = null): JSONObject? {
+        val gate = synchronized(this) {
+            allTasks().singleOrNull { it.hasDisplay && it.phase in setOf("active", "parked") &&
+                it.owner.conversation == conversation && it.virtualKey == virtualKey && it.control.state == "user" }
+                ?.control ?: return null
+        }
+        val version = gate.generation
+        val result = VirtualScreen.foregroundStatus(virtualKey, appearanceBounds) {
+            gate.generation == version && gate.state == "user"
+        }
+        val foreground = if (result.optBoolean("ok")) result.opt("task_foreground") as? Boolean else null
+        return synchronized(this) {
+            val live = allTasks().any { it.hasDisplay && it.virtualKey == virtualKey && it.control === gate }
+            if (!live || gate.generation != version || gate.state != "user") return@synchronized null
+            if (gate.recordForeground(version, foreground, SystemClock.elapsedRealtime())) {
+                // Changing apps changes the button only; no notification or model wake-up is needed.
+                main.removeCallbacks(refreshUi)
+                main.post(refreshUi)
+            }
+            // Native display colors stay in this local UI path; no image or model event is produced.
+            result.optJSONObject("appearance").takeIf { result.optBoolean("ok") }
+        }
+    }
+
+    /** UI-only: a lease cannot target an arbitrary Android task or migrate another conversation. */
+    fun takeoverVirtualScreen(conversation: String, virtualKey: String) = transferScreen(conversation, virtualKey, false)
+    fun restoreVirtualScreen(conversation: String, virtualKey: String) = transferScreen(conversation, virtualKey, true)
+
+    /** Brings back the exact human-controlled Android task. It never launches a replacement app. */
+    fun focusVirtualScreen(conversation: String, virtualKey: String): JSONObject {
+        val task = synchronized(this) {
+            val selected = allTasks().singleOrNull { it.hasDisplay &&
+                it.owner.conversation == conversation && it.virtualKey == virtualKey }
+                ?: return failure("inactive", "This virtual screen is no longer available.")
+            if (!selected.control.beginFocus()) return failure("screen_busy", "The app is not ready to be brought back.")
+            changed()
+            selected
+        }
+        val gate = task.control
+        val version = gate.generation
+        val result = synchronized(adbUiLock) {
+            synchronized(task) {
+                VirtualScreen.focus(task.virtualKey) { gate.generation == version && gate.state == "focusing" }
+            }
+        }
+        // Focusing is never consent to give control back, even if Android moved the task elsewhere.
+        if (result.optString("control_state") == "agent") {
+            result.put("ok", false).put("control_state", "unknown")
+                .put("error", JSONObject().put("code", "task_changed")
+                    .put("message", "The task is no longer on the main screen. Choose Return to verify and hand it back."))
+        }
+        return completeTransfer(gate, version, result, true)
+    }
+
+    private fun transferScreen(conversation: String, virtualKey: String, restore: Boolean): JSONObject {
+        val task = synchronized(this) {
+            val selected = allTasks().singleOrNull { it.hasDisplay && it.phase != "starting" &&
+                it.owner.conversation == conversation && it.virtualKey == virtualKey }
+                ?: return failure("inactive", "This virtual screen is no longer available.")
+            if (!restore && rootCommands > 0)
+                return failure("screen_busy", "A Root command is still running. Finish or stop it before taking over the screen.")
+            if (!restore && (mainReservation != null || tasks.values.any {
+                    it.screen == "main" && it.phase in setOf("starting", "active") }))
+                return failure("screen_busy", "Another phone task is using the main screen.")
+            if (!selected.control.begin(restore)) return failure("screen_busy", "A control transfer is already pending or is not needed.")
+            phoneControlGeneration++
+            mainReservation = selected.control
+            selected.observationId = null
+            selected.imageMapping = null
+            selected.observedImage = null
+            selected.companion.wake()
+            changed()
+            selected
+        }
+        val gate = task.control
+        val version = gate.generation
+        // Already dispatched gestures finish before migration. Queued requests lose their generation.
+        val result = synchronized(adbUiLock) {
+            synchronized(task) {
+                VirtualScreen.transfer(task.virtualKey, restore) { gate.generation == version && gate.state != "closed" }
+            }
+        }
+        return completeTransfer(gate, version, result, restore)
+    }
+
+    private fun completeTransfer(gate: MobileControlGate, version: Long, result: JSONObject, endMissing: Boolean): JSONObject =
+        synchronized(this) {
+            val message = result.optJSONObject("error")?.optString("message")
+            val accepted = gate.complete(version, result.optString("control_state").takeIf { it.isNotBlank() }, message)
+            if (accepted) gate.recordPackage(version, result.optString("package").takeIf { it.isNotBlank() })
+            if (gate.state == "agent" && mainReservation === gate) mainReservation = null
+            val live = allTasks().singleOrNull { it.hasDisplay && it.control === gate }
+            // Only a positively verified missing task ends takeover. Query failures remain recoverable.
+            if (endMissing && accepted && live != null && result.optJSONObject("error")?.optString("code") == "task_gone") {
+                live.error = result.getJSONObject("error")
+                end(live, "stopped")
+                return@synchronized state(live).put("ok", false)
+            }
+            live?.companion?.wake()
+            changed()
+            if (live == null) failure("inactive", "This virtual screen has closed.")
+            else state(live).put("ok", accepted && result.optBoolean("ok")).apply {
+                result.optJSONObject("error")?.let { put("error", it) }
+            }
+        }
+
+    /** A borrow may change the main display, so it shares the raw-ADB dispatch lock. */
+    private inline fun <T> withPhoneDispatchLock(task: Task, mayBorrow: Boolean, action: () -> T): T =
+        if (mayBorrow) synchronized(adbUiLock) { synchronized(task) { action() } }
+        else synchronized(task) { action() }
+
+    private fun launchVirtual(task: Task, method: String, input: JSONObject, allowed: () -> Boolean): JSONObject {
+        val mayBorrow = synchronized(this) {
+            val free = allowed() && rootCommands == 0 && mainReservation == null && tasks.values.none {
+                it.screen == "main" && it.phase in setOf("starting", "active")
+            }
+            if (free) {
+                phoneControlGeneration++
+                mainReservation = task.control
+            }
+            free
+        }
+        // Host-owned permission, never trust a script-supplied value of this field.
+        input.put("borrow_allowed", mayBorrow)
+        val version = task.control.generation
+        return try {
+            val result = VirtualScreen.execute(task.virtualKey, method, input, allowed)
+            val uncertain = (result.has("control_state") && result.optString("control_state") != "agent") ||
+                (mayBorrow && !result.optBoolean("ok") && result.optString("dispatch") == "unknown" && result.optString("verification") == "unknown")
+            if (uncertain) synchronized(this) {
+                if (task.control.uncertainDispatch(version, result.optJSONObject("error")?.optString("message"))) {
+                    task.control.recordPackage(task.control.generation, result.optString("package").takeIf { it.isNotBlank() })
+                    task.observationId = null
+                    task.imageMapping = null
+                    task.observedImage = null
+                    task.companion.wake()
+                    result.put("control_state", "unknown")
+                    changed()
+                }
+            }
+            result
+        } finally {
+            synchronized(this) {
+                if (mayBorrow && mainReservation === task.control && task.control.state == "agent") mainReservation = null
+            }
+        }
+    }
+
     fun command(owner: Owner, token: String, manual: Boolean, boundTask: String, request: JSONObject, canceled: ()->Boolean): JSONObject {
         val method = request.getString("method")
         val args = request.optJSONObject("args") ?: JSONObject()
@@ -416,39 +673,48 @@ internal object MobileUseTasks {
             phaseFailure(entry.task)?.let { return it }
             entry
         }
-        val allowed = { attachment.valid && !canceled() }
         val task = attachment.task
+        val version = task.control.generation
+        val attached = { attachment.valid && !canceled() }
+        val allowed = { attached() && task.control.allows(version) && (task.screen != "main" || mainReservation == null) }
         if (method == "companion_wait") {
             val timeout = args.getLong("timeout_ms")
             if (timeout > 0) task.scriptWaiters.incrementAndGet()
-            return try { task.companion.await(timeout, allowed) }
+            return try { task.companion.await(timeout, attached).put("controlState", task.control.state) }
             catch (e: ScreenProblem) { failure(e.code, e.message.orEmpty()) }
             finally { if (timeout > 0) task.scriptWaiters.decrementAndGet() }
         }
         // Script processes may change between capturing an image and acting on a model's answer.
         // Keep the mapping with this task. Stopping the task never waits for a screenshot.
-        return synchronized(task) {
+        return withPhoneDispatchLock(task, task.screen == "virtual" && method in setOf("launch", "open_app")) {
             try {
-                if (!allowed()) return@synchronized failure("session_closed", "This task has ended.")
+                if (!attached()) return@withPhoneDispatchLock failure("session_closed", "This task has ended.")
+                controlFailure(task)?.let { return@withPhoneDispatchLock it }
+                if (!allowed()) return@withPhoneDispatchLock failure("stale_observation", "Phone control changed. Observe the screen again after it is returned.")
                 when (method) {
                     "companion_status" -> {
                         val text = (args.opt("text") as? String)?.trim()
-                            ?: return@synchronized failure("invalid_argument", "Expected a short status string.")
-                        if (text.length > 240) return@synchronized failure("invalid_argument", "Status exceeds 240 characters.")
+                            ?: return@withPhoneDispatchLock failure("invalid_argument", "Expected a short status string.")
+                        if (text.length > 240) return@withPhoneDispatchLock failure("invalid_argument", "Status exceeds 240 characters.")
                         // Repeating a status can reclaim it after a different tool description.
                         task.caption = ScriptCaption(text, System.nanoTime() / 1000L)
                         changed()
-                        return@synchronized JSONObject().put("ok", true)
+                        return@withPhoneDispatchLock JSONObject().put("ok", true)
                     }
-                    "companion_watch" -> return@synchronized task.companion.watch(args.getLong("interval_ms")) { current ->
-                        if (task.screen == "main") MobileScreen.preview(task.id, current)
-                        else VirtualScreen.execute(task.virtualKey, "preview", JSONObject(), current)
+                    "companion_watch" -> return@withPhoneDispatchLock task.companion.watch(args.getLong("interval_ms")) { current ->
+                        val captureVersion = task.control.generation
+                        val captureAllowed = { current() && task.control.allows(captureVersion) &&
+                            (task.screen != "main" || mainReservation == null) }
+                        controlFailure(task) ?: if (task.screen == "main") MobileScreen.preview(task.id, captureAllowed)
+                        else VirtualScreen.execute(task.virtualKey, "preview", JSONObject(), captureAllowed)
                     }
-                    "companion_history" -> return@synchronized task.companion.read(args)
+                    "companion_history" -> return@withPhoneDispatchLock task.companion.read(args)
                 }
+                if (task.control.needsObservation && method != "observe")
+                    return@withPhoneDispatchLock failure("stale_observation", "The phone has been returned by the user. Observe it again before acting; do not replay old actions.")
                 if (method == "check") {
                     val expected = args.optString("observation_id")
-                    return@synchronized if (expected.isNotEmpty() && (task.imageMapping?.observationId != expected ||
+                    return@withPhoneDispatchLock if (expected.isNotEmpty() && (task.imageMapping?.observationId != expected ||
                         SystemClock.elapsedRealtime() - task.observedAt > 60_000))
                         failure("stale_observation", "The visual observation expired or was replaced.")
                     else JSONObject().put("ok",true).put("taskId",task.id).put("screen",task.screen)
@@ -458,32 +724,40 @@ internal object MobileUseTasks {
                     val image = task.observedImage
                     if (image == null || task.imageMapping?.observationId != id ||
                         SystemClock.elapsedRealtime() - task.observedAt > 60_000)
-                        return@synchronized failure("stale_observation", "Observe the target screen again.")
+                        return@withPhoneDispatchLock failure("stale_observation", "Observe the target screen again.")
                     val result = if (method == "find_template") MobileTemplate.find(image,args) else MobileColors.read(image,args)
-                    return@synchronized if (allowed()) result.put("observation_id",id) else failure("session_closed", "This task has ended.")
+                    return@withPhoneDispatchLock if (allowed()) result.put("observation_id",id) else failure("session_closed", "This task has ended.")
                 }
                 val observation = method == "observe"
                 if (!observation && args.has("observation_id") && args.optString("observation_id") != task.observationId)
-                    return@synchronized failure("stale_observation", "Observe the selected screen again in this task.")
+                    return@withPhoneDispatchLock failure("stale_observation", "Observe the selected screen again in this task.")
                 val input = when {
                     method == "open_app" -> {
-                        val app = context ?: return@synchronized failure("session_closed", "Sugar is no longer available.")
+                        val app = context ?: return@withPhoneDispatchLock failure("session_closed", "Sugar is no longer available.")
                         val name = args.opt("name") as? String
-                            ?: return@synchronized failure("invalid_argument", "Supply the app's launcher name.")
+                            ?: return@withPhoneDispatchLock failure("invalid_argument", "Supply the app's launcher name.")
                         val target = LauncherAppNames.resolve(app.packageManager, name)
-                        if (!allowed()) return@synchronized failure("session_closed", "This task has ended.")
-                        if (!target.getBoolean("ok")) return@synchronized target
+                        if (!allowed()) return@withPhoneDispatchLock failure("session_closed", "This task has ended.")
+                        if (!target.getBoolean("ok")) return@withPhoneDispatchLock target
                         target.put("owner_uid", android.os.Process.myUid())
                     }
                     observation -> args
                     else -> MobileImages.forAction(args, task.imageMapping)
                 }
                 val result = if (task.screen == "main") MobileScreen.execute(task.id, method, input, allowed)
+                    else if (method in setOf("launch", "open_app")) launchVirtual(task, method, input, allowed)
                     else VirtualScreen.execute(task.virtualKey, method, input, allowed)
+                if (!allowed()) {
+                    val interrupted = controlFailure(task) ?: failure("stale_observation", "Phone control changed during this operation. Observe again; do not retry the old action.")
+                    if (result.has("dispatch")) interrupted.put("dispatch", result.optString("dispatch"))
+                    return@withPhoneDispatchLock interrupted.put("verification", "unknown")
+                }
                 if (method == "open_app" && result.optBoolean("ok")) {
                     result.put("label", input.getString("label")).put("package", input.getString("package"))
                 }
-                if (observation) storeObservation(task, result, args, allowed) else {
+                if (observation) storeObservation(task, result, args, allowed).also {
+                    if (it.optBoolean("ok")) task.control.observed(version)
+                } else {
                     if (result.has("dispatch")) {
                         if (result.optString("dispatch") == "sent") task.dispatchedAt = SystemClock.elapsedRealtime()
                         task.observationId = null

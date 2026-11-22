@@ -69,6 +69,10 @@ internal object SugarDialog {
         position(activity, dialog)
     }
 
+    fun setPreviewDragging(dialog: AlertDialog, dragging: Boolean) {
+        (dialog.window?.decorView?.getTag(R.id.sugar_dialog_surface) as? SugarDialogPeek)?.setPreviewDragging(dragging)
+    }
+
     fun movePreviewBy(activity: Activity, dialog: AlertDialog, dx: Int, dy: Int) {
         val preview = previews[dialog] ?: return
         val decor = dialog.window?.decorView ?: return

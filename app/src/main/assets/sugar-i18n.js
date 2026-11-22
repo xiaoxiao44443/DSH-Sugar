@@ -105,6 +105,8 @@
     '拖过屏幕中线，或在导航条展开后朝对侧快甩。从任一侧滑动都回到刚才的页面，再滑一次回到当前页。打开其他页面后，这两页随之更新。返回和前进按钮可以继续翻看更早的记录。只有一个页面时，拖动可调整导航停靠位置。': ['Drag past the center, or flick the open navigation bar toward the opposite edge. Swipe from either side to switch between your last two pages. Opening another page updates the pair. Use Back and Forward for older history. With just one page, drag to move the bar.', '画面中央を越えてドラッグするか、開いたナビゲーションバーを反対側へフリックします。どちらの端からでも直前の2ページを行き来できます。別のページを開くと対象が変わります。さらに前の履歴は「戻る」と「進む」でたどれます。1ページしかない場合はバーの位置を変更できます。'],
     '上下滑动设置页': ['Swipe between settings pages', '上下のスワイプで切り替え'],
     '在设置的相邻页面间切换。': ['Swipe up or down to move to the next settings page.', '上下にスワイプすると隣の設定ページに切り替わります。'],
+    '桌宠免通知': ['Mute with pet', 'ペット表示中は通知オフ'],
+    '桌宠显示时，暂停消息通知': ['Pause notifications while the pet is visible.', 'ペット表示中はメッセージ通知を止めます。'],
     '轮次完成通知': ['Turn completion', 'タスク完了通知'],
     'Agent 完成本轮任务时提醒': ['Notify when the agent finishes a turn', 'エージェントが今回のタスクを終えたときに通知'],
     '系统通知已关闭': ['System notifications are off', 'システム通知はオフです'],

@@ -55,7 +55,7 @@ internal class MobileTaskOverlay(
 ) {
     private data class Task(
         val conversation: String, val id: String, val phase: String, val virtual: Boolean,
-        val virtualAvailable: Boolean, val running: Boolean?, val language: String
+        val virtualAvailable: Boolean, val running: Boolean?, val language: String, val controlState: String
     )
 
     private val prefs = activity.getSharedPreferences("mobile-task-overlay", Context.MODE_PRIVATE)
@@ -161,11 +161,13 @@ internal class MobileTaskOverlay(
             return
         }
         val next = Task(conversation, id, phase, state.optString("screen") == "virtual",
-            state.optBoolean("virtualAvailable"), state.opt("running") as? Boolean, SugarLanguage.read(activity))
+            state.optBoolean("virtualAvailable"), state.opt("running") as? Boolean, SugarLanguage.read(activity),
+            state.optString("controlState", "agent"))
         val old = task
         if (old == next) return
         if (old == null || old.conversation != conversation || old.id != id)
             folded = foldByTask[id] ?: (phase != "choosing" && prefs.getBoolean("folded", false))
+        if (next.controlState != "agent") folded = false
         task = next
         layout(rebuildControls = true)
     }
@@ -241,7 +243,15 @@ internal class MobileTaskOverlay(
         val state = task ?: return
         val size = geometry ?: return
         val words = when (state.language) { "ja" -> ja; "en" -> en; else -> zh }
-        val status = when (state.phase) {
+        val status = if (state.controlState != "agent") activity.sugarString(when (state.controlState) {
+            "taking_over" -> R.string.mobile_virtual_taking_over
+            "restoring" -> R.string.mobile_virtual_restoring
+            "focusing" -> R.string.mobile_virtual_focusing
+            "closing" -> R.string.mobile_virtual_closing
+            "close_failed" -> R.string.mobile_virtual_close_failed
+            "unknown" -> R.string.mobile_virtual_control_unknown
+            else -> R.string.mobile_virtual_user_control
+        }) else when (state.phase) {
             "choosing" -> words.choose
             "disabled" -> if (state.virtual) words.virtualOff else words.mainOff
             "permission" -> if (state.virtual) words.adbRequired else words.serviceRequired
@@ -286,7 +296,7 @@ internal class MobileTaskOverlay(
                 typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                 minHeight = dp(48)
                 gravity = Gravity.CENTER_VERTICAL
-                contentDescription = "$title · ${words.collapse}"
+                contentDescription = if (state.controlState == "agent") "$title · ${words.collapse}" else title
             }
             styleUpdates += {
                 label.setTextColor(textInk)
@@ -297,7 +307,10 @@ internal class MobileTaskOverlay(
             }
             asHandle(label)
             header.addView(label, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            val fold = ImageView(activity).apply { contentDescription = words.collapse }
+            val fold = ImageView(activity).apply {
+                contentDescription = words.collapse
+                visibility = if (state.controlState == "agent") View.VISIBLE else View.GONE
+            }
             styleUpdates += {
                 fold.background = RippleDrawable(ColorStateList.valueOf(alpha(ink,.12)), null, shape(Color.WHITE, 12))
                 fold.setImageDrawable(MobileControlIcon(MobileIcon.FOLD, material.accent()))
@@ -365,7 +378,14 @@ internal class MobileTaskOverlay(
                 }
                 "disabled" -> add(words.settings, if (state.virtual) "virtualSettings" else "mainSettings", MobileIcon.SETTINGS)
                 "permission" -> add(words.connect, if (state.virtual) "adb" else "mainSettings", MobileIcon.SETTINGS)
-                "active","running","ready","parked" -> if (state.virtual) add(words.preview,"preview",MobileIcon.PREVIEW)
+                "active","running","ready","parked","closing","close_failed" -> if (state.virtual) {
+                    val label = when (state.controlState) {
+                        "agent" -> words.preview
+                        "closing", "close_failed" -> activity.sugarString(R.string.mobile_virtual_view_status)
+                        else -> activity.sugarString(R.string.mobile_virtual_restore)
+                    }
+                    add(label,"preview",MobileIcon.PREVIEW)
+                }
             }
             val available = (size.width - size.artWidth - dp(7) - buttonInset).coerceAtLeast(1)
             val gap = dp(11)
@@ -387,7 +407,14 @@ internal class MobileTaskOverlay(
                 })
             }
             content.addView(body)
-            val footer = button(state, if (choosing) words.cancel else if (state.phase == "parked") activity.sugarString(R.string.mobile_virtual_stop) else words.stop, "stop", null)
+            val footerTitle = when {
+                choosing -> words.cancel
+                state.phase == "close_failed" -> activity.sugarString(R.string.mobile_virtual_retry_close)
+                state.phase == "closing" -> activity.sugarString(R.string.mobile_virtual_closing_short)
+                state.phase == "parked" -> activity.sugarString(R.string.mobile_virtual_stop)
+                else -> words.stop
+            }
+            val footer = button(state, footerTitle, "stop", null, enabled = state.phase != "closing")
             content.addView(footer, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
                 marginStart = buttonInset
                 marginEnd = buttonInset
@@ -522,6 +549,7 @@ internal class MobileTaskOverlay(
     }
 
     private fun toggle() {
+        if (task?.controlState != "agent") return
         val id = task?.id ?: return
         folded = !folded
         foldByTask.remove(id)
@@ -661,7 +689,7 @@ internal class MobileTaskOverlay(
         val collapse: String, val expand: String, val parked: String)
 
     private companion object {
-        val livePhases = setOf("choosing", "disabled", "permission", "busy", "starting", "active", "ready", "running", "parked")
+        val livePhases = setOf("choosing", "disabled", "permission", "busy", "starting", "active", "ready", "running", "parked", "closing", "close_failed")
         val hex = Regex("#[0-9a-fA-F]{6}")
         val zh = Words("手机操作", "主屏", "虚拟屏", "在哪块屏幕上操作？", "主屏操作已关闭", "虚拟屏操作已关闭",
             "等待连接 Root 或无线 ADB", "等待无障碍或 Root 授权", "另一项任务正在使用此屏幕", "正在连接…", "已连接，就绪", "操作进行中",

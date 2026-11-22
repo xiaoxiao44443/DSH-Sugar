@@ -80,10 +80,19 @@ class MobileAccessibilityService : AccessibilityService() {
             windows.forEach { it.recycle() }
             throw e
         }
-        val window = MainWindow(info?.id ?: -1, root?.packageName?.toString().orEmpty(), size.x, size.y,
-            display.rotation * 90, revision)
-        windows.forEach { it.recycle() }
-        return try { block(window, root) } finally { root?.recycle() }
+        return try {
+            val window = try {
+                val bounds = info?.let { value ->
+                    MainWindowBounds.from(Rect().also { value.getBoundsInScreen(it) })
+                }
+                val contentBounds = root?.let { value ->
+                    MainWindowBounds.from(Rect().also { value.getBoundsInScreen(it) })
+                }
+                MainWindow(info?.id ?: -1, root?.packageName?.toString().orEmpty(), size.x, size.y,
+                    display.rotation * 90, revision, bounds, contentBounds, info?.isFocused, info?.layer)
+            } finally { windows.forEach { it.recycle() } }
+            block(window, root)
+        } finally { root?.recycle() }
     }
 
     internal fun supportsScreenshot(): Boolean = Build.VERSION.SDK_INT >= 30 &&
@@ -116,6 +125,7 @@ class MobileAccessibilityService : AccessibilityService() {
         } else validateWindow()
         json.put("width", window.width).put("height", window.height).put("rotation", window.rotation)
             .put("package", window.packageName).put("window_id", window.id)
+        window.metadata()?.let { json.put("window", it) }
         return MainObservation(id, time, window, tree.nodes, json)
     }
 
@@ -158,6 +168,7 @@ class MobileAccessibilityService : AccessibilityService() {
                                 withWindow { live, _ ->
                                     live.packageName == current.packageName && live.rotation == current.rotation &&
                                         live.width == current.width && live.height == current.height &&
+                                        live.bounds == current.bounds && live.contentBounds == current.contentBounds &&
                                         submit { dispatchStroke(movement, listener) }
                                 }
                             }.getOrDefault(false)

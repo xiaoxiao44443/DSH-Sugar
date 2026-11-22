@@ -19,7 +19,7 @@ const handleMutating = new Set(['write', 'writev', 'writeFile', 'appendFile', 't
   'chmod', 'chown', 'utimes']);
 const pathMethods = new Set(['readFile', 'writeFile', 'appendFile', 'stat', 'lstat',
   'readdir', 'realpath', 'access', 'mkdir', 'rm', 'rmdir', 'unlink', 'rename', 'copyFile',
-  'cp', 'chmod', 'chown', 'utimes', 'truncate', 'mkdtemp', 'readlink', 'symlink', 'link', 'open']);
+  'cp', 'chmod', 'chown', 'utimes', 'truncate', 'mkdtemp', 'readlink', 'symlink', 'link', 'open', 'opendir']);
 
 function failure(code, message, name, dest) {
   return Object.assign(new Error(message), { code, ...(name === undefined ? {} : { path: name }),
@@ -190,6 +190,27 @@ function createBackend({ root = VIRTUAL_ROOT, maxHandles = 128, idleMs = 60000 }
     const record = handles.get(request.handle);
     if (!record) throw failure('EBADF', 'Plugin file handle is closed or expired');
     method = handleAliases[method] || method;
+    if (record.type === 'directory') {
+      if (method === 'closeDir') return closeRecord(request.handle, record);
+      if (method !== 'readDir') throw failure('EBADF', 'Operation requires a file handle');
+      record.pending++;
+      record.touched = Date.now();
+      // A recursive facade keeps parent cursors open while visiting a child.
+      // Child progress keeps those ancestors alive; fully idle walks still expire.
+      for (const ancestor of handles.values()) if (ancestor.type === 'directory' &&
+          record.location.startsWith(ancestor.location + path.sep)) ancestor.touched = record.touched;
+      const task = record.tail.then(async () => {
+        await currentRoot();
+        await contained(record.location);
+        const entry = await record.file.read();
+        return entry === null ? null : {$type:'Dirent',kind:kind(entry),name:entry.name,
+          parentPath:virtual(record.location),path:virtual(record.location)};
+      });
+      record.tail = task.catch(() => {});
+      try { return await task; }
+      finally { record.pending--; record.touched = Date.now(); }
+    }
+    if (method === 'closeDir' || method === 'readDir') throw failure('EBADF', 'Operation requires a directory handle');
     if (method === 'close') return closeRecord(request.handle, record);
     if (handleMutating.has(method)) {
       requireWritable(request);
@@ -268,18 +289,23 @@ function createBackend({ root = VIRTUAL_ROOT, maxHandles = 128, idleMs = 60000 }
     else {
       if (!pathMethods.has(method)) throw failure('ENOTSUP', 'Unsupported plugin file operation: ' + method);
       if (mutating.has(method) || (method === 'access' && ((args[1] ?? 0) & fs.constants.W_OK))) requireWritable(request);
-      if (method === 'open') {
-        const write = writingFlags(args[1]);
+      if (method === 'open' || method === 'opendir') {
+        const directory = method === 'opendir';
+        // Recursive traversal is performed by the facade, opening each child
+        // through this checked path rather than Node's unchecked recursive Dir.
+        if (directory && optionsObject(args[1]).recursive)
+          throw failure('EINVAL', 'Recursive directory traversal requires checked child opens');
+        const write = !directory && writingFlags(args[1]);
         if (write) requireWritable(request);
         if (handles.size + pendingOpens >= maxHandles) throw failure('EMFILE', 'Too many open plugin files');
         pendingOpens++;
         let file;
         try {
           const location = await locate(args[0], { protectRoot: write });
-          file = await fsp.open(location, args[1] ?? 'r', args[2]);
+          file = directory ? await fsp.opendir(location, args[1]) : await fsp.open(location, args[1] ?? 'r', args[2]);
           if (closed) throw failure('EBADF', 'Plugin file backend is closed');
           const id = randomUUID();
-          handles.set(id, { file, writable: request.writable === true,
+          handles.set(id, { file, type:directory ? 'directory' : 'file', location, writable: !directory && request.writable === true,
             pending: 0, touched: Date.now(), tail: Promise.resolve(), closing: null });
           file = null;
           result = { handle: id };
@@ -389,7 +415,7 @@ function createBackend({ root = VIRTUAL_ROOT, maxHandles = 128, idleMs = 60000 }
       });
       const request = deserialize(body);
       const result = await execute(request);
-      if (request.method === 'open' && request.handle === undefined) opened = result;
+      if (['open','opendir'].includes(request.method) && request.handle === undefined) opened = result;
       if (req.aborted || res.destroyed) { await discardOpen(opened); return; }
       const bytes = serialize({ result });
       res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': bytes.length, 'Cache-Control': 'no-store' });

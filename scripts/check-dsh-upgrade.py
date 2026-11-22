@@ -97,7 +97,7 @@ def main():
         check_settings(bundle)
         check_connection(bundle)
         check_dependencies(bundle, args.host_dsh)
-    for check in ("check-plugin-files-worker.cjs", "check-plugin-files.cjs", "check-plugin-routing.cjs", "check-plugin-process.cjs", "check-device-access-routing.mjs"):
+    for check in ("check-plugin-files-worker.cjs", "check-plugin-files.cjs", "check-plugin-directories.cjs", "check-plugin-glob.cjs", "check-plugin-routing.cjs", "check-plugin-process.cjs", "check-device-access-routing.mjs"):
         subprocess.run(["node", ROOT / "scripts" / check], check=True)
     if args.host_dsh:
         subprocess.run(["node", ROOT / "scripts/check-recovery-preset.mjs", args.host_dsh.resolve()], check=True)

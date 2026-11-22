@@ -20,6 +20,8 @@ import app.dsh.sugar.AdbPairingNotice
 import app.dsh.sugar.DesktopPetOverlay
 import app.dsh.sugar.WirelessAdb
 import app.dsh.sugar.NotificationEntryActivity
+import app.dsh.sugar.AgentNotifications
+import app.dsh.sugar.VirtualTakeoverOverlay
 import app.dsh.sugar.R
 import app.dsh.sugar.sugarString
 
@@ -54,6 +56,7 @@ internal class RuntimeForegroundService : Service() {
     private var petOnly = false
     private var lastRecovery: Long? = null
     private var desktopPet: DesktopPetOverlay? = null
+    private var takeoverOverlay: VirtualTakeoverOverlay? = null
 
     private val adb by lazy { WirelessAdb.get(applicationContext) }
     private val adbChanged: () -> Unit = {
@@ -65,6 +68,7 @@ internal class RuntimeForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         MobileUseTasks.initialize(this)
+        takeoverOverlay = VirtualTakeoverOverlay(this).also { it.start() }
         AdbPairingNotice.clearInactiveNotice(this)
         adb.addListener(adbChanged)
     }
@@ -211,9 +215,12 @@ internal class RuntimeForegroundService : Service() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         desktopPet?.refresh()
+        takeoverOverlay?.refresh()
     }
 
     override fun onDestroy() {
+        takeoverOverlay?.close()
+        takeoverOverlay = null
         MobileUseTasks.stopAll()
         adb.removeListener(adbChanged)
         if (instance === this) instance = null
@@ -224,7 +231,10 @@ internal class RuntimeForegroundService : Service() {
     private fun notification(): Notification {
         val openWorkspace = NotificationEntryActivity.intent(this).setAction(Intent.ACTION_MAIN)
             .addCategory(Intent.CATEGORY_LAUNCHER)
-        val tap = PendingIntent.getActivity(this, 0, openWorkspace, PendingIntent.FLAG_IMMUTABLE)
+        val phoneTasks = MobileUseTasks.activeTasks()
+        val controlled = phoneTasks.firstOrNull { it.controlState != "agent" }
+        val tap = controlled?.let { AgentNotifications.openSession(this, it.conversation) }
+            ?: PendingIntent.getActivity(this, 0, openWorkspace, PendingIntent.FLAG_IMMUTABLE)
         val status = when {
             petOnly -> R.string.pet_service_active
             ready -> R.string.sugar_runtime_running
@@ -232,8 +242,10 @@ internal class RuntimeForegroundService : Service() {
             else -> R.string.sugar_launching
         }
         val connection = adb.status()
-        val phoneTasks = MobileUseTasks.activeTasks()
         val text = when {
+            controlled?.controlState == "closing" -> sugarString(R.string.mobile_virtual_closing)
+            controlled?.controlState == "close_failed" -> sugarString(R.string.mobile_virtual_close_failed)
+            controlled != null -> sugarString(R.string.mobile_virtual_control_notice)
             phoneTasks.any { !it.parked } -> sugarString(R.string.mobile_use_running)
             phoneTasks.isNotEmpty() -> sugarString(R.string.mobile_use_kept_screens)
             connection.optString("phase") == "connecting" -> sugarString(R.string.sugar_runtime_adb_connecting, sugarString(status))
@@ -251,11 +263,14 @@ internal class RuntimeForegroundService : Service() {
             .setOngoing(true)
             .setShowWhen(false)
             .apply {
-                for ((id, screen, displayId, parked) in phoneTasks.take(3)) {
+                for (task in phoneTasks.take(3)) {
+                    if (task.controlState == "closing") continue
+                    val (id, screen, displayId, parked) = task
                     val stop = Intent(this@RuntimeForegroundService, RuntimeForegroundService::class.java)
                         .setAction(STOP_MOBILE).setData(android.net.Uri.parse("sugar://mobile-use/stop/$id"))
                     val click = PendingIntent.getService(this@RuntimeForegroundService, 0, stop, PendingIntent.FLAG_IMMUTABLE)
                     val label = when {
+                        task.controlState == "close_failed" -> R.string.mobile_virtual_retry_close
                         parked -> R.string.mobile_virtual_stop
                         screen == "main" -> R.string.mobile_use_stop_main
                         else -> R.string.mobile_use_stop_virtual
@@ -303,6 +318,7 @@ internal class RuntimeForegroundService : Service() {
         fun languageChanged() {
             val service = instance ?: return
             service.desktopPet?.refresh()
+            service.takeoverOverlay?.refresh()
             val manager = service.getSystemService(NotificationManager::class.java)
             manager.getNotificationChannel(CHANNEL)?.let { channel ->
                 channel.name = service.sugarString(R.string.sugar_runtime_channel)

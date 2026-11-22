@@ -7,7 +7,7 @@ import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 
-internal enum class MobileIcon { PHONE, DISPLAYS, PREVIEW, STOP, FOLD, CANCEL, SETTINGS, CHAT, PLUS }
+internal enum class MobileIcon { PHONE, DISPLAYS, PREVIEW, STOP, FOLD, CANCEL, SETTINGS, CHAT, PLUS, EXPAND }
 
 /** A single stroke weight for both the tiny controls and the folded task badge. */
 internal class MobileControlIcon(private val icon: MobileIcon, color: Int) : Drawable() {
@@ -59,6 +59,7 @@ internal class MobileControlIcon(private val icon: MobileIcon, color: Int) : Dra
             }
             MobileIcon.STOP -> canvas.drawRoundRect(5f, 5f, 19f, 19f, 3f, 3f, pen)
             MobileIcon.FOLD -> line(5, 12, 19, 12)
+            MobileIcon.EXPAND -> { line(6, 9, 12, 15); line(12, 15, 18, 9) }
             MobileIcon.CANCEL -> { line(6, 6, 18, 18); line(18, 6, 6, 18) }
             MobileIcon.PLUS -> { line(5, 12, 19, 12); line(12, 5, 12, 19) }
             MobileIcon.CHAT -> canvas.drawPath(checkNotNull(bubble), pen)

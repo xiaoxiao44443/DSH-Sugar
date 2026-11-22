@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pet_detail_updated">上次更新 · %1$s 前</string>
     <string name="pet_companion_ready">我在这儿，等你下一句。</string>
     <string name="pet_detail_waiting">脚本等待中 · 本步 %1$s</string>
     <string name="pet_detail_thinking">思考中 · 本步 %1$s</string>

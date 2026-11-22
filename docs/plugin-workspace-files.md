@@ -4,7 +4,15 @@ Sugar 为安装的 Host 插件提供 Node 文件兼容层。插件工具由工�
 
 没有关联工作区的插件操作，看不到 `/workspace`，也不能创建这个入口。读操作返回 `ENOENT`，写操作返回 `EACCES`。在工具调用中发起的异步任务保留原工作区身份，读写时重新读取会话权限。切换前台会话不会把任务的输出转移到另一个项目。
 
-支持常用同步、callback、Promise 文件方法、读写流和基础 FileHandle。跨工作区复用文件句柄会被拒绝；宿主与项目之间的 `copyFile` 采用分块复制，并保留排他创建语义。单次文件 RPC 上限为 32 MiB，较大文件应使用流。尚未实现的工作区方法，例如 `watch`、`glob`、`opendir`，明确返回 `ENOTSUP`。
+支持常用同步、callback、Promise 文件方法、读写流和基础 FileHandle。跨工作区复用文件句柄会被拒绝；宿主与项目之间的 `copyFile` 采用分块复制，并保留排他创建语义。单次文件 RPC 上限为 32 MiB，较大文件应使用流。支持 `glob` / `globSync` / `fs.promises.glob` 和 `opendir` / `opendirSync` / `fs.promises.opendir`。尚未实现的工作区持续监听方法（如 `watch`、`watchFile`）仍明确返回 `ENOTSUP`。
+
+## 文件匹配与目录遍历
+
+`glob` 默认从当前会话的 `/workspace` 开始匹配，支持多个模式、`**`、花括号、`cwd`（含文件 URL）、`exclude`（模式数组或回调）、`withFileTypes` 和 `followSymlinks`。返回的目录项使用插件视图中的路径。匹配沿用 Node.js 24.22.2 的规则；权限、工作区归属和传输错误会明确返回，普通路径不存在则得到空匹配。匹配迭代器绑定创建时的工作区，不能转交给另一工作区继续读取。
+
+`opendir` 返回可逐项读取的目录句柄，支持 `read` / `readSync`、`close` / `closeSync`、异步迭代、编码、读取缓冲大小和递归选项。异步迭代结束或提前退出会关闭句柄；目录句柄与普通文件句柄共用后端数量及空闲回收限制。递归打开每一层目录时重新检查工作区路径，不跟随目录符号链接跨出工作区。无工作区操作仍不能读取 `/workspace`。
+
+Glob 引擎和匹配器的来源、许可证及本地改动见 [上游说明](plugin-glob-upstream.md)。
 
 ## 插件依赖
 

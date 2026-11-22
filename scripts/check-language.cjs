@@ -72,6 +72,31 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
     await paint();
     assert.equal(await evaluate("settings().querySelector('[data-pane=general]').hidden"),false,'Back from About returns to General');
   }
+  async function checkNotificationPreferences() {
+    await evaluate("settings().querySelector('[data-go=notifications]').click()");
+    await paint();
+    const control = key => 'settings().querySelector(' + JSON.stringify('[data-notice="' + key + '"]') + ')';
+    assert.equal(await evaluate(control('muteWhilePetVisible') + '.getAttribute("aria-checked")'),'true','Pet notification mute defaults to enabled');
+    await evaluate(`window.noticeWrites=[];window.captureNotice=({data})=>{
+      const m=JSON.parse(data);if(m.type==='notificationSettings')noticeWrites.push(m.changes);
+    };native.addEventListener('message',captureNotice);`);
+    for (const [language, label, note] of [
+      ['zh','桌宠免通知','桌宠显示时，暂停消息通知'],
+      ['en','Mute with pet','Pause notifications while the pet is visible.'],
+      ['ja','ペット表示中は通知オフ','ペット表示中はメッセージ通知を止めます。']]) {
+      await evaluate(`native.postMessage(JSON.stringify({type:'languageState',language:${JSON.stringify(language)}}))`);
+      await paint();
+      assert.equal(await evaluate("settings().querySelector('#notice-pet').firstChild.textContent"), label);
+      assert.equal(await evaluate("settings().querySelector('#notice-pet small').textContent"), note);
+    }
+    await evaluate(control('muteWhilePetVisible') + '.click()');
+    await paint();
+    assert.equal(await evaluate(control('muteWhilePetVisible') + '.getAttribute("aria-checked")'),'false');
+    assert.equal(await evaluate(control('question') + '.disabled'),false,'Preferences remain editable while notifications are paused');
+    assert.deepEqual(await evaluate('noticeWrites'),[{muteWhilePetVisible:false}]);
+    await evaluate(`native.removeEventListener("message",captureNotice); rail.querySelector('[data-action="back"]').click()`);
+    await paint();
+  }
   async function checkEditingInteraction() {
     await evaluate(`{
       const field=document.createElement('textarea'); field.id='ime-fixture';
@@ -599,6 +624,7 @@ module.exports = async function checkLanguage({assets, send, evaluate, paint}) {
     await paint();
     assert.equal(await evaluate("settings().querySelector('[data-pane=overview]').hidden"),false,'Back from General returns to overview');
     await checkRootSettings();
+    await checkNotificationPreferences();
     await checkStorage();
     await checkWorkspaceSelection();
     const writes = await evaluate('writes');

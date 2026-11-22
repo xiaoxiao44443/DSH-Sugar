@@ -29,6 +29,8 @@ internal object VirtualScreen {
     private class Session(val id: String, val link: Link, val main: Boolean) {
         val wireId: String = UUID.randomUUID().toString()
         val revoked = AtomicBoolean()
+        val closing = AtomicBoolean()
+        val closeLock = Any()
         val opened = CompletableFuture<JSONObject>()
         val sendLock = Any()
         var openSent = false
@@ -151,12 +153,17 @@ internal object VirtualScreen {
         return if (session.revoked.get() && result.optBoolean("ok")) closed() else result
     }
 
-    private fun await(future: CompletableFuture<JSONObject>): JSONObject = try {
-        future.get(20, TimeUnit.SECONDS)
+    private fun await(future: CompletableFuture<JSONObject>, timeoutMs: Long = 20000L): JSONObject = try {
+        future.get(timeoutMs, TimeUnit.MILLISECONDS)
     } finally {
         if (!future.isDone) future.cancel(false)
     }
     private fun closed() = screenError("session_closed","The virtual display is no longer active.")
+
+    /** Resource ownership survives turning the user's connection setting off until cleanup finishes. */
+    fun hasSession(id: String): Boolean = synchronized(lock) {
+        sessions[id]?.let { !it.revoked.get() && !it.link.ended.get() } == true
+    }
 
     fun isOpen(id: String): Boolean {
         val session = synchronized(lock) { sessions[id] } ?: return false
@@ -165,21 +172,38 @@ internal object VirtualScreen {
     }
     fun close(id: String) { synchronized(lock) { sessions[id] }?.let(::closeSession) }
 
+    /** Runs on a worker. A failed return keeps the lease and its helper alive for a user retry. */
+    fun closeAndAwait(id: String): JSONObject {
+        val session = synchronized(lock) { sessions[id] } ?: return JSONObject().put("ok", true).put("closed", true)
+        return closeAndAwait(session)
+    }
+
     private fun closeSession(session: Session) {
-        if (!session.revoked.compareAndSet(false,true)) return
-        session.opened.complete(closed())
-        cleanup.execute {
-            try {
-                val response = synchronized(session.sendLock) {
-                    if (session.openSent && !session.link.ended.get())
-                        session.link.submit(session, "close", JSONObject()) { true }
-                    else null
-                }
-                response?.let(::await)
-            } catch (_: Exception) {
-                // A lost transport releases its displays via Binder. Never revoke an unrelated generation.
-            } finally { forget(session) }
+        session.closing.set(true)
+        cleanup.execute { closeAndAwait(session) }
+    }
+
+    private fun closeAndAwait(session: Session): JSONObject = synchronized(session.closeLock) {
+        if (session.revoked.get()) return@synchronized JSONObject().put("ok", true).put("closed", true)
+        session.closing.set(true)
+        val result = try {
+            val response = synchronized(session.sendLock) {
+                if (session.openSent && !session.link.ended.get())
+                    session.link.submit(session, "close", JSONObject()) { true }
+                else null
+            }
+            response?.let(::await) ?: JSONObject().put("ok", true).put("closed", true)
+        } catch (_: Exception) {
+            screenError("close_reply_unavailable", "Closing the virtual screen could not be verified. Retry closing it in Sugar.")
+                .put("closed", session.link.ended.get()).put("dispatch", "unknown").put("verification", "unknown")
         }
+        if (result.optBoolean("closed") || session.link.ended.get()) {
+            session.revoked.set(true)
+            session.opened.complete(closed())
+            forget(session)
+        }
+        // In particular, never forget a live helper after a timeout or a failed task return.
+        result
     }
 
     private fun removed(link: Link, wireId: String) {
@@ -205,15 +229,37 @@ internal object VirtualScreen {
 
     fun execute(id: String, op: String, args: JSONObject, allowed: () -> Boolean): JSONObject {
         if (op !in operations) return screenError("unsupported","Unknown virtual screen operation.")
+        return request(id, op, args, allowed)
+    }
+
+    /** Not in the agent operation whitelist. Only native user controls can transfer a display lease. */
+    fun transfer(id: String, restore: Boolean, allowed: () -> Boolean): JSONObject =
+        request(id, if (restore) "restore" else "takeover", JSONObject(), allowed)
+
+    fun focus(id: String, allowed: () -> Boolean): JSONObject = request(id, "focus", JSONObject(), allowed)
+
+    /** A short UI-only query; it never participates in control transfers or observation generations. */
+    fun foregroundStatus(id: String, appearanceBounds: IntArray? = null, allowed: () -> Boolean): JSONObject {
+        val args = JSONObject()
+        if (appearanceBounds?.size == 4) args.put("appearance", true).put("overlay_bounds", JSONObject()
+            .put("left", appearanceBounds[0]).put("top", appearanceBounds[1])
+            .put("right", appearanceBounds[2]).put("bottom", appearanceBounds[3]))
+        return request(id, "foreground_status", args, allowed, 1500L)
+    }
+
+    private fun request(id: String, op: String, args: JSONObject, allowed: () -> Boolean, timeoutMs: Long = 20000L): JSONObject {
+        if (op !in operations && op !in setOf("takeover", "restore", "focus", "control_status", "foreground_status")) return screenError("unsupported","Unknown virtual screen operation.")
         val session = synchronized(lock) { sessions[id] } ?: return closed()
         return try {
             val response = synchronized(session.sendLock) {
-                session.link.submit(session, op, args) { !session.revoked.get() && allowed() }
+                session.link.submit(session, op, args) { !session.revoked.get() && !session.closing.get() && allowed() }
             }
-            val result = await(response)
+            val result = await(response, timeoutMs)
             if (session.revoked.get() || !allowed()) closed().put("dispatch","unknown").put("verification","unknown")
             else result
         } catch (_: Exception) {
+            if (op == "foreground_status") return screenError("foreground_unavailable", "The foreground task could not be verified.")
+                .put("task_foreground", JSONObject.NULL).put("dispatch", "not_sent").put("verification", "unknown")
             if (op == "preview") return screenError("preview_unavailable","The preview frame was not available.")
             val failure = if (isOpen(id)) {
                 screenError("reply_unavailable","Virtual display command lost its reply. Observe the screen before the next action.")

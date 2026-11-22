@@ -123,6 +123,7 @@ internal class DesktopPetOverlay(private val context: Context, private val onDis
                 PetWindow(display).also { window = it }
             }
             overlay.show(DesktopPets.selected(context), displayState, DesktopPets.size(context))
+            AgentNotifications.petVisibilityChanged(overlay.attached)
         } catch (_: WindowManager.BadTokenException) {
             removeWindow()
         } catch (_: SecurityException) {
@@ -134,6 +135,7 @@ internal class DesktopPetOverlay(private val context: Context, private val onDis
     }
 
     private fun removeWindow() {
+        AgentNotifications.petVisibilityChanged(false)
         window?.remove()
         window = null
     }
@@ -194,13 +196,9 @@ internal class DesktopPetOverlay(private val context: Context, private val onDis
         private var spokenState: String? = null
         private var spokenSession: String? = null
         private var spokenResult: DesktopPetActivity.Result? = null
-        private var readingReply: DesktopPetActivity.Result? = null
-        private val finishReply = Runnable {
-            val finished = readingReply
-            readingReply = null
-            if (finished != null) DesktopPetActivity.dismiss(finished)
-            if (window === this) refresh()
-        }
+        private val replyReading = PetReplyReading()
+        // Completing the first pass releases reading protection, not the last useful message.
+        private val finishReply = Runnable { if (window === this) refresh() }
         private var spokenPhase: String? = null
         private var spokenCaption: String? = null
         private val phoneProgress = PhoneCaptionProgress()
@@ -255,7 +253,7 @@ internal class DesktopPetOverlay(private val context: Context, private val onDis
                 val result = spokenResult
                 if (result?.kind == "reply") {
                     main.removeCallbacks(finishReply)
-                    readingReply = null
+                    replyReading.clear()
                 }
                 val session = result?.sessionId ?: spokenSession.takeUnless { spokenState == "idle" }
                 if (session != null && DesktopPets.openConversationOnBubbleTap(context)) {
@@ -336,16 +334,10 @@ internal class DesktopPetOverlay(private val context: Context, private val onDis
             main.postDelayed(idleChatter, delay)
         }
 
-        fun show(pet: String, status: DesktopPetActivity.Display, sizeDp: Int) {
-            val (state, session, phase, incoming, detail, category) = status
-            // A reply at a companion input prompt stays readable until dismissed or superseded.
-            // Ordinary tool updates can retain the same reply. A newer reply takes its place immediately.
-            val waitingForInput = status.phoneTask?.awaitingCompanion == true
-            if (readingReply != incoming || waitingForInput) {
-                main.removeCallbacks(finishReply)
-                readingReply = null
-            }
-            val result = incoming
+        fun show(pet: String, incomingStatus: DesktopPetActivity.Display, sizeDp: Int) {
+            val status = replyReading.select(incomingStatus, SystemClock.uptimeMillis())
+            val (state, session, phase, result, detail, category) = status
+            main.removeCallbacks(finishReply)
             replies.bind(pet, status)
             val caption = when (status.phoneStep) {
                 "awaitingCompanion" -> context.sugarString(R.string.pet_companion_ready)
@@ -407,10 +399,14 @@ internal class DesktopPetOverlay(private val context: Context, private val onDis
             petSizeDp = sizeDp
             bubble.showText(displayedPhrase)
             main.removeCallbacks(updatePhoneDetail)
-            val showProgress = result == null && pause == null && replies.prompt == null
-            val tick = phoneProgress.update(status.progressTask.takeIf { showProgress }, displayedPhrase,
+            val showProgress = pause == null && replies.prompt == null
+            val age = if (showProgress) PetCaptionAge.update(status, System.nanoTime() / 1000L) else null
+            val tick = phoneProgress.update(status.progressTask.takeIf { showProgress && age == null }, displayedPhrase,
                 !detail.isNullOrBlank(), category == "thinking", SystemClock.elapsedRealtime(), status.toolCaptionAt)
-            bubble.showDetail(tick.hint?.let { hint ->
+            bubble.showDetail(age?.seconds?.let { seconds ->
+                val elapsed = "%d:%02d".format(java.util.Locale.ROOT, seconds / 60, seconds % 60)
+                context.sugarString(R.string.pet_detail_updated, elapsed)
+            } ?: tick.hint?.let { hint ->
                 val seconds = hint.seconds
                 val elapsed = "%d:%02d".format(java.util.Locale.ROOT, seconds / 60, seconds % 60)
                 val label = when (hint.activity) {
@@ -422,14 +418,13 @@ internal class DesktopPetOverlay(private val context: Context, private val onDis
                 }
                 context.sugarString(label, elapsed)
             })
-            tick.nextIn?.let { main.postDelayed(updatePhoneDetail, it) }
+            (age?.nextIn ?: tick.nextIn)?.let { main.postDelayed(updatePhoneDetail, it) }
             if (displayedPhrase == null && bubble.parent != null) wm.removeViewImmediate(bubble)
             if (!layoutPet(force = true)) return
             if (character.parent == null) wm.addView(character, characterParams)
             if (displayedPhrase != null && bubble.parent == null) wm.addView(bubble, bubbleParams)
-            if (result?.kind == "reply" && !waitingForInput && readingReply == null) {
-                readingReply = result
-                main.postDelayed(finishReply, bubble.firstPassDurationMs().coerceAtLeast(4_000L))
+            replyReading.start(status, bubble.firstPassDurationMs(), SystemClock.uptimeMillis())?.let {
+                main.postDelayed(finishReply, it)
             }
             val animation = character.drawable as? AnimatedImageDrawable
             if (animation != null && !animation.isRunning) animation.start()
@@ -567,7 +562,7 @@ internal class DesktopPetOverlay(private val context: Context, private val onDis
             main.removeCallbacks(resumeSpeech)
             main.removeCallbacks(finishReply)
             main.removeCallbacks(updatePhoneDetail)
-            readingReply = null
+            replyReading.clear()
             bubble.showText(null)
             phrase = null
             (character.drawable as? AnimatedImageDrawable)?.stop()

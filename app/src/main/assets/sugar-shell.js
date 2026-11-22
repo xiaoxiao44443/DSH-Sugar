@@ -1087,6 +1087,8 @@
             <button type="button" data-notice="permission" role="switch" aria-labelledby="notice-permission"></button></div>
           <div class="row"><span id="notice-question">提问通知<small>需要你回答问题时，在前台和后台都提醒</small></span>
             <button type="button" data-notice="question" role="switch" aria-labelledby="notice-question"></button></div></div>
+          <div class="group"><div class="row"><span id="notice-pet">桌宠免通知<small>桌宠显示时，暂停消息通知</small></span>
+            <button type="button" data-notice="muteWhilePetVisible" role="switch" aria-labelledby="notice-pet"></button></div></div>
         </fieldset>`)}
       ${settingsPane('splash', window.SugarSplashSettings.controls)}
       ${settingsPane('splash-preview', window.SugarSplashPreview.controls)}
@@ -1192,7 +1194,7 @@
       paintAdb();
       state();
     });
-    notices = {completion:'background', permission:true, question:true, ...notifications};
+    notices = {completion:'background', permission:true, question:true, muteWhilePetVisible:true, ...notifications};
     systemNotificationsEnabled = enabled !== false;
     splashPreviewUrl = previewUrl;
     initialSplash = splash;

@@ -339,7 +339,7 @@ async function checkShellHistory({evaluate, touch, tap, swipeAt, paint, screen, 
   await click('back','dsh/right/index.html');
   await evaluate('testPort.close();SugarShell.dispose()');
   await evaluate(readFileSync(shell,'utf8'));
-  await mount({fullEdgeGestures:savedEdge,notifications:{completion:'off',permission:false,question:true}});
+  await mount({fullEdgeGestures:savedEdge,notifications:{completion:'off',permission:false,question:true,muteWhilePetVisible:false}});
   await click('settings','overview'); await click('gestures','gestures');
   assert.equal(await evaluate(edgeSwitch + ".getAttribute('aria-checked')"),'true','restored native preference');
   await checkColorPage({evaluate,click,point,waitPage,paint,screen,fromEdge});
@@ -525,16 +525,17 @@ async function checkNotificationSettings({evaluate,click,point,tap,paint,send}) 
     const pane=paneRoot().querySelector('[data-pane=notifications]');
     return [pane.hidden,pane.querySelector('#notice-completion').value,...[...pane.querySelectorAll('[role=switch]')].map(b=>b.getAttribute('aria-checked')),pane.querySelector('.system-notice').hidden];
   })()`);
-  assert.deepEqual(await read(),[false,'off','false','true',true], 'persisted Android preferences hydrate the controls');
+  assert.deepEqual(await read(),[false,'off','false','true','false',true], 'persisted Android preferences hydrate the controls');
   await evaluate(`window.noticeMessages=[];window.recordNotice=({data})=>noticeMessages.push(JSON.parse(data));
     palettePort.addEventListener('message',recordNotice);`);
   const trigger = "paneRoot().querySelector('#notice-completion')";
   const picker = "paneRoot().querySelector('#notice-options')";
+  await evaluate(trigger + '.scrollIntoView({block:"nearest"})'); await paint();
   await point(trigger);
   assert.deepEqual(await evaluate(`(()=>{
     const d=${picker}, r=d.getBoundingClientRect();
     return [d.open, getComputedStyle(d,'::backdrop').backgroundColor,
-      getComputedStyle(d.querySelector('button')).fontSize, paneRoot().activeElement.value,
+      getComputedStyle(d.querySelector('button')).fontSize, paneRoot().activeElement?.value,
       r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight];
   })()`),[true,'rgba(0, 0, 0, 0)','13px','off',true]);
   await checkNotificationGlass({evaluate,send,paint});
@@ -549,14 +550,14 @@ async function checkNotificationSettings({evaluate,click,point,tap,paint,send}) 
   await point(trigger);
   await point(picker+".querySelector('[value=always]')");
   await evaluate(`const pane=paneRoot().querySelector('[data-pane=notifications]');
-    pane.querySelector('[data-notice=permission]').click(); pane.querySelector('[data-notice=question]').click();
+    pane.querySelector('[data-notice=permission]').click(); pane.querySelector('[data-notice=question]').click(); pane.querySelector('[data-notice=muteWhilePetVisible]').click();
     palettePort.postMessage(JSON.stringify({type:'notificationStatus',enabled:false}));`);
   await paint();
-  assert.deepEqual(await read(),[false,'always','true','false',false], 'permission warning coexists with independent switches');
+  assert.deepEqual(await read(),[false,'always','true','false','true',false], 'permission warning coexists with independent switches');
   await evaluate("paneRoot().querySelector('[data-system-notifications]').click()"); await paint();
   const msgs=await evaluate("palettePort.removeEventListener('message',recordNotice);noticeMessages");
   assert.deepEqual(msgs.filter(m=>m.type==='notificationSettings').map(m=>m.changes),
-    [{completion:'background'},{completion:'always'},{permission:true},{question:false}]);
+    [{completion:'background'},{completion:'always'},{permission:true},{question:false},{muteWhilePetVisible:true}]);
   assert(msgs.some(m=>m.type==='openNotificationSettings'));
   assert(!msgs.some(m=>m.type==='settings'));
   await click('back','overview'); await click('back','dsh/home');

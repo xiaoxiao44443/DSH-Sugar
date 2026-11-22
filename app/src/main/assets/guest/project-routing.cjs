@@ -497,9 +497,9 @@ const api = { within, withinStream, workspaceMediaPath, serveSessionFile,
   adbShell(agent, command, signal) {
     return adbRequest(agent, {op:'adbShell', command, conversation:agent.id, route:{turn:currentTurnId(agent.session)}}, signal);
   },
-  agentNotification(kind, sessionId, eventId, title, dismiss) {
+  agentNotification(kind, sessionId, eventId, title, dismiss, body) {
     return management({ op: dismiss ? 'dismissAgentNotification' : 'agentNotification',
-      kind, sessionId, eventId, title }, AbortSignal.timeout(5000));
+      kind, sessionId, eventId, title, body }, AbortSignal.timeout(5000));
   },
   attachPetReplies(handler) {
     petReplies = handler;
@@ -509,8 +509,8 @@ const api = { within, withinStream, workspaceMediaPath, serveSessionFile,
     sessionStorage = handler;
     return () => { if (sessionStorage === handler) sessionStorage = undefined; };
   },
-  petState(state, sessionId, result, phase, caption, phoneStep, captionAt) {
-    return management({op:'petState', state, sessionId, result, phase, caption, phoneStep, captionAt}, AbortSignal.timeout(3000));
+  petState(state, sessionId, result, phase, caption, phoneStep, captionAt, turnStartedAt) {
+    return management({op:'petState', state, sessionId, result, phase, caption, phoneStep, captionAt, turnStartedAt}, AbortSignal.timeout(3000));
   },
   clientRevision(id, upstream) {
     const recipe = clientRecipes.get(id);

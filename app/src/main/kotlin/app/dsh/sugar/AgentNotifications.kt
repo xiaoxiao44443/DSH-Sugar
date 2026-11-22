@@ -10,6 +10,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.app.KeyguardManager
+import android.provider.Settings
 import android.service.notification.StatusBarNotification
 import org.json.JSONArray
 import org.json.JSONObject
@@ -22,13 +25,14 @@ internal class AgentNotificationPreferences(context: Context) {
         .put("completion", prefs.getString("completion", "background"))
         .put("permission", prefs.getBoolean("permission", true))
         .put("question", prefs.getBoolean("question", true))
+        .put("muteWhilePetVisible", prefs.getBoolean("muteWhilePetVisible", true))
 
     fun update(value: JSONObject) {
         val edit = prefs.edit()
         val completion = value.opt("completion")
         if (completion is String && completion in setOf("background", "always", "off"))
             edit.putString("completion", completion)
-        for (key in listOf("permission", "question"))
+        for (key in listOf("permission", "question", "muteWhilePetVisible"))
             (value.opt(key) as? Boolean)?.let { edit.putBoolean(key, it) }
         edit.apply()
     }
@@ -37,6 +41,13 @@ internal class AgentNotificationPreferences(context: Context) {
 /** The foreground runtime and its WebView share a process, but only visible activities count here. */
 internal object AgentNotifications {
     private val visibleActivities = AtomicInteger()
+    @Volatile private var petAttached = false
+    fun petVisibilityChanged(attached: Boolean) { petAttached = attached }
+
+    // The preference alone is insufficient: a hidden pet cannot replace a notification.
+    private fun petVisible(context: Context): Boolean = petAttached && Settings.canDrawOverlays(context) &&
+        context.getSystemService(PowerManager::class.java).isInteractive &&
+        !context.getSystemService(KeyguardManager::class.java).isKeyguardLocked
     fun activityStarted() { visibleActivities.incrementAndGet() }
     fun activityStopped() { visibleActivities.decrementAndGet() }
 
@@ -44,7 +55,7 @@ internal object AgentNotifications {
     private const val NOTICE = 2
 
     private enum class Kind(val key: String, val channelName: Int, val heading: Int, val importance: Int) {
-        COMPLETION("completion", R.string.agent_turn_channel, R.string.agent_turn_title, NotificationManager.IMPORTANCE_DEFAULT),
+        COMPLETION("completion", R.string.agent_turn_channel, R.string.agent_turn_title, NotificationManager.IMPORTANCE_HIGH),
         PERMISSION("permission", R.string.agent_approval_channel, R.string.agent_approval_title, NotificationManager.IMPORTANCE_HIGH),
         QUESTION("question", R.string.agent_question_channel, R.string.agent_question_title, NotificationManager.IMPORTANCE_HIGH)
     }
@@ -109,14 +120,10 @@ internal object AgentNotifications {
         if (seen) return
         if (!dismiss) {
             val settings = AgentNotificationPreferences(context).read()
-            val enabled = when (kind) {
-                Kind.COMPLETION -> when (settings.getString("completion")) {
-                    "always" -> true
-                    "background" -> visibleActivities.get() == 0
-                    else -> false
-                }
-                else -> settings.getBoolean(kind.key)
-            }
+            val policy = AgentNotificationPolicy(settings.getString("completion"), settings.getBoolean("permission"),
+                settings.getBoolean("question"), settings.getBoolean("muteWhilePetVisible"))
+            val enabled = policy.allows(kind.key, visibleActivities.get() > 0,
+                policy.muteWhilePetVisible && petVisible(context))
             if (enabled && manager.areNotificationsEnabled() && (Build.VERSION.SDK_INT < 33 ||
                     context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)) {
                 val channel = "agent_" + kind.key
@@ -125,10 +132,14 @@ internal object AgentNotifications {
                 val conversation = (event.opt("title") as? String)?.lineSequence()
                     ?.joinToString(" ") { it.trim() }?.trim()?.takeIf { it.isNotEmpty() }?.take(120)
                     ?: context.sugarString(R.string.agent_untitled, session.removePrefix("session-").take(8))
+                val heading = context.sugarString(kind.heading)
+                val body = AgentNotificationBody.normalize(event.opt("body") as? String) ?: heading
                 val notification = Notification.Builder(context, channel)
                     .setSmallIcon(R.drawable.ic_runtime_notification)
                     .setContentTitle(conversation)
-                    .setContentText(context.sugarString(kind.heading))
+                    .setContentText(body)
+                    .setStyle(Notification.BigTextStyle().bigText(body))
+                    .setSubText(heading)
                     .setContentIntent(open)
                     .setCategory(if (kind == Kind.COMPLETION) Notification.CATEGORY_STATUS else Notification.CATEGORY_MESSAGE)
                     .setVisibility(Notification.VISIBILITY_PRIVATE)

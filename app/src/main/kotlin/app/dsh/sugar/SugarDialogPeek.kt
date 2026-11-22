@@ -24,6 +24,7 @@ internal class SugarDialogPeek(private val activity: Activity, private val windo
     private val visibleArea = Rect()
     var requestedCardHeight = 0
     var previewShiftY = 0
+    private var draggingPreview = false
     private var headroom = 0
     private var footroom = 0
     private var figureShown = false
@@ -40,6 +41,7 @@ internal class SugarDialogPeek(private val activity: Activity, private val windo
 
     override fun onViewAttachedToWindow(view: View) {
         backdrop = DialogGlassBackdrop(activity, decor) { invalidateSelf() }
+        backdrop?.setSamplingPaused(draggingPreview)
         decor.clipToOutline = false
         decor.viewTreeObserver.addOnPreDrawListener(this)
     }
@@ -87,7 +89,7 @@ internal class SugarDialogPeek(private val activity: Activity, private val windo
             return false
         }
         val area = dialogPeekBounds(card.left, card.top, card.right, bounds.left, bounds.top, bounds.right,
-            density, compact)
+            density, compact, preview = requestedCardHeight > 0)
         if (area != null) {
             if (figure.bounds.run { left != area.left || top != area.top || right != area.right || bottom != area.bottom })
                 figure.setBounds(area.left, area.top, area.right, area.bottom)
@@ -96,6 +98,11 @@ internal class SugarDialogPeek(private val activity: Activity, private val windo
         figureShown = area != null
         backdrop?.update(card, radius, blur)
         return true
+    }
+
+    fun setPreviewDragging(dragging: Boolean) {
+        draggingPreview = dragging
+        backdrop?.setSamplingPaused(dragging)
     }
 
     override fun getPadding(padding: Rect): Boolean {

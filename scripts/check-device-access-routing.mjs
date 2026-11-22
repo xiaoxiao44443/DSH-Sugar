@@ -52,6 +52,11 @@ try {
   assert.match(policy,/open or operate an app, call mobile_use\(\{\}\).*choose the screen/);
   assert.match(skills.get('mobile-use').content,/app name alone does not specify the main screen/);
   assert.equal(tools.get('mobile_use').parameters.screen.default,'ask');
+  const mobileGuide = skills.get('mobile-use').content;
+  assert(mobileGuide.includes('screen.get("window")'));
+  assert.match(mobileGuide,/floating window that is already open is part of the main screen/);
+  assert.match(mobileGuide,/After a window moves or resizes, observe again/);
+  assert.doesNotMatch(mobileGuide,/window_mode/);
   // An updated guide must not revoke ADB access in a restored conversation that
   // read the previous shipped guide. Use its frozen intro and unchanged commands.
   const current = skills.get('android-adb').content;

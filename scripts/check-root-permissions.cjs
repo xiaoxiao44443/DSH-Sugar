@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const {pathToFileURL} = require('node:url');
 const path = require('node:path');
+const {readFile} = require('node:fs/promises');
 
 async function main() {
   const {authorizeRoot} = await import(pathToFileURL(path.resolve(__dirname,
@@ -58,8 +59,21 @@ async function main() {
   const during = new AbortController();
   answer = () => {during.abort(Error('cancelled'));return 'allowed-once';};
   await assert.rejects(run(during.signal),/cancelled/);
+  // Source bindings protect the approval-time admission boundary; Native's gate
+  // tests cover the generation and active-command behavior itself.
+  const cli = await readFile(path.resolve(__dirname,
+    '../app/src/main/kotlin/app/dsh/sugar/runtime/ProjectAdbCli.kt'), 'utf8');
+  const rootAdmission = cli.indexOf('val rootAdmission = if (op == "root-exec") MobileUseTasks.captureRootAdmission() else null');
+  const uiAdmission = cli.indexOf('val uiAdmission = if (inspection?.action != null) MobileUseTasks.captureUiAdmission() else null');
+  const authorize = cli.indexOf('val identity = authorize(');
+  assert(rootAdmission >= 0 && rootAdmission < authorize, 'Root admission is captured before approval');
+  assert(uiAdmission >= 0 && uiAdmission < authorize, 'ADB UI admission is captured before approval');
+  assert.match(cli, /output\.exit\(MobileUseTasks\.withRootCommand\(checkNotNull\(rootAdmission\)\)\s*\{\s*rootAccess\.execOut\(/);
+  assert.match(cli, /if \(op == "root-status"\) \{\s*stdout\.write\(\(rootAccess\.status\(\)/);
+  assert.match(cli, /MobileUseTasks\.withAdbUiAdmitted\(checkNotNull\(uiAdmission\), actor, identity\.optJSONObject\("route"\), ui, shellCommand, ::execute\)/);
+  assert.doesNotMatch(cli, /MobileUseTasks\.withAdbUi\(/);
   // The service is a trusted host integration. These tests deliberately do not
   // claim resistance to a host plugin replacing ctx or editing shared .dsh.
-  console.log('PASS Root exact-command approval, wait, deny/cancel/unavailable, full vs Auto, turn/preset changes and manual terminal');
+  console.log('PASS Root exact-command approval, wait, deny/cancel/unavailable, full vs Auto, turn/preset changes, manual terminal and early Root/ADB takeover admission');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

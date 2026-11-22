@@ -48,6 +48,11 @@ internal class DialogGlassBackdrop(
     private var retriedEmpty = false
     private var awaitingOwnerFrame = false
     private var disposed = false
+    private var samplingPaused = false
+    private var frozenOffsetX = 0
+    private var frozenOffsetY = 0
+    private var frozenPanelLeft = 0
+    private var frozenPanelTop = 0
     private var generation = 0
     private var lastCopy = 0L
     private var frame: Frame? = null
@@ -58,7 +63,7 @@ internal class DialogGlassBackdrop(
         request()
     }
     private val ownerDraw = ViewTreeObserver.OnPreDrawListener {
-        if (!disposed && !awaitingOwnerFrame && radius > 0f && decor.isShown) {
+        if (!disposed && !samplingPaused && !awaitingOwnerFrame && radius > 0f && decor.isShown) {
             if (owner.isHardwareAccelerated) {
                 // A copy requested at onDraw can still receive the previous Surface buffer.
                 awaitingOwnerFrame = true
@@ -116,8 +121,21 @@ internal class DialogGlassBackdrop(
         request()
     }
 
+    fun setSamplingPaused(paused: Boolean) {
+        if (samplingPaused == paused) return
+        samplingPaused = paused
+        if (paused) {
+            frozenOffsetX = offsetX
+            frozenOffsetY = offsetY
+            frozenPanelLeft = panel.left
+            frozenPanelTop = panel.top
+            main.removeCallbacks(copy)
+            scheduled = false
+        } else request()
+    }
+
     private fun request() {
-        if (disposed || radius <= 0f || panel.isEmpty || !decor.isShown) return
+        if (disposed || samplingPaused || radius <= 0f || panel.isEmpty || !decor.isShown) return
         dirty = true
         if (copying || scheduled) return
         scheduled = true
@@ -127,7 +145,7 @@ internal class DialogGlassBackdrop(
     private fun capture() {
         scheduled = false
         dirty = false
-        if (disposed || radius <= 0f || !decor.isHardwareAccelerated || !decor.isShown || !owner.isShown ||
+        if (disposed || samplingPaused || radius <= 0f || !decor.isHardwareAccelerated || !decor.isShown || !owner.isShown ||
             Build.VERSION.SDK_INT < 31) return
         val area = Rect(panel)
         area.offset(offsetX, offsetY)
@@ -146,7 +164,7 @@ internal class DialogGlassBackdrop(
         try {
             PixelCopy.request(window, Rect(area), pixels, { status ->
                 copying = false
-                if (status == PixelCopy.SUCCESS && !disposed && version == generation && radius > 0f) {
+                if (status == PixelCopy.SUCCESS && !disposed && !samplingPaused && version == generation && radius > 0f) {
                     frame = Frame(area, blurredNode(pixels, area))
                     retriedEmpty = false
                     invalidate()
@@ -190,7 +208,9 @@ internal class DialogGlassBackdrop(
         val area = captured.area
         val save = canvas.save()
         canvas.clipPath(clip)
-        canvas.translate((area.left - offsetX).toFloat(), (area.top - offsetY).toFloat())
+        val x = if (samplingPaused) frozenOffsetX - (panel.left - frozenPanelLeft) else offsetX
+        val y = if (samplingPaused) frozenOffsetY - (panel.top - frozenPanelTop) else offsetY
+        canvas.translate((area.left - x).toFloat(), (area.top - y).toFloat())
         canvas.scale(area.width().toFloat() / captured.node.width, area.height().toFloat() / captured.node.height)
         canvas.drawRenderNode(captured.node)
         canvas.restoreToCount(save)

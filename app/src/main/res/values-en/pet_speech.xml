@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pet_detail_updated">Last update · %1$s ago</string>
     <string name="pet_companion_ready">I’m here whenever you’re ready.</string>
     <string name="pet_detail_waiting">Script waiting · Step %1$s</string>
     <string name="pet_detail_thinking">Thinking · Step %1$s</string>

@@ -30,7 +30,11 @@ class Peer(socketserver.StreamRequestHandler):
         else:
             assert req["sessionId"] == "opaque-1"
             body = {"ok": True}
-            if method == "check" and self.server.check_error:
+            if method in self.server.action_errors:
+                body = {"ok": False, "error": self.server.action_errors[method]}
+            elif method in self.server.action_replies:
+                body = self.server.action_replies[method]
+            elif method == "check" and self.server.check_error:
                 body = {"ok": False,"error":{"code":self.server.check_error,"message":"no longer current"}}
             elif method == "companion_wait":
                 if self.server.wait_reason == "timeout":
@@ -78,6 +82,8 @@ class MobileUseTest(unittest.TestCase):
         self.server.observation_fields = {}
         self.server.check_error = None
         self.server.feedback_error = None
+        self.server.action_errors = {}
+        self.server.action_replies = {}
         self.server.wait_reason = "timeout"
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -277,6 +283,128 @@ for kwargs in ({"timeout": -1}, {"until": 0}, {"interval": 0}, {"description": "
                 self.assertEqual([r["method"] for r in requests], ["open", "open_app", "open_app", "open_app", "close"])
                 self.assertEqual(requests[0]["args"], {"screen": screen})
                 self.assertTrue(all(r["args"] == {"name": "计算器"} for r in requests[1:-1]))
+
+    def test_launch_task_provenance_is_data_and_keeps_selected_virtual_screen(self):
+        for origin in ("borrowed", "created"):
+            with self.subTest(origin=origin), subprocess.Popen(
+                [sys.executable, str(MODULE), "stdio"], env=self.env, text=True,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE
+            ) as proc:
+                def call(method, **args):
+                    proc.stdin.write(json.dumps(dict(id=1, method=method, **args)) + "\n")
+                    proc.stdin.flush()
+                    return json.loads(proc.stdout.readline())
+
+                start = len(self.server.calls)
+                self.assertTrue(call("open", screen="virtual")["ok"])
+                receipt = {"ok": True, "package": "test.calc", "display_id": 7,
+                           "task_id": 73, "user_id": 0, "task_origin": origin, "dispatch": "sent", "verification": "verified"}
+                if origin == "borrowed":
+                    receipt["source_display_id"] = 0
+                self.server.action_replies = {"launch": receipt, "open_app": {**receipt, "label": "Calculator"}}
+                for method, code in (("launch", 'phone.launch("test.calc")'),
+                                     ("open_app", 'phone.open_app("Calculator")')):
+                    reply = call("eval", code=code)
+                    self.assertEqual(reply["result"], self.server.action_replies[method])
+                    self.assertEqual(reply["actions"], [{"method": method, "dispatch": "sent", "verification": "verified"}])
+                self.assertTrue(call("close")["ok"])
+                proc.stdin.close()
+                self.assertEqual(proc.wait(timeout=5), 0)
+                requests = self.server.calls[start:]
+                self.assertEqual([r["method"] for r in requests], ["open", "launch", "open_app", "close"])
+                self.assertEqual([r["args"] for r in requests],
+                                 [{"screen": "virtual"}, {"package": "test.calc"}, {"name": "Calculator"}, {}])
+                self.assertTrue(all(r["sessionId"] == "opaque-1" for r in requests[1:]))
+
+    def test_virtual_task_conflicts_do_not_reopen_or_switch_screen(self):
+        with subprocess.Popen([sys.executable, str(MODULE), "stdio"], env=self.env, text=True,
+                              stdin=subprocess.PIPE, stdout=subprocess.PIPE) as proc:
+            def call(method, **args):
+                proc.stdin.write(json.dumps(dict(id=1, method=method, **args)) + "\n")
+                proc.stdin.flush()
+                return json.loads(proc.stdout.readline())
+
+            self.assertTrue(call("open", screen="virtual")["ok"])
+            expected = ["open"]
+            for method, code in (("launch", 'phone.launch("test.calc")'),
+                                 ("open_app", 'phone.open_app("Calculator")')):
+                for error_code in ("app_on_other_display", "ambiguous_task", "app_busy", "task_origin_unknown"):
+                    error = {"code": error_code, "message": "The app task cannot be borrowed safely."}
+                    self.server.action_errors = {method: error}
+                    result = call("eval", code=code)
+                    self.assertEqual(result["error"], error)
+                    self.assertEqual(result["actions"], [{"method": method, "error": error_code}])
+                    expected.append(method)
+                    self.assertEqual([r["method"] for r in self.server.calls], expected)
+            self.assertTrue(call("close")["ok"])
+            proc.stdin.close()
+            self.assertEqual(proc.wait(timeout=5), 0)
+        self.assertEqual([r["method"] for r in self.server.calls], expected + ["close"])
+        self.assertEqual(self.server.calls[0]["args"], {"screen": "virtual"})
+        self.assertTrue(all(r["sessionId"] == "opaque-1" for r in self.server.calls[1:]))
+
+    def test_observation_metadata_preserves_nested_window_geometry_without_pixels(self):
+        complete = {"display_id": 0, "window_id": 17, "task_id": 73, "package": "test.calc",
+                    "bounds": [21, 30, 421, 630], "content_bounds": [21, 62, 421, 630],
+                    "focused": True, "layer": 9, "bounds_source": "accessibility_window",
+                    "geometry_signature": "display-0-window-17-v1"}
+        minimal = {"display_id": 4, "window_id": 8, "package": "test.calc",
+                   "bounds": [0, 0, 1080, 2400], "focused": False, "layer": 1,
+                   "bounds_source": "accessibility_window", "geometry_signature": "display-4-window-8-v1"}
+        for screen, window, provenance in (
+            ("main", complete, {}),
+            ("virtual", minimal, {"task_origin": "borrowed", "task_id": 73, "user_id": 0, "source_display_id": 0}),
+            ("virtual", minimal, {"task_origin": "created", "task_id": 74, "user_id": 0}),
+            ("main", None, {}),
+        ):
+            with self.subTest(screen=screen, window=window), tempfile.TemporaryDirectory() as tmp:
+                fields = {"display": screen, "display_id": 0 if screen == "main" else 4, "width": 1080, "height": 2400,
+                          "rotation": 0, "timestamp_ms": 1000, "image_timestamp_ms": 1001}
+                if window is not None:
+                    fields.update(window_id=window["window_id"], window=window)
+                fields.update(provenance)
+                self.server.observation_fields = fields
+                source = ("import json\nshot = phone.observe(image=True)\n"
+                          f"assert shot.get('window') == {window!r}\n"
+                          f"assert shot.get('window_id') == {fields.get('window_id')!r}\n"
+                          "shot.save_metadata('shot.json')\nprint(json.dumps(shot.metadata()))\n")
+                start = len(self.server.calls)
+                proc = subprocess.run([sys.executable, str(MODULE), "run", "--screen", screen, "-"],
+                                      input=source, cwd=tmp, env=self.env, capture_output=True, text=True, timeout=10)
+                self.assertEqual(proc.returncode, 0, proc.stderr)
+                saved = json.loads(Path(tmp, "shot.json").read_text(encoding="utf-8"))
+                self.assertEqual(saved, json.loads(proc.stdout))
+                self.assertEqual(saved, {**fields, "observation_id": "s1", "image": {
+                    "mime_type": "image/png", "width": 8, "height": 4,
+                    "offset_x": 21, "offset_y": 30, "scale_x": 2.5, "scale_y": 1.75}})
+                self.assertNotIn("tree", saved)
+                self.assertNotIn("data", saved["image"])
+                self.assertEqual([r["method"] for r in self.server.calls[start:]], ["open", "observe", "close"])
+
+    def test_moved_window_stale_observation_is_not_retried(self):
+        window = {"display_id": 0, "window_id": 17, "package": "test.calc", "bounds": [21, 30, 421, 630],
+                  "focused": True, "layer": 9, "bounds_source": "accessibility_window", "geometry_signature": "before"}
+        self.server.observation_fields = {"window_id": 17, "window": window}
+        error = {"code": "stale_observation", "message": "The window moved. Observe again before acting.",
+                 "window_id": 17, "geometry_signature": "after", "bounds": [41, 50, 441, 650]}
+        self.server.action_errors = {"tap": error}
+        with subprocess.Popen([sys.executable, str(MODULE), "stdio"], env=self.env, text=True,
+                              stdin=subprocess.PIPE, stdout=subprocess.PIPE) as proc:
+            def call(method, **args):
+                proc.stdin.write(json.dumps(dict(id=1, method=method, **args)) + "\n")
+                proc.stdin.flush()
+                return json.loads(proc.stdout.readline())
+
+            self.assertTrue(call("eval", code="shot = phone.observe(image=True)")["ok"])
+            reply = call("eval", code='phone.tap(shot, x=1, y=2, space="image")')
+            self.assertFalse(reply["ok"], reply)
+            self.assertEqual(reply["error"], error)
+            self.assertEqual(reply["actions"], [{"method": "tap", "observation_id": "s1", "error": "stale_observation"}])
+            self.assertTrue(call("close")["ok"])
+            proc.stdin.close()
+            self.assertEqual(proc.wait(timeout=5), 0)
+        self.assertEqual([r["method"] for r in self.server.calls], ["open", "observe", "tap", "close"])
+        self.assertEqual(self.server.calls[2]["args"], {"observation_id": "s1", "x": 1, "y": 2, "space": "image"})
 
     def test_run_shows_ambiguous_app_candidates(self):
         candidates = [{"label": "地图", "package": "test.maps", "activity": "test.maps.Entry"},

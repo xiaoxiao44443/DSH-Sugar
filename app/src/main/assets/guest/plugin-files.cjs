@@ -405,5 +405,16 @@ exports.create = function create({ current, request, requestSync, hostFs = requi
   ReadStream.prototype=fs.ReadStream.prototype;WriteStream.prototype=fs.WriteStream.prototype;
   set(facade,'ReadStream',ReadStream);set(facade,'FileReadStream',ReadStream);
   set(facade,'WriteStream',WriteStream);set(facade,'FileWriteStream',WriteStream);
+  const directories = require('./plugin-directories.cjs').create({
+    fs,current,filename,inWorkspace,hostPath,endpoint,sameEndpoint,remote,remoteSync,error
+  });
+  set(facade,'Dir',directories.Dir);
+  set(facade,'opendir',directories.opendir);
+  set(facade,'opendirSync',directories.opendirSync);
+  set(promises,'opendir',directories.promisesOpendir);
+  const glob = require('./plugin-glob.cjs').create({fs:facade,current,sameEndpoint,filename,inWorkspace,error});
+  set(facade,'glob',glob.glob);
+  set(facade,'globSync',glob.globSync);
+  set(promises,'glob',glob.promisesGlob);
   return facade;
 };

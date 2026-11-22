@@ -246,8 +246,8 @@ class DesktopPetActivityTest {
         assertEquals(asking, writing.copy(state = "asking", caption = "选哪一项？").display(emptyList()))
         val settled = writing.display(listOf(phone.single().copy(parked = true)))
         assertEquals("working", settled.pose)
-        assertNull(settled.caption)
-        assertNull(settled.phoneStep)
+        assertEquals("编辑文件", settled.caption)
+        assertEquals("error", settled.phoneStep)
     }
 
     @Test fun tappingAPhasePausesItUntilNewProgressOrFourSeconds() {
@@ -299,5 +299,166 @@ class DesktopPetActivityTest {
         } finally {
             store.detach(owner)
         }
+    }
+
+    @Test fun ordinaryProgressUsesLatestMeaningfulEventAndKeepsItsOriginalAgeThroughPolls() {
+        val store = DesktopPetActivity
+        val owner = Any()
+        val reply = DesktopPetActivity.Result("generation", "say-generation-1", "reply", "正在跑第 12/24 步", 120)
+        store.attach(owner)
+        try {
+            store.publish(owner, "working", "generation", null, "1", "按缩小尺寸后台出图", captionAt = 110, turnStartedAt = 100)
+            assertEquals("按缩小尺寸后台出图", store.status().display(emptyList()).caption)
+            assertEquals(110L, store.status().display(emptyList()).contentAtMicros)
+            store.publish(owner, "working", "generation", reply, "2", "按缩小尺寸后台出图", captionAt = 110, turnStartedAt = 100)
+            for (phase in 3..5) {
+                store.publish(owner, "thinking", "generation", null, phase.toString(), "按缩小尺寸后台出图", captionAt = 110, turnStartedAt = 100)
+                assertEquals(reply, store.status().display(emptyList()).result)
+                assertEquals(120L, store.status().display(emptyList()).contentAtMicros)
+            }
+            store.publish(owner, "working", "generation", null, "6", "保存生成的图片", captionAt = 140, turnStartedAt = 100)
+            val latest = store.status().display(emptyList())
+            assertNull(latest.result)
+            assertEquals("保存生成的图片", latest.caption)
+            assertEquals(140L, latest.contentAtMicros)
+            store.publish(owner, "working", "generation", reply.copy(id = "say-generation-delayed", atMicros = 125), "4",
+                "按缩小尺寸后台出图", captionAt = 110, turnStartedAt = 100)
+            assertEquals(latest.caption, store.status().display(emptyList()).caption)
+            assertNull(store.status().display(emptyList()).result)
+            assertEquals(140L, store.status().display(emptyList()).contentAtMicros)
+        } finally { store.detach(owner) }
+    }
+
+    @Test fun newTurnCannotReuseOldReplyOrPhoneStatusEvenWhenIdleWasCoalescedAway() {
+        val store = DesktopPetActivity
+        val owner = Any()
+        val reply = DesktopPetActivity.Result("repeat", "say-repeat-1", "reply", "上一轮已处理", 120)
+        val phone = NoticeTask("repeat-phone", "main", null, false, "repeat", caption = "上一轮等待", captionAt = 130)
+        store.attach(owner)
+        try {
+            store.publish(owner, "working", "repeat", reply, "1", captionAt = 100, turnStartedAt = 100)
+            store.publish(owner, "thinking", "repeat", null, "2", captionAt = 200, turnStartedAt = 200)
+            assertNull(store.status().display(emptyList()).result)
+            assertNull(store.status().display(listOf(phone)).caption)
+            assertEquals(200L, store.status().display(listOf(phone)).turnStartedAt)
+            store.publish(owner, "working", "repeat", reply.copy(id = "say-repeat-delayed"), "old",
+                "旧进展", captionAt = 130, turnStartedAt = 100)
+            assertEquals(200L, store.status().turnStartedAt)
+            assertNull(store.status().display(emptyList()).result)
+            assertNull(store.status().display(emptyList()).caption)
+            store.publish(owner, "thinking", "repeat", null, "3", "这轮开始检查", captionAt = 210, turnStartedAt = 200)
+            assertEquals("这轮开始检查", store.status().display(listOf(phone)).caption)
+        } finally { store.detach(owner) }
+    }
+
+    @Test fun replyAndPhoneToolDescriptionsCompeteByTimeRatherThanFixedPriority() {
+        val reply = DesktopPetActivity.Result("phone-new", "say-phone-new", "reply", "金额一致", 120)
+        val phone = NoticeTask("phone-new", "main", null, false, "phone-new", caption = "核对金额", captionAt = 110)
+        val state = DesktopPetActivity.Status("working", "phone-new", reply = reply, caption = "打开账单", captionAt = 105, turnStartedAt = 100)
+        assertEquals(120L, state.display(listOf(phone)).contentAtMicros)
+        val next = state.copy(caption = "正在提交", captionAt = 130).display(listOf(phone))
+        assertNull(next.result)
+        assertEquals("正在提交", next.caption)
+        assertEquals(130L, next.contentAtMicros)
+        val scripted = state.copy(caption = "正在提交", captionAt = 130).display(listOf(phone.copy(caption = "提交成功", captionAt = 140)))
+        assertNull(scripted.result)
+        assertEquals("提交成功", scripted.caption)
+        assertEquals(140L, scripted.contentAtMicros)
+    }
+
+    @Test fun errorQuestionAndCompletionReplaceProgressButDoNotLeakToTheNextConversation() {
+        val store = DesktopPetActivity
+        val owner = Any()
+        val reply = DesktopPetActivity.Result("priority", "say-priority-1", "reply", "仍在生成", 120)
+        val error = DesktopPetActivity.Result("priority", "tool-priority-2", "error", "生成失败", 130)
+        val answer = DesktopPetActivity.Result("priority", "turn-priority-3", "answer", "生成完成", 160)
+        store.attach(owner)
+        try {
+            store.publish(owner, "working", "priority", reply, "1", captionAt = 100, turnStartedAt = 100)
+            store.publish(owner, "working", "priority", error, "2", phoneStep = "error", captionAt = 130, turnStartedAt = 100)
+            assertEquals(error, store.status().display(emptyList()).result)
+            store.publish(owner, "thinking", "priority", null, "next-step", phoneStep = "error", captionAt = 130, turnStartedAt = 100)
+            assertEquals(error, store.status().display(emptyList()).result)
+            store.publish(owner, "asking", "priority", null, "question", "要重试吗？", turnStartedAt = 100)
+            assertNull(store.status().display(emptyList()).result)
+            assertEquals("要重试吗？", store.status().display(emptyList()).caption)
+            store.publish(owner, "idle", null, answer)
+            assertEquals(answer, store.status().display(emptyList()).result)
+            store.publish(owner, "thinking", "different", null, "new", captionAt = 200, turnStartedAt = 200)
+            assertNull(store.status().display(emptyList()).result)
+            assertNull(store.status().display(emptyList()).caption)
+        } finally { store.dismiss(answer); store.detach(owner) }
+    }
+
+    @Test fun moreRecentReplyCanReplaceAnOperationResultInTheSamePhase() {
+        val reply = DesktopPetActivity.Result("recovery", "say-recovery", "reply", "已经恢复，继续处理", 140)
+        val error = DesktopPetActivity.Result("recovery", "tool-recovery", "error", "重试中", 130)
+        val status = DesktopPetActivity.Status("working", "recovery", "same", operation = error, reply = reply, captionAt = 100)
+        assertEquals(reply, status.display(emptyList()).result)
+        assertEquals(reply, status.display(listOf(NoticeTask("recovery-phone", "main", null, false, "recovery"))).result)
+    }
+
+    @Test fun readingANewScreenRecoversFromAnErrorWithoutResurrectingEarlierSpeech() {
+        val store = DesktopPetActivity
+        val owner = Any()
+        val task = NoticeTask("recover-screen", "main", null, false, "screen-recovery")
+        val reply = DesktopPetActivity.Result("screen-recovery", "say-screen-recovery", "reply", "仍在等待", 120)
+        val failed = DesktopPetActivity.Result("screen-recovery", "tool-screen-recovery", "error", "截图失败", 130)
+        store.attach(owner)
+        try {
+            store.publish(owner, "working", "screen-recovery", reply, "1", "等待画面", captionAt = 110, turnStartedAt = 100)
+            store.publish(owner, "working", "screen-recovery", failed, "2", phoneStep = "error", captionAt = 130, turnStartedAt = 100)
+            store.publish(owner, "thinking", "screen-recovery", null, "3", phoneStep = "error", captionAt = 130, turnStartedAt = 100)
+            assertEquals(failed, store.status().display(listOf(task)).result)
+            store.publish(owner, "working", "screen-recovery", null, "4", phoneStep = "screen", captionAt = 140, turnStartedAt = 100)
+            val recovered = store.status().display(listOf(task))
+            assertNull(recovered.result)
+            assertNull(recovered.caption)
+            assertEquals("screen", recovered.phoneStep)
+        } finally { store.detach(owner) }
+    }
+
+    @Test fun abortingANewTurnDoesNotReplayTheSameSessionsEarlierCompletion() {
+        val store = DesktopPetActivity
+        val owner = Any()
+        val complete = DesktopPetActivity.Result("abort-next", "turn-abort-previous", "answer", "上次完成了", 120)
+        store.attach(owner)
+        try {
+            store.publish(owner, "idle", null, complete)
+            assertEquals(complete, store.status().display(emptyList()).result)
+            store.publish(owner, "thinking", "abort-next", null, "new-turn", captionAt = 200, turnStartedAt = 200)
+            assertNull(store.status().result)
+            store.publish(owner, "idle", null, null)
+            assertNull(store.status().display(emptyList()).result)
+            val legacy = complete.copy(id = "turn-abort-legacy", atMicros = 0)
+            store.publish(owner, "idle", null, legacy)
+            store.publish(owner, "thinking", "abort-next", null, "newer-turn", captionAt = 300, turnStartedAt = 300)
+            assertNull(store.status().result)
+            store.publish(owner, "idle", null, null)
+            assertNull(store.status().display(emptyList()).result)
+        } finally { store.detach(owner) }
+    }
+
+    @Test fun freshCompletionDisplaysWhileThePhoneLeaseIsStillOpen() {
+        val phone = NoticeTask("open-phone", "main", null, false, "open-phone-chat", caption = "正在保存", captionAt = 130, resumedAt = 110)
+        val answer = DesktopPetActivity.Result("open-phone-chat", "turn-open-phone", "answer", "图片已保存", 150)
+        val status = DesktopPetActivity.Status(result = answer)
+        val finished = status.display(listOf(phone))
+        assertEquals(answer, finished.result)
+        assertEquals(150L, finished.contentAtMicros)
+        assertNull(finished.progressTask)
+        assertNull(finished.caption)
+        assertEquals(answer, status.display(listOf(phone.copy(awaitingCompanion = true))).result)
+        assertNull(status.display(listOf(phone.copy(resumedAt = 150))).result)
+        assertNull(status.display(listOf(phone.copy(captionAt = 151))).result)
+        assertNull(status.copy(sessionId = "open-phone-chat", state = "thinking", turnStartedAt = 150)
+            .display(listOf(phone)).result)
+        assertNull(status.copy(result = answer.copy(atMicros = 0)).display(listOf(phone)).result)
+        assertNull(status.copy(result = answer.copy(sessionId = "other-chat")).display(listOf(phone)).result)
+        val asking = status.copy(state = "asking", sessionId = "open-phone-chat", caption = "继续吗？")
+            .display(listOf(phone))
+        assertEquals("asking", asking.pose)
+        assertNull(asking.result)
+        assertEquals("继续吗？", asking.caption)
     }
 }

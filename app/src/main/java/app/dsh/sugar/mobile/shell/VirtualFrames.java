@@ -59,7 +59,9 @@ final class VirtualFrames implements AutoCloseable {
             int flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC | DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION |
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
             // Hidden platform flags are read from this device, never substituted with mirroring.
-            for (String name : new String[]{"SUPPORTS_TOUCH","DESTROY_CONTENT_ON_REMOVAL","TRUSTED","OWN_DISPLAY_GROUP","OWN_FOCUS"}) {
+            // A lost helper must preserve borrowed tasks: public displays return their
+            // content to the main display. Normal close removes only identified owned tasks.
+            for (String name : new String[]{"SUPPORTS_TOUCH","TRUSTED","OWN_DISPLAY_GROUP","OWN_FOCUS"}) {
                 flags |= DisplayManager.class.getField("VIRTUAL_DISPLAY_FLAG_" + name).getInt(null);
             }
             DisplayManager manager = context.getSystemService(DisplayManager.class);

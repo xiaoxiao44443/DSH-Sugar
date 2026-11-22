@@ -10,28 +10,26 @@ internal fun dialogPeekHeadroom(spare: Int, cap: Int, preview: Boolean): Int =
 
 internal data class PreviewVerticalPlacement(val shift: Int, val top: Int, val bottom: Int, val windowY: Int)
 
-/** Move the visible card. The transparent margins for the mascot can shrink at either screen edge. */
+/** Drag the whole preview within the safe area, keeping its padding and contents unchanged. */
 internal fun previewVerticalPlacement(spare: Int, cap: Int, requestedShift: Int): PreviewVerticalPlacement {
-    val defaultTop = dialogPeekHeadroom(spare, cap, preview = true)
-    val defaultBottom = minOf(defaultTop, spare - defaultTop)
-    val initialCardTop = (spare - defaultTop - defaultBottom) / 2 + defaultTop
-    val shift = requestedShift.coerceIn(-initialCardTop, spare - initialCardTop)
-    val cardTop = initialCardTop + shift
-    val top = minOf(cardTop, cap)
-    val bottom = minOf(spare - cardTop, cap)
-    val centeredWindowTop = (spare - top - bottom) / 2
-    return PreviewVerticalPlacement(shift, top, bottom, cardTop - top - centeredWindowTop)
+    val top = dialogPeekHeadroom(spare, cap, preview = true)
+    val bottom = minOf(top, spare - top)
+    val travel = spare - top - bottom
+    val centeredWindowTop = travel / 2
+    val shift = requestedShift.coerceIn(-centeredWindowTop, travel - centeredWindowTop)
+    return PreviewVerticalPlacement(shift, top, bottom, shift)
 }
 
-/** Keep the illustration inside the panel's width and the system-safe owner window. */
+/** Fit the width; draggable previews keep their scale and clip at the window's top edge. */
 internal fun dialogPeekBounds(panelLeft: Int, panelTop: Int, panelRight: Int, safeLeft: Int,
-    safeTop: Int, safeRight: Int, density: Float, compact: Boolean): DialogPeekBounds? {
+    safeTop: Int, safeRight: Int, density: Float, compact: Boolean, preview: Boolean = false): DialogPeekBounds? {
     fun dp(value: Int) = (value * density).roundToInt()
     val right = minOf(panelRight, safeRight) - dp(12)
     val left = maxOf(panelLeft, safeLeft) + dp(10)
     val bottom = panelTop + dp(4)
-    val maxHeight = minOf(dp(if (compact) 38 else 61), bottom - safeTop, ((right - left) / 1.68f).toInt())
-    if (maxHeight < dp(14)) return null
+    val fittedHeight = minOf(dp(if (compact) 38 else 61), ((right - left) / 1.68f).toInt())
+    val maxHeight = if (preview) fittedHeight else minOf(fittedHeight, bottom - safeTop)
+    if (maxHeight < dp(14) || bottom <= safeTop) return null
     val width = (maxHeight * 1.68f).roundToInt()
     return DialogPeekBounds(right - width, bottom - maxHeight, right, bottom)
 }

@@ -34,10 +34,16 @@ function createPetPublisher(bridge) {
   async function send() {
     timer = undefined;
     sending = true;
-    const value = desired;
-    const result = pendingFinal ?? (pendingTool?.kind === 'error' ? pendingTool : pendingReply ?? pendingTool);
+    let value = desired;
+    const result = pendingFinal ?? pendingReply ?? pendingTool;
+    if (result?.kind === 'reply' && result.sessionId === value.sessionId && value.captionAt > result.atMicros) {
+      // Let Android see the speech once before its newer action description.
+      // Otherwise batching makes the timestamp selector skip the reply entirely,
+      // before the bubble can establish its first-reading protection.
+      value = {...value, caption:undefined, phoneStep:undefined, captionAt:result.atMicros};
+    }
     try {
-      await bridge.petState(value.state, value.sessionId, result, value.phase, value.caption, value.phoneStep, value.captionAt);
+      await bridge.petState(value.state, value.sessionId, result, value.phase, value.caption, value.phoneStep, value.captionAt, value.turnStartedAt);
       reported = value;
       if (pendingFinal === result) pendingFinal = undefined;
       if (pendingReply === result) pendingReply = undefined;
@@ -55,11 +61,19 @@ function createPetPublisher(bridge) {
   }
   return {
     claim(id) { owner = id; desired = idle; pendingTool = pendingReply = undefined; schedule(100); },
+    resetTurn(id, sessionId) {
+      if (id !== owner) return;
+      // A new turn can begin before the previous idle/reset crosses the bridge.
+      // Do not deliver that conversation's queued speech or completion in its place.
+      if (pendingReply?.sessionId === sessionId) pendingReply = undefined;
+      if (pendingTool?.sessionId === sessionId) pendingTool = undefined;
+      if (pendingFinal?.sessionId === sessionId) pendingFinal = undefined;
+    },
     update(id, state, sessionId, phase, result, progress) {
       if (id !== owner) return;
       const changed = desired.state !== state || desired.sessionId !== sessionId || desired.phase !== phase ||
         desired.caption !== progress?.caption || desired.phoneStep !== progress?.phoneStep ||
-        desired.captionAt !== progress?.captionAt;
+        desired.captionAt !== progress?.captionAt || desired.turnStartedAt !== progress?.turnStartedAt;
       if (!changed && !result) return;
       if (changed) {
         desired = state === 'idle' ? idle : { state, sessionId, phase, ...progress };
@@ -75,7 +89,6 @@ function createPetPublisher(bridge) {
       }
       else if (result && result.sessionId === sessionId && (state === 'coding' || state === 'working')) {
         pendingTool = result;
-        if (result.kind === 'error') pendingReply = undefined;
       }
       if (!timer) schedule(100);
     },
@@ -97,11 +110,11 @@ function boundedLine(line, limit) {
   return line.slice(0, cut).trimEnd() + '…';
 }
 
-function* publicLines(message) {
+function* publicLines(message, preserveParagraphs = false) {
   let fence = '';
   for (const block of message?.content ?? []) {
     if (block.type !== 'text' || typeof block.text !== 'string') continue;
-    for (const raw of stripVTControlCharacters(block.text).split(/[\r\n]+/u)) {
+    for (const raw of stripVTControlCharacters(block.text).split(preserveParagraphs ? /\r\n?|\n/u : /[\r\n]+/u)) {
       const marker = /^\s*(`{3,}|~{3,})/u.exec(raw)?.[1];
       if (marker) {
         if (!fence) fence = marker;
@@ -128,6 +141,45 @@ function spokenText(message, limit) {
     if (text.length > limit) return boundedLine(text, limit);
   }
   return text || undefined;
+}
+
+// Notifications have room for the actual final answer, independently of the short pet caption.
+// Keep paragraph boundaries, but never put tool output, reasoning, code blocks or attachment URLs there.
+function notificationBody(message) {
+  const lines = [];
+  let length = 0;
+  for (const raw of publicLines(message, true)) {
+    const line = visibleLinks(raw)
+      .replace(/(?:https?:\/\/|file:\/\/|data:|sandbox:\/)[^\s<>，。！？、]+/giu, '')
+      .replace(/^\s*#{1,6}\s+/u, '').replace(/^\s*>\s?/u, '')
+      .replace(/(\*\*|__|~~|`|\*)([^\s].*?)\1/gu, '$2')
+      .replace(/[\u200e\u200f\u2060-\u206f\ufeff]/gu, '').trim();
+    if (!line && (!lines.length || !lines.at(-1))) continue;
+    lines.push(line);
+    length += line.length + 1;
+    if (length > 2000) break;
+  }
+  const body = lines.join('\n').trim();
+  return body ? boundedLine(body, 2000) : undefined;
+}
+
+function requestNotificationBody(kind, request) {
+  const questions = Array.isArray(request.questions) ? request.questions : [];
+  const shown = kind === 'permission' ? questions.filter(question => question.intent?.kind === 'approval') : questions;
+  const questionBody = notificationBody({content:shown.filter(question => typeof question.question === 'string')
+    .map(question => ({type:'text', text:question.question}))});
+  if (questionBody) return questionBody;
+  if (kind !== 'permission') return;
+  // Approval reasons may append complete scripts (Sugar Root does). Take only a
+  // prose introduction; the full request stays behind the notification's chat link.
+  const tool = typeof request.toolName === 'string' && /^[\p{L}\p{N}_.:-]{1,80}$/u.test(request.toolName)
+    ? request.toolName : undefined;
+  const first = typeof request.reason === 'string' ? stripVTControlCharacters(request.reason).trimStart().split(/[\r\n]/u, 1)[0] : '';
+  const prose = first.length <= 240 &&
+    (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(first) || /(?:\p{L}+[ ,.!?]+){3}/u.test(first)) &&
+    !/[`;$|<>{}=]|(?:^|\s)--?\w|(?:^|\s)(?:https?:|file:|data:|sandbox:)|(?:token|password|passwd|secret|api.?key|authorization|bearer|密钥|密码)/iu.test(first)
+    ? notificationBody({content:[{type:'text', text:first}]}) : undefined;
+  return [tool, prose].filter(Boolean).join(' · ') || undefined;
 }
 
 const sentences = new Intl.Segmenter(undefined, {granularity:'sentence'});
@@ -195,28 +247,20 @@ function captionTime() { return Number(process.hrtime.bigint() / 1000n); }
 
 function phoneProgress(name, args, previous) {
   // Reading the next frame can verify the action we just described. Keep its purpose
-  // visible while checking the result; a fresh observation after an error starts a new step.
+  // visible while checking the result. Tool outcomes do not reinterpret that description.
   if (name === 'read_image') return previous?.caption ? previous : {phoneStep:'screen', captionAt:previous?.captionAt};
   if (name === 'job_output') return previous;
-  const cleared = previous?.captionAt ? {captionAt:previous.captionAt} : undefined;
-  if (name !== 'bash' && name !== 'adb_shell') return cleared;
+  // A transport/tool transition is not new progress. Retain the last useful
+  // description and its original time; never display raw commands as a fallback.
+  if (name !== 'bash' && name !== 'adb_shell') return previous;
   let input;
-  try { input = typeof args === 'string' ? JSON.parse(args) : args; } catch { return cleared; }
-  if (typeof input?.description !== 'string') return cleared;
+  try { input = typeof args === 'string' ? JSON.parse(args) : args; } catch { return previous; }
+  if (typeof input?.description !== 'string') return previous;
   const line = stripVTControlCharacters(input.description).trim();
-  if (!line || /[\r\n`]/u.test(line)) return cleared;
+  if (!line || /[\r\n`]/u.test(line)) return previous;
   const caption = line.replace(/[\p{Cc}\u200b\u202a-\u202e\u2066-\u2069]/gu, ' ').replace(/\s+/gu, ' ').trim();
   if (caption) return {caption:boundedLine(caption, 240), captionAt:captionTime()};
-  return cleared;
-}
-
-function toolFailed(name, message, meta) {
-  if (message.isError) return true;
-  if (name !== 'bash') return false;
-  if (Number.isInteger(meta?.exitCode)) return meta.exitCode !== 0;
-  const last = message.content?.at(-1);
-  // The bundled Bash tool reports a nonzero child exit as a trailer on a successful tool call.
-  return last?.type === 'text' && /(?:^|\n)\[exit code: -?[1-9]\d*\]\s*$/u.test(last.text);
+  return previous;
 }
 
 export function apply(ctx) {
@@ -232,6 +276,7 @@ export function apply(ctx) {
   const active = new Map();
   const petTurns = new Map();
   const answers = new WeakMap();
+  const notificationAnswers = new WeakMap();
   const editingTools = new Set(['write', 'edit', 'apply_patch', 'str_replace_editor']);
   // Committed tool/result messages identify their tool invocation by toolCallId.
   // Keep only outstanding calls in this turn; missing metadata is a generic result.
@@ -297,10 +342,10 @@ export function apply(ctx) {
     }
   }
 
-  async function notify(session, kind, id, dismiss = false) {
+  async function notify(session, kind, id, dismiss = false, body) {
     try {
       const title = dismiss ? undefined : await conversationTitle(session).catch(() => undefined);
-      await bridge.agentNotification(kind, session.id, id, title, dismiss);
+      await bridge.agentNotification(kind, session.id, id, title, dismiss, body);
     } catch {
       ctx.logger.warn('DSH Sugar: could not deliver an Android notification');
     }
@@ -310,6 +355,15 @@ export function apply(ctx) {
   ctx.on('session/event', (session, event) => {
     if (!['turn/start', 'step/start', 'assistant/message', 'tool/call', 'tool/result', 'turn/end'].includes(event.type)) return;
     if (!rootAgents(ctx.agents).some(agent => agent.session === session)) return;
+    // Final-answer collection also works when no desktop-pet publisher is attached.
+    // Any further tool/step means the preceding text was an interim explanation.
+    if (['turn/start', 'step/start', 'tool/call'].includes(event.type)) notificationAnswers.delete(session);
+    if (event.type === 'assistant/message') {
+      const message = event.data.message;
+      const body = message?.content?.some(block => block.type === 'tool-call') ? undefined : notificationBody(message);
+      if (body) notificationAnswers.set(session, body);
+      else notificationAnswers.delete(session);
+    }
     if (event.type === 'turn/end') {
       if ((completed.get(session) ?? -1) >= event.seq) return;
       completed.set(session, event.seq);
@@ -317,11 +371,16 @@ export function apply(ctx) {
       toolCalls.delete(session);
       const reason = event.data.reason.kind;
       const resultId = 'turn-' + event.seq;
+      const atMicros = captionTime();
       const text = reason === 'completed' ? answers.get(session) : undefined;
       answers.delete(session);
-      petChanged(reason === 'completed' || reason === 'error' ? {sessionId:session.id, id:resultId,
-        kind:reason === 'completed' ? 'answer' : 'error', text} : undefined);
-      if (reason === 'completed') void notify(session, 'completion', resultId);
+      const body = reason === 'completed' ? notificationAnswers.get(session) : undefined;
+      notificationAnswers.delete(session);
+      // A failed turn is still visible in the conversation. Do not turn it into
+      // invented pet speech, or present it as a successful completion.
+      petChanged(reason === 'completed' ? {sessionId:session.id, id:resultId,
+        kind:'answer', text, atMicros} : undefined);
+      if (reason === 'completed') void notify(session, 'completion', resultId, false, body);
       return;
     }
     if (!publisher) return;
@@ -333,7 +392,7 @@ export function apply(ctx) {
       calls.set(callId, name);
       if (calls.size > 128) calls.delete(calls.keys().next().value);
       const turn = petTurns.get(session);
-      const progress = phoneProgress(name, event.data.arguments, turn.progress);
+      const progress = {...phoneProgress(name, event.data.arguments, turn.progress), turnStartedAt:turn.progress?.turnStartedAt};
       if (turn.state === 'thinking' || progress || turn.progress) {
         petTurns.set(session, {state:turn.state === 'thinking' ? (editingTools.has(name) ? 'coding' : 'working') : turn.state,
           phase:String(event.seq), progress});
@@ -345,14 +404,13 @@ export function apply(ctx) {
       const calls = toolCalls.get(session);
       const name = calls?.get(message.toolCallId);
       calls?.delete(message.toolCallId);
-      // Reads, searches and shell commands can return arbitrary file contents or secrets.
-      const text = editingTools.has(name) ? operationExcerpt(message) : undefined;
-      const failed = toolFailed(name, message, event.data.meta);
-      if (failed && ['bash', 'adb_shell', 'read_image', 'mobile_use'].includes(name)) {
-        petTurns.get(session).progress = {phoneStep:'error', captionAt:captionTime()};
-      }
-      if (text || failed)
-        petChanged({sessionId:session.id, id:'tool-' + event.seq, kind:failed ? 'error' : 'operation', text});
+      // Exit codes and tool errors are evidence for the agent, not a verdict on
+      // the task. Keep them in the conversation; the agent's public explanation
+      // reaches the pet through assistant/message without interrupting its reply.
+      // Successful editing receipts remain useful, but never echo an error body.
+      const text = !message.isError && editingTools.has(name) ? operationExcerpt(message) : undefined;
+      if (text)
+        petChanged({sessionId:session.id, id:'tool-' + event.seq, kind:'operation', text, atMicros:captionTime()});
     } else if (event.type === 'assistant/message') {
       const message = event.data.message;
       const calls = message.content.filter(block => block.type === 'tool-call');
@@ -368,10 +426,16 @@ export function apply(ctx) {
         phase:String(event.seq), progress:petTurns.get(session)?.progress});
       petChanged(reply);
     } else {
-      if (event.type === 'turn/start') toolCalls.delete(session);
+      const turnStartedAt = event.type === 'turn/start' ? captionTime() : undefined;
+      if (event.type === 'turn/start') {
+        toolCalls.delete(session);
+        publisher.resetTurn(owner, session.id);
+      }
       answers.delete(session);
       petTurns.set(session, {state:'thinking', phase:String(event.seq),
-        progress:event.type === 'step/start' ? petTurns.get(session)?.progress : undefined});
+        // An empty caption with a new time invalidates speech from the previous
+        // turn even when batching skips the intermediate idle state.
+        progress:event.type === 'step/start' ? petTurns.get(session)?.progress : {captionAt:turnStartedAt, turnStartedAt}});
       petChanged();
     }
   });
@@ -386,9 +450,10 @@ export function apply(ctx) {
     const timer = setTimeout(() => {
       const question = kind === 'question' ? request.questions?.[0]?.question : undefined;
       const caption = question && spokenText({content:[{type:'text', text:question}]}, 240);
+      const body = requestNotificationBody(kind, request);
       pendingQuestions.set(id, {sessionId:agent.session.id, caption});
       petChanged();
-      posted = notify(agent.session, kind, id);
+      posted = notify(agent.session, kind, id, false, body);
     }, 200);
     timer.unref();
     function settle() {

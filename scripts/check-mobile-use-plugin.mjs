@@ -133,7 +133,7 @@ try {
     const key = agent.session;
     calls.push([key,method,taskId,screen]);
     if (method === 'begin' && adbRoute && screen === 'ask') return {ok:true,phase:adbRoute,taskId:null};
-    if (method === 'begin') states.set(key,{ok:true,taskId,phase:screen === 'ask' ? 'choosing' : 'active',screen});
+    if (method === 'begin') states.set(key,{ok:true,taskId,phase:screen === 'ask' ? 'choosing' : 'active',screen,controlState:'agent',controlGeneration:0});
     if ((method === 'hold' || method === 'resume') && states.get(key)?.phase === 'active')
       states.get(key).holding = method === 'hold';
     if (method === 'finish') {
@@ -150,6 +150,10 @@ try {
       assert(s.content.includes('adb exec-out screencap -p > screen.png') && s.content.includes('adb ui-dump > ui.xml'));
       assert(s.content.includes('phone.recents()'));
       assert(s.content.includes('phone.open_app("计算器")') && s.content.includes('ambiguous_app'));
+      assert(s.content.includes('screen.get("window")') && s.content.includes('geometry_signature'));
+      assert(s.content.includes('user_control') && s.content.includes('不能自动重放') && s.content.includes('不消耗模型 token'));
+      assert(s.content.includes('borrowed') && s.content.includes('created') && s.content.includes('parked'));
+      assert(s.content.includes('回到应用') && s.content.includes('不恢复 Agent'));
       const generalGuide = s.content.split('### 陪玩与持续看屏')[0];
       assert.match(generalGuide, /phone\.status\(/);
       assert.match(generalGuide, /角色口吻/);
@@ -164,7 +168,12 @@ try {
   const user = text => ({type:'user/message',data:{role:'user',source:{kind:'user'},content:[{type:'text',text}]}});
   const start = {type:'turn/start'};
   function createAgent(events) {
-    return {inbox:{nextStep:[]},session:{get seq(){return events.length;},eventAt:i=>events[i]}};
+    return {inbox:{nextStep:[]},session:{get seq(){return events.length;},eventAt:i=>events[i]},
+      send(message, target, wakeup) {
+        assert.equal(target, 'next-step');
+        assert.equal(wakeup, false);
+        this.inbox.nextStep.push(message);
+      }};
   }
   const bEvents = [start,user('请用虚拟屏打开计算器')];
   const controller = new AbortController(), a = createAgent([start,user('打开手机上的应用')]), b = createAgent(bEvents);
@@ -222,6 +231,7 @@ try {
   assert.equal(direct.screen,'virtual');
   assert(direct.next.includes('phone.open_app("计算器")') && direct.next.includes('phone.launch(package)'));
   assert(direct.next.includes('displayId'));
+  assert.match(direct.next, /task_origin.*Do not switch to main.*app_on_other_display.*another conversation/);
   assert(!direct.next.includes('screencap'));
   assert.doesNotMatch(direct.next,/phone\.recents/);
   assert.notEqual(states.get(a.session).taskId,direct.taskId);
@@ -244,6 +254,9 @@ try {
   assert(selected.next.includes('phone.open_app("计算器")') && selected.next.includes('phone.launch(package)'));
   assert.match(selected.next,/mobile_use run task\.py/);
   assert.match(selected.next,/phone\.recents\(\)/);
+  assert(selected.next.includes('screen.get("window")'));
+  assert.match(selected.next,/after a window moves or resizes, observe again/);
+  assert.doesNotMatch(selected.next,/window_mode/);
   const repeated = await tool.execute({}, {agent:a,signal:controller.signal});
   const resume = await tool.execute({screen:'ask'}, {agent:a,signal:controller.signal});
   assert.equal(resume.taskId,selected.taskId);
@@ -282,6 +295,158 @@ try {
   await hooks.get('session/event')(b.session, {type:'turn/end', data:{reason:{kind:'completed'}}});
   assert.equal(states.get(b.session).phase, 'parked');
   console.log('PASS mobile_use: native screen choice, turn-bound control, retained virtual screen and fresh choice on rapid follow-up');
+
+  const take = createAgent([start,user('在虚拟屏操作')]);
+  const takeSignal = new AbortController().signal;
+  await tool.execute({screen:'virtual'}, {agent:take, signal:takeSignal});
+  const takeState = states.get(take.session);
+  const tick = () => new Promise(resolve=>setImmediate(resolve));
+  let admitted = 0, dispatched = 0;
+  const preStep = (messages=[], signal=takeSignal) => hooks.get('agent/pre-step')({agent:take, signal},
+    async () => { admitted++; return {kind:'enter', messages}; });
+  const pendingTool = () => hooks.get('tools/pre-execute')({agent:take, signal:takeSignal, name:'Bash'},
+    async () => { dispatched++; return {kind:'allow'}; });
+  takeState.controlState = 'taking_over'; takeState.controlGeneration++;
+  const firstUserMessage = {id:'first-user', role:'user', source:{kind:'user'}, content:[]};
+  const gated = preStep([firstUserMessage]);
+  await tick();
+  assert.equal(admitted, 0, 'takeover waits before another model request');
+  const interruption = {id:'new-user', source:{kind:'user'}};
+  take.inbox.nextStep.push(interruption);
+  await hooks.get('session/event')(take.session, splice('next-step','user'));
+  await tick();
+  assert.equal(admitted, 0, 'user messages do not bypass the takeover gate');
+  assert.equal((await pendingTool()).info.code, 'user_control');
+  takeState.controlState = 'focusing';
+  assert.equal((await pendingTool()).info.code, 'user_control');
+  await tick(); assert.equal(admitted, 0, 'UI focus does not return control to the agent');
+  takeState.controlState = 'user';
+  takeState.controlState = 'restoring'; takeState.controlGeneration++;
+  assert.equal((await pendingTool()).kind, 'deny');
+  takeState.controlState = 'agent';
+  const returned = await gated;
+  assert.equal(returned.messages[0], firstUserMessage);
+  assert.equal(returned.messages.length, 2);
+  assert.match(returned.messages[1].content[0].text, /phone\.observe.*do not automatically retry or replay/);
+  assert.equal(returned.messages[1].source.kind, 'sugar-phone-control');
+  assert.deepEqual(take.inbox.nextStep, [interruption], 'new user input is preserved');
+  take.inbox.nextStep.length = 0;
+  assert.equal((await pendingTool()).kind, 'allow', 'a new observation tool after the fresh step is allowed');
+  assert.equal(dispatched, 1, 'denied tools were never dispatched or replayed');
+  assert.equal((await preStep()).messages.length, 0, 'the return instruction is injected once');
+
+  // A complete, short takeover between polls still invalidates the prepared action.
+  takeState.controlGeneration += 2;
+  assert.equal((await pendingTool()).info.code, 'stale_observation');
+  assert.equal(dispatched, 1);
+  assert.equal((await preStep()).messages.length, 1);
+  assert.equal((await pendingTool()).kind, 'allow');
+
+  // An ordinary (non-companion) turn stays open until the user returns control.
+  takeState.controlState = 'user'; takeState.controlGeneration++;
+  let ended = false;
+  const boundary = hooks.get('agent/turn-stopping')({agent:take,signal:takeSignal}).then(()=>{ended=true;});
+  await tick(); assert.equal(ended, false);
+  takeState.controlState = 'agent'; takeState.controlGeneration++;
+  await boundary;
+  assert.equal(take.inbox.nextStep.length, 1);
+  const queuedNotice = take.inbox.nextStep.splice(0);
+  assert.deepEqual((await preStep(queuedNotice)).messages, queuedNotice, 'turn-stopping return notice is not duplicated');
+  assert.equal(states.get(take.session).phase, 'active');
+  assert.equal(calls.filter(([s,m])=>s===take.session && m==='begin').length, 1);
+
+  takeState.controlState = 'unknown'; takeState.controlError = 'restore_failed'; takeState.controlGeneration++;
+  const canceledGate = new AbortController();
+  const gate = preStep([], canceledGate.signal);
+  await tick(); canceledGate.abort();
+  await assert.rejects(gate, {name:'AbortError'});
+  assert.equal((await pendingTool()).kind, 'deny', 'unknown control fails closed');
+  const stoppedGate = hooks.get('agent/turn-stopping')({agent:take,signal:takeSignal});
+  await tick(); takeState.phase = 'stopped';
+  await stoppedGate;
+  assert.equal(take.inbox.nextStep.length, 0, 'native stop does not claim control was returned');
+  await hooks.get('session/event')(take.session, {type:'turn/end',data:{reason:{kind:'aborted'}}});
+
+  const disposeTake = createAgent([start,user('虚拟屏')]);
+  await tool.execute({screen:'virtual'}, {agent:disposeTake, signal:takeSignal});
+  states.get(disposeTake.session).controlState = 'user';
+  const disposeWait = hooks.get('agent/turn-stopping')({agent:disposeTake, signal:takeSignal});
+  await tick();
+  await hooks.get('agent/disposed')({agent:disposeTake});
+  await disposeWait;
+  assert.equal(states.get(disposeTake.session).phase, 'stopped');
+  console.log('PASS mobile_use: cancellable takeover gates, preserved inbox, one fresh-observation notice, no stale-tool replay, short takeover generation, native stop and disposal');
+
+  for (const boundary of ['pre-step', 'turn-stopping', 'companion']) {
+    const closed = createAgent([start,user('虚拟屏继续操作')]);
+    await tool.execute({screen:'virtual', companion:boundary==='companion'}, {agent:closed, signal:takeSignal});
+    const closedState = states.get(closed.session);
+    const original = {id:'original-'+boundary, role:'user', source:{kind:'user'}, content:[]};
+    const arriving = {id:'arriving-'+boundary, source:{kind:'user'}};
+    const admitClosed = messages => hooks.get('agent/pre-step')({agent:closed,signal:takeSignal},
+      async () => ({kind:'enter', messages}));
+    if (boundary !== 'companion') {
+      closedState.controlState = 'user'; closedState.controlGeneration++;
+    }
+    const pending = boundary === 'pre-step' ? admitClosed([original]) :
+      hooks.get('agent/turn-stopping')({agent:closed,signal:takeSignal});
+    await tick();
+    if (boundary === 'companion') assert.equal(closedState.holding, true);
+    closed.inbox.nextStep.push(arriving);
+    closedState.phase = 'stopped'; closedState.controlState = 'closed';
+    closedState.error = {code:'task_gone', message:'The app task no longer exists.'};
+    const result = await pending;
+    let messages;
+    if (boundary === 'pre-step') {
+      messages = result.messages;
+      assert.equal(messages[0], original);
+      assert.deepEqual(closed.inbox.nextStep, [arriving]);
+    } else {
+      assert.equal(closed.inbox.nextStep[0], arriving);
+      messages = (await admitClosed(closed.inbox.nextStep.splice(0))).messages;
+    }
+    const notices = messages.filter(message => message.source?.kind === 'sugar-phone-control');
+    assert.equal(notices.length, 1, boundary+' emits one terminal app-closed notice');
+    assert.match(notices[0].content[0].text, /app task has closed.*phone task has ended.*Tell the user/);
+    assert.match(notices[0].content[0].text, /Do not automatically reopen.*retry.*Wait for a new user request/);
+    assert.doesNotMatch(notices[0].content[0].text, /phone\.observe/);
+    assert.equal((await admitClosed([])).messages.length, 0);
+    closed.inbox.nextStep.length = 0;
+    await hooks.get('agent/turn-stopping')({agent:closed,signal:takeSignal});
+    assert.equal(closed.inbox.nextStep.length, 0, 'task_gone never starts another automatic model step');
+    await hooks.get('session/event')(closed.session, {type:'turn/end',data:{reason:{kind:'aborted'}}});
+  }
+  console.log('PASS mobile_use: app closed during takeover ends the task once, preserves user messages and never requests observe or automatic reopen');
+
+  for (const phase of ['closing', 'close_failed']) {
+    for (const boundary of ['pre-step', 'turn-stopping']) {
+      const closing = createAgent([start,user('关闭虚拟屏')]);
+      await tool.execute({screen:'virtual'}, {agent:closing,signal:takeSignal});
+      const current = states.get(closing.session);
+      current.controlState = 'user'; current.controlGeneration++;
+      const userMessage = {id:phase+'-'+boundary,source:{kind:'user'}};
+      const enter = messages => hooks.get('agent/pre-step')({agent:closing,signal:takeSignal},
+        async () => ({kind:'enter',messages}));
+      const pending = boundary === 'pre-step' ? enter([userMessage])
+        : hooks.get('agent/turn-stopping')({agent:closing,signal:takeSignal});
+      await tick();
+      current.phase = phase; current.controlState = phase;
+      const result = await pending;
+      const messages = boundary === 'pre-step' ? result.messages
+        : (await enter(closing.inbox.nextStep.splice(0))).messages;
+      if (boundary === 'pre-step') assert.equal(messages[0], userMessage);
+      const notice = messages.find(message => message.source?.kind === 'sugar-phone-control').content[0].text;
+      assert.match(notice, phase === 'closing' ? /closing is in progress/ : /closing failed.*retry Close in Sugar/);
+      assert.doesNotMatch(notice, /phone\.observe/);
+      assert.equal((await enter([])).messages.length, 0);
+      await hooks.get('agent/turn-stopping')({agent:closing,signal:takeSignal});
+      assert.equal(closing.inbox.nextStep.length, 0);
+      assert.equal((await tool.execute({}, {agent:closing,signal:takeSignal})).phase, phase);
+      assert.equal(calls.filter(([s,m])=>s===closing.session && m==='begin').length, 1, 'terminal cleanup never reopens the screen');
+      await hooks.get('session/event')(closing.session,{type:'turn/end',data:{reason:{kind:'aborted'}}});
+    }
+  }
+  console.log('PASS mobile_use: closing and close_failed release takeover waits, explain cleanup once and never reopen a screen');
 
   const flow = createAgent([start,user('陪我玩，直到我说结束')]);
   const flowSignal = new AbortController().signal;

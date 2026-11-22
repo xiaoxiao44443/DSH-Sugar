@@ -216,6 +216,7 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
                                 val pageSurface = data.optString("pageSurface").takeIf(HEX::matches) ?: surface
                                 val pageInk = data.optString("pageInk").takeIf(HEX::matches) ?: ink
                                 SugarDialog.updatePalette(activity, pageSurface, pageInk, opacity, blur)
+                                SugarOverlayPalette.update(activity, pageSurface, pageInk, opacity, blur)
                                 mobileUi.palette(pageSurface, pageInk, opacity)
                             }
                         }

@@ -120,7 +120,7 @@ object SugarRuntime {
             "LD_LIBRARY_PATH=/lib/aarch64-linux-gnu:/usr/lib/aarch64-linux-gnu",
             "SUCRUNE_MEMORY_POLICY=linux-jit", "SUCRUNE_NETWORK_POLICY=outbound", "SUCRUNE_NETWORK_ROUTE=system", "SUGAR_HANDOFF=$handoff"
         )
-        for (name in listOf("project-routing.cjs", "workspace-root.cjs", "adb-cli-sessions.cjs", "sugar-user-turn.cjs", "root-agents.mjs", "project-hooks.json", "project-creator-hooks.json", "project-process.cjs", "picker-folders.cjs", "workspace-directory-picker.mjs", "session-storage.cjs", "session-images.cjs", "plugin-module-view.cjs", "plugin-files.cjs", "plugin-file-transport.cjs", "plugin-process.cjs", "plugin-child.cjs", "plugin-global-worker.cjs", "project-process-worker.cjs")) {
+        for (name in listOf("project-routing.cjs", "workspace-root.cjs", "adb-cli-sessions.cjs", "sugar-user-turn.cjs", "root-agents.mjs", "project-hooks.json", "project-creator-hooks.json", "project-process.cjs", "picker-folders.cjs", "workspace-directory-picker.mjs", "session-storage.cjs", "session-images.cjs", "plugin-module-view.cjs", "plugin-files.cjs", "plugin-directories.cjs", "plugin-glob.cjs", "plugin-glob-engine.cjs", "plugin-minimatch.cjs", "plugin-glob-LICENSE.txt", "plugin-file-transport.cjs", "plugin-process.cjs", "plugin-child.cjs", "plugin-global-worker.cjs", "project-process-worker.cjs")) {
             app.assets.open("guest/$name").use { client.writeFile(id, "/opt/sugar/$name", it.readBytes()) }
         }
         val argv = webCommand(app, client, id, workspacePatch, recovery = false)

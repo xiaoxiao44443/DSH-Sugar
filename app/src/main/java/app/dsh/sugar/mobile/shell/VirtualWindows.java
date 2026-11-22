@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.graphics.Rect;
+import android.graphics.Region;
 import android.os.Bundle;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -85,6 +86,42 @@ final class VirtualWindows implements AutoCloseable {
             if (best == null || w.getLayer() > best.getLayer()) best=w;
         }
         return best;
+    }
+    static JSONArray bounds(Rect rect) throws org.json.JSONException {
+        return new JSONArray(new int[]{rect.left,rect.top,rect.right,rect.bottom});
+    }
+    static JSONObject describeWindow(AccessibilityWindowInfo window) throws Exception {
+        if (window == null) return null;
+        Rect rect = new Rect();
+        window.getBoundsInScreen(rect);
+        JSONObject result = new JSONObject().put("display_id",window.getDisplayId()).put("window_id",window.getId())
+                .put("bounds",bounds(rect)).put("bounds_source","accessibility_window")
+                .put("focused",window.isFocused()).put("layer",window.getLayer());
+        AccessibilityNodeInfo root = window.getRoot();
+        if (root != null) {
+            try {
+                root.getBoundsInScreen(rect);
+                result.put("content_bounds",bounds(rect));
+                if (root.getPackageName() != null) result.put("package",root.getPackageName().toString());
+            } finally { root.recycle(); }
+        }
+        // A window's task ID is hidden on some releases. Never infer it from the top package.
+        try {
+            int taskId = (Integer) AccessibilityWindowInfo.class.getMethod("getTaskId").invoke(window);
+            if (taskId >= 0) result.put("task_id",taskId);
+        } catch (ReflectiveOperationException | SecurityException unavailable) { }
+        return result;
+    }
+    static String geometry(AccessibilityWindowInfo window) {
+        if (window == null) return "none";
+        Region region = new Region();
+        window.getRegionInScreen(region);
+        String value = region.toString();
+        // Also reject an observation after a window moved away and returned to its old bounds.
+        try {
+            value += "|" + AccessibilityWindowInfo.class.getMethod("getTransitionTimeMillis").invoke(window);
+        } catch (ReflectiveOperationException | SecurityException unavailable) { }
+        return value;
     }
     static String text(CharSequence value) {
         if (value == null) return "";

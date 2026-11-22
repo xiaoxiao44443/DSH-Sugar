@@ -102,13 +102,46 @@ class SugarDialogGlassTest {
     }
 
     @Test fun previewCanUseTheSpaceBelowTheCardForTheIllustration() {
-        // The nearly full-height landscape preview leaves 29dp in total.
+        // The nearly full-height landscape preview leaves 29dp in total: clip, do not shrink.
         val top = dialogPeekHeadroom(29, cap = 34, preview = true)
-        val peek = dialogPeekBounds(0, top, 210, 0, 0, 210, 1f, true)!!
-        assertEquals(33, peek.bottom - peek.top)
+        val peek = dialogPeekBounds(0, top, 210, 0, 0, 210, 1f, true, preview = true)!!
+        assertEquals(38, peek.bottom - peek.top)
+        assertEquals(-5, peek.top)
+        assertEquals(33, peek.bottom)
         assertEquals(14, dialogPeekHeadroom(29, cap = 34, preview = false))
         assertEquals(34, dialogPeekHeadroom(80, cap = 34, preview = true))
         assertEquals(0, dialogPeekHeadroom(0, cap = 34, preview = true))
+    }
+
+    @Test fun draggedPreviewKeepsTheMascotAndPaddingUnchangedAtBothEdges() {
+        for (density in listOf(1f, 2.55f)) for (compact in listOf(false, true)) {
+            fun dp(value: Int) = (value * density).roundToInt()
+            val cap = dp(if (compact) 34 else 57)
+            val spare = cap * 4
+            val initial = previewVerticalPlacement(spare, cap, requestedShift = 0)
+            val figure = dialogPeekBounds(0, initial.top, dp(370), 0, 0, dp(370), density, compact, preview = true)!!
+            for (shift in -spare..spare) {
+                val moved = previewVerticalPlacement(spare, cap, requestedShift = shift)
+                assertEquals(initial.top, moved.top)
+                assertEquals(initial.bottom, moved.bottom)
+                assertEquals(figure, dialogPeekBounds(0, moved.top, dp(370), 0, 0, dp(370), density, compact, preview = true))
+                assertTrue(figure.top >= -1) // Pixel rounding at non-integer densities.
+            }
+        }
+    }
+
+    @Test fun previewMascotStillFitsNarrowWidthsAndOrdinaryDialogsStillFitHeadroom() {
+        val narrow = dialogPeekBounds(0, 57, 100, 0, 0, 100, 1f, false, preview = true)!!
+        val moved = dialogPeekBounds(0, 10, 100, 0, 0, 100, 1f, false, preview = true)!!
+        assertTrue(narrow.bottom - narrow.top < 61)
+        assertTrue(narrow.left >= 10 && narrow.right <= 88)
+        assertEquals(narrow.right - narrow.left, moved.right - moved.left)
+        assertEquals(narrow.bottom - narrow.top, moved.bottom - moved.top)
+
+        val ordinary = dialogPeekBounds(0, 20, 370, 0, 0, 370, 1f, false)!!
+        assertEquals(24, ordinary.bottom - ordinary.top)
+        assertEquals(0, ordinary.top)
+        assertNull(dialogPeekBounds(0, 8, 370, 0, 0, 370, 1f, false))
     }
 
     @Test fun peekStaysAboveDialogAndOnItsSideOfTheRail() {
@@ -121,18 +154,23 @@ class SugarDialogGlassTest {
         assertTrue(smaller.bottom < 60)
     }
 
-    @Test fun previewDragCanUseSpaceReservedForTheMascot() {
+    @Test fun previewDragStopsTheWholeWindowAtSafeEdgesWithoutRelayout() {
         for (spare in listOf(0, 23, 58, 96, 271)) {
             val centered = previewVerticalPlacement(spare, cap = 34, requestedShift = 0)
+            val travel = spare - centered.top - centered.bottom
+            val start = travel / 2
             assertEquals(0, centered.windowY)
-            fun cardTop(p: PreviewVerticalPlacement) = (spare - p.top - p.bottom) / 2 + p.windowY + p.top
-            val start = cardTop(centered)
+            var previousTop = 0
             for (dy in -300..300) {
                 val p = previewVerticalPlacement(spare, cap = 34, requestedShift = dy)
-                val expected = (start + dy).coerceIn(0, spare)
-                assertEquals(expected, cardTop(p))
-                assertEquals(expected - start, p.shift)
-                assertTrue(p.top <= expected && p.bottom <= spare - expected)
+                val windowTop = start + p.windowY
+                assertEquals((start + dy).coerceIn(0, travel), windowTop)
+                assertEquals(p.shift, p.windowY)
+                assertEquals(centered.top, p.top)
+                assertEquals(centered.bottom, p.bottom)
+                assertTrue(windowTop >= 0 && windowTop + p.top + p.bottom <= spare)
+                assertTrue(windowTop - previousTop in 0..1)
+                previousTop = windowTop
             }
         }
     }

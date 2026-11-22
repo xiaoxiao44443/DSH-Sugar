@@ -6,10 +6,38 @@ import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
+
+/** Copy Android's mutable Rect before its window or node handle is recycled. */
+internal data class MainWindowBounds(val left: Int, val top: Int, val right: Int, val bottom: Int) {
+    fun json() = JSONArray(listOf(left, top, right, bottom))
+
+    companion object {
+        fun from(rect: Rect) = MainWindowBounds(rect.left, rect.top, rect.right, rect.bottom)
+    }
+}
 
 internal data class MainWindow(
     val id: Int, val packageName: String, val width: Int, val height: Int, val rotation: Int, val generation: Long,
-)
+    val bounds: MainWindowBounds? = null, val contentBounds: MainWindowBounds? = null,
+    val focused: Boolean? = null, val layer: Int? = null,
+) {
+    val geometrySignature: String
+        get() = UUID.nameUUIDFromBytes(toString().toByteArray(Charsets.UTF_8)).toString()
+
+    fun metadata(): JSONObject? {
+        val actualBounds = bounds ?: return null
+        if (id < 0) return null
+        return JSONObject().put("display_id", 0).put("window_id", id)
+            .put("bounds", actualBounds.json()).put("bounds_source", "accessibility_window")
+            .put("geometry_signature", geometrySignature).apply {
+                if (packageName.isNotEmpty()) put("package", packageName)
+                contentBounds?.let { put("content_bounds", it.json()) }
+                focused?.let { put("focused", it) }
+                layer?.let { put("layer", it) }
+            }
+    }
+}
 
 internal data class MainObservation(
     val id: String, val time: Long, val window: MainWindow,

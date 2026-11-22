@@ -195,6 +195,7 @@ internal class ProjectAdbCli(
             require(op in OPERATIONS) { "不支持此 adb 命令。" }
             val root = op == "root-exec" || op == "root-status"
             if (root) clientName = "sugar-root"
+            val rootAdmission = if (op == "root-exec") MobileUseTasks.captureRootAdmission() else null
             val authority = synchronized(lock) {
                 check(!closed)
                 call.token = token // Register before calling DSH so a simultaneous revoke can cancel this request.
@@ -214,6 +215,7 @@ internal class ProjectAdbCli(
             // Root scripts are explicit Android shell requests. Keep existing ADB
             // inspection separate so adb shell su retains Shell's own grant.
             val inspection = if (root) null else command?.let(AdbUiCommands::inspect)
+            val uiAdmission = if (inspection?.action != null) MobileUseTasks.captureUiAdmission() else null
             fun watchClient() {
                 socket.soTimeout = 0
                 thread(isDaemon = true, name = "sugar-adb-cli-peer") {
@@ -248,7 +250,9 @@ internal class ProjectAdbCli(
                     stdout.write((rootAccess.status().toString() + "\n").toByteArray(Charsets.UTF_8))
                     output.exit(0)
                 } else {
-                    output.exit(rootAccess.execOut(checkNotNull(command), stdout, stderr, call.signal))
+                    output.exit(MobileUseTasks.withRootCommand(checkNotNull(rootAdmission)) {
+                        rootAccess.execOut(checkNotNull(command), stdout, stderr, call.signal)
+                    })
                 }
             } else if (mobile) {
                 val actor = MobileUseTasks.Owner(mobileScope, owner.first, owner.second, identity.getString("conversation"))
@@ -266,7 +270,7 @@ internal class ProjectAdbCli(
                             fun execute(routed: String) = transport.execOut(routed, stdout, stderr, call.signal)
                             if (ui == null) execute(shellCommand) else {
                                 val actor = MobileUseTasks.Owner(mobileScope, owner.first, owner.second, identity.getString("conversation"))
-                                MobileUseTasks.withAdbUi(actor, identity.optJSONObject("route"), ui, shellCommand, ::execute)
+                                MobileUseTasks.withAdbUiAdmitted(checkNotNull(uiAdmission), actor, identity.optJSONObject("route"), ui, shellCommand, ::execute)
                             }
                         }
                         "pull" -> { transport.pull(remotePath(args), stdout, call.signal); 0 }

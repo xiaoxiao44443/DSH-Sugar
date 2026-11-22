@@ -215,7 +215,7 @@ internal class ProjectBridge(val context: Context, private val client: RuntimeCl
             }
             DesktopPetActivity.publish(this, request.getString("state"), request.opt("sessionId") as? String, result,
                 request.opt("phase") as? String, request.opt("caption") as? String, request.opt("phoneStep") as? String,
-                request.optLong("captionAt", 0L))
+                request.optLong("captionAt", 0L), request.optLong("turnStartedAt", 0L))
             return JSONObject()
         }
         if (op == "agentNotification" || op == "dismissAgentNotification") {

@@ -18,10 +18,12 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -35,11 +37,17 @@ final class VirtualOperations implements AutoCloseable {
     private final InputManager inputManager;
     private final Method inject;
     private final BooleanSupplier stopped;
+    private final VirtualTaskControl taskControl;
+    private final VirtualAppearance appearance=new VirtualAppearance();
     private String observation, previousScope;
     private long timestamp;
     VirtualOperations(VirtualFrames frames,Context shell,BooleanSupplier stopped) {
+        this(frames,shell,stopped,()->true);
+    }
+    VirtualOperations(VirtualFrames frames,Context shell,BooleanSupplier stopped,BooleanSupplier mainAvailable) {
         this.frames=frames; this.shell=shell; display=frames.display.getDisplayId();
         this.stopped = stopped;
+        taskControl = new VirtualTaskControl(shell,display,stopped,mainAvailable);
         inputManager = shell.getSystemService(InputManager.class);
         Method method = null;
         try {
@@ -56,7 +64,25 @@ final class VirtualOperations implements AutoCloseable {
         windows=w;
         if (frames.mainDisplay) frames.mainWindows = windows;
     }
-    public void close() { if(windows!=null) windows.close(); }
+    public void close() { taskControl.releaseOwnership(); if(windows!=null) windows.close(); }
+    JSONObject closeTasks() throws Exception {
+        observation=null; previousScope=null;
+        return frames.mainDisplay ? new JSONObject().put("ok",true).put("closed",true) : taskControl.closeTasks();
+    }
+    JSONObject foregroundStatus(JSONObject args,BooleanSupplier allowed) throws Exception {
+        JSONObject result=taskControl.foregroundStatus();
+        if(args.optBoolean("appearance",false))
+            result.put("appearance",appearance.sample(windows==null?null:windows.ui,args.optJSONObject("overlay_bounds"),allowed));
+        return result;
+    }
+    JSONObject control(String op) throws Exception {
+        if (!op.equals("control_status")) {
+            observation=null;
+            previousScope=null;
+            if (windows!=null) windows.tree(null);
+        }
+        return taskControl.execute(op);
+    }
     private static JSONObject ok() throws Exception { return new JSONObject().put("ok",true); }
     private static JSONObject error(String code,String message) throws Exception {
         return new JSONObject().put("ok",false).put("error",new JSONObject().put("code",code).put("message",message));
@@ -86,8 +112,19 @@ final class VirtualOperations implements AutoCloseable {
         int at=component.indexOf('/');
         return at==-1 ? "" : component.substring(0,at);
     }
-    private String scope(String component,AccessibilityWindowInfo window) {
-        return display+"|"+component+"|"+(window==null ? -1 : window.getId())+"|"+frames.display.getRotation();
+    private JSONObject windowMetadata(AccessibilityWindowInfo window) throws Exception {
+        JSONObject result = VirtualWindows.describeWindow(window);
+        if (result == null) return null;
+        Point size = new Point(); frames.display.getRealSize(size);
+        String geometry = display + "|" + size.x + "x" + size.y + "|" + frames.display.getRotation() + "|" +
+                result.toString() + "|" + VirtualWindows.geometry(window);
+        return result.put("geometry_signature", UUID.nameUUIDFromBytes(geometry.getBytes(StandardCharsets.UTF_8)).toString());
+    }
+    private String scope(String component,JSONObject window) {
+        return display+"|"+component+"|"+(window==null ? "none" : window.optString("geometry_signature"))+"|"+frames.display.getRotation();
+    }
+    private String currentScope() throws Exception {
+        return scope(top(), windowMetadata(windows == null ? null : windows.window()));
     }
     private static String cli(String... arguments) throws Exception {
         Process p = new ProcessBuilder(arguments).redirectErrorStream(true).start();
@@ -214,11 +251,17 @@ final class VirtualOperations implements AutoCloseable {
             android.os.UserHandle user=android.os.UserHandle.getUserHandleForUid(args.getInt("owner_uid"));
             targetUser=(int)android.os.UserHandle.class.getMethod("getIdentifier").invoke(user);
             if(targetUser<0) return error("app_unavailable","Could not determine the app's Android user.");
-            if(pkg.equals(foregroundPackageForUser(targetUser)))
+            if(frames.mainDisplay && pkg.equals(foregroundPackageForUser(targetUser)))
                 return ok().put("display_id",display).put("dispatch","already_foreground").put("verification","verified");
+        } else {
+            targetUser=(int)ActivityManager.class.getMethod("getCurrentUser").invoke(null);
         }
-        // Avoid moving a task out of a display on which the user is already working.
-        for(ActivityManager.RunningTaskInfo task:tasks()) if(taskDisplay(task)!=display &&
+        if(!frames.mainDisplay) {
+            JSONObject existing=taskControl.existingLaunch(target,targetUser,args.optBoolean("borrow_allowed",false));
+            if(existing!=null) { observation=null; previousScope=null; return existing; }
+        }
+        // The main-screen driver must not take a task from another display.
+        for(ActivityManager.RunningTaskInfo task:tasks()) if(frames.mainDisplay && taskDisplay(task)!=display &&
                 task.topActivity!=null && pkg.equals(task.topActivity.getPackageName()) && task.isRunning &&
                 task.topActivity.equals(target))
             return error("app_on_other_display","That activity already has a task on another display.");
@@ -226,14 +269,23 @@ final class VirtualOperations implements AutoCloseable {
         // This launch belongs to the virtual display. Let Android discard its recent entry when its activity finishes.
         int flags = frames.mainDisplay ? Intent.FLAG_ACTIVITY_NEW_TASK : Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK |
                 Intent.FLAG_ACTIVITY_NEW_DOCUMENT | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS;
+        Set<Integer> before=frames.mainDisplay?null:taskControl.beforeLaunch();
         List<String> command = new ArrayList<>(Arrays.asList("/system/bin/cmd","activity","start-activity"));
-        if(byName) command.addAll(Arrays.asList("--user",Integer.toString(targetUser),"-a",Intent.ACTION_MAIN,"-c",Intent.CATEGORY_LAUNCHER));
+        command.addAll(Arrays.asList("--user",Integer.toString(targetUser)));
+        if(byName) command.addAll(Arrays.asList("-a",Intent.ACTION_MAIN,"-c",Intent.CATEGORY_LAUNCHER));
         command.addAll(Arrays.asList("--display",Integer.toString(display),"-f",Integer.toString(flags),"-n",target.flattenToString()));
         cli(command.toArray(new String[0]));
         JSONObject result=sent();
         long until=SystemClock.uptimeMillis()+2500;
         do {
-            if(pkg.equals(byName ? foregroundPackageForUser(targetUser) : packageOf(top())))
+            if(!frames.mainDisplay) {
+                JSONObject identity=taskControl.recordLaunch(pkg,targetUser,before);
+                if(identity!=null) {
+                    for(String key:new String[]{"task_id","user_id","package","display_id","task_origin","source_display_id"})
+                        if(identity.has(key)) result.put(key,identity.get(key));
+                    return result.put("verification","verified");
+                }
+            } else if(pkg.equals(byName ? foregroundPackageForUser(targetUser) : packageOf(top())))
                 return result.put("verification","verified").put("package",pkg);
             SystemClock.sleep(75);
         } while(SystemClock.uptimeMillis()<until);
@@ -282,13 +334,20 @@ final class VirtualOperations implements AutoCloseable {
             finally { synchronized (launching) { launching.remove(pkg); } }
         }
         AccessibilityWindowInfo window=windows==null?null:windows.window();
+        JSONObject windowInfo=windowMetadata(window);
         String component=top();
-        String currentScope=scope(component,window);
+        String currentScope=scope(component,windowInfo);
         if(op.equals("observe")) {
             if(args.optBoolean("tree",true) && windows==null) return error("tree_unavailable","No virtual display tree; request image only.");
             JSONObject result=ok().put("width",size.x).put("height",size.y).put("rotation",frames.display.getRotation())
                     .put("display",frames.mainDisplay ? "main" : "virtual").put("display_id",display).put("package",packageOf(component))
                     .put("window_id",window==null?-1:window.getId()).put("timestamp_ms",System.currentTimeMillis());
+            if (windowInfo != null) result.put("window",windowInfo);
+            if (!frames.mainDisplay) {
+                JSONObject task=taskControl.metadata();
+                if(task!=null) for(String key:new String[]{"task_id","task_origin","source_display_id","user_id"})
+                    if(task.has(key)) result.put(key,task.get(key));
+            }
             if(args.optBoolean("tree",true)) result.put("tree_timestamp_ms",System.currentTimeMillis())
                     .put("tree",windows.tree(window==null?null:window.getRoot()));
             else if(windows!=null) windows.tree(null);
@@ -298,7 +357,7 @@ final class VirtualOperations implements AutoCloseable {
                 if (image.has("feedback_delay_ms")) result.put("feedback_delay_ms",image.remove("feedback_delay_ms"));
                 result.put("image",image);
             }
-            if(!currentScope.equals(scope(top(),windows==null?null:windows.window())))
+            if(!currentScope.equals(currentScope()))
                 return error("stale_observation","Virtual display changed during observation.");
             observation=UUID.randomUUID().toString(); previousScope=currentScope; timestamp=SystemClock.elapsedRealtime();
             return result.put("observation_id",observation);

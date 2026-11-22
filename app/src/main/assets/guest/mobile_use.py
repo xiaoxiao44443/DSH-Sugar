@@ -127,7 +127,8 @@ class Observation(dict):
 
     def metadata(self):
         """Copy observation geometry and provenance without image pixels or UI text."""
-        result = {k: self[k] for k in ("observation_id", "display", "width", "height", "rotation",
+        result = {k: self[k] for k in ("observation_id", "display", "display_id", "width", "height", "rotation",
+                                         "window_id", "window", "task_origin", "task_id", "user_id", "source_display_id",
                                          "timestamp_ms", "image_timestamp_ms", "feedback_delay_ms") if k in self}
         if self.get("image"):
             result["image"] = {k: v for k, v in self["image"].items() if k != "data"}
