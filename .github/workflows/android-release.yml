@@ -48,6 +48,12 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.2'
+      - name: Check plugin workspace filesystem
+        run: |
+          foreach ($check in @('check-plugin-files-worker.cjs', 'check-plugin-files.cjs', 'check-plugin-directories.cjs', 'check-plugin-glob.cjs', 'check-plugin-routing.cjs', 'check-plugin-process.cjs')) {
+            node "scripts/$check"
+            if ($LASTEXITCODE -ne 0) { throw "Plugin filesystem preflight failed: $check" }
+          }
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: '1.26.10'

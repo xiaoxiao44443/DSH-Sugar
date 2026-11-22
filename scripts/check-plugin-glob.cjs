@@ -49,9 +49,9 @@ if (!isMainThread && workerData?.sugarGlobServer) {
   async function main() {
     assert.equal(typeof fs.globSync, 'function', 'Run with Node 24 or newer');
     // Windows CI TEMP may use an 8.3 name or junction. Internal fixture links
-    // must target the same canonical root that the file backend validates.
-    const fixtureBase = fs.realpathSync(os.tmpdir());
-    const root = fs.mkdtempSync(path.join(fixtureBase, 'sugar-plugin-glob-'));
+    // must use the backend's native realpath; legacy realpathSync keeps 8.3 names.
+    const fixtureBase = await fs.promises.realpath(os.tmpdir());
+    const root = await fs.promises.realpath(fs.mkdtempSync(path.join(fixtureBase, 'sugar-plugin-glob-')));
     const actualA = path.join(root, 'a');
     for (const directory of ['a', 'b', 'host', 'outside']) {
       fs.mkdirSync(path.join(root, directory));
@@ -182,6 +182,24 @@ if (!isMainThread && workerData?.sugarGlobServer) {
             assert.deepEqual(normalize(await collect(iterator)), expected, testCase.label + ': async iterator');
           });
         } catch (cause) {
+          const inspectPath = async name => {
+            const attempt = async read => {
+              try { return await read(); }
+              catch (error) { return { code: error.code }; }
+            };
+            return {
+              path: name,
+              realpathSync: await attempt(() => fs.realpathSync(name)),
+              realpathNative: await attempt(() => fs.realpathSync.native(name)),
+              realpathPromise: await attempt(() => fs.promises.realpath(name)),
+              readlink: await attempt(() => fs.promises.readlink(name))
+            };
+          };
+          console.error('Glob fixture path diagnostics:', JSON.stringify({
+            fixtureBase,
+            paths: await Promise.all([root, actualA, path.join(actualA, 'src'),
+              path.join(actualA, 'linked-src')].map(inspectPath))
+          }, null, 2));
           throw new Error('Glob differential "' + testCase.label + '" (' + api + ', Node ' +
             process.version + ', ' + process.platform + ') failed', { cause });
         }
