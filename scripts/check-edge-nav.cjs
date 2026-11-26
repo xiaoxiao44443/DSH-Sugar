@@ -1,4 +1,4 @@
-// node scripts/check-edge-nav.cjs [--language|--shell-history|--notification-glass|--pane-deck|--splash-preview]. Set CHROME_BIN to select a Chromium executable.
+// node scripts/check-edge-nav.cjs [--licenses|--language|--shell-history|--notification-glass|--pane-deck|--splash-preview]. Set CHROME_BIN to select a Chromium executable.
 const { spawn } = require('node:child_process');
 const { existsSync, mkdtempSync, readFileSync } = require('node:fs');
 const { rm } = require('node:fs/promises');
@@ -18,12 +18,13 @@ const noticeMode = process.argv[2] === '--notification-glass';
 const recoverySettingsMode = process.argv[2] === '--recovery-settings';
 const historyMode = process.argv[2] === '--shell-history' || noticeMode || recoverySettingsMode;
 const languageMode = process.argv[2] === '--language';
+const licensesMode = process.argv[2] === '--licenses';
 const recoveryMode = process.argv[2] === '--recovery';
 const recoveryManagerMode = process.argv[2] === '--recovery-manager';
 const deckMode = process.argv[2] === '--pane-deck';
 const exitMode = process.argv[2] === '--splash-exit';
 const previewMode = process.argv[2] === '--splash-preview';
-const source = readFileSync(!recoveryMode && !recoveryManagerMode && !languageMode && !historyMode && !deckMode && !previewMode && !exitMode && process.argv[2] || join(assets, 'sugar-edge-nav.js'), 'utf8');
+const source = readFileSync(!recoveryMode && !recoveryManagerMode && !languageMode && !licensesMode && !historyMode && !deckMode && !previewMode && !exitMode && process.argv[2] || join(assets, 'sugar-edge-nav.js'), 'utf8');
 const profile = mkdtempSync(join(tmpdir(), 'sugar-edge-test-'));
 const browser = spawn(executable, ['--headless', '--remote-debugging-pipe', '--no-first-run',
   '--disable-background-networking', '--disable-extensions', '--user-data-dir=' + profile],
@@ -2033,6 +2034,7 @@ async function run() {
   if (exitMode) return require('./check-splash-exit.cjs')({assets,send,evaluate,paint});
   if (previewMode) return require('./check-splash-preview.cjs')({assets,send,evaluate,touch,paint});
   if (languageMode) return require('./check-language.cjs')({assets,send,evaluate,paint});
+  if (licensesMode) return require('./check-open-source-notices.cjs')({assets,send,evaluate,paint,screen});
   if (recoveryMode) return require('./check-recovery-rail.cjs')({assets,evaluate,touch,tap,center,touchSwipe,paint});
   if (recoveryManagerMode) return require('./check-recovery-management.cjs')({assets,evaluate,send,tap,center,touchSwipe,paint});
   await evaluate(readFileSync(join(assets,'sugar-i18n.js'),'utf8'));
@@ -2470,7 +2472,8 @@ async function run() {
 (async () => {
   try {
     await run();
-    console.log(recoveryManagerMode ? 'PASS offline recovery manager: docking gestures, limited actions and back handling' :
+    console.log(licensesMode ? 'PASS open-source licenses: local assets, detail pages, history and scroll, translations, themes, narrow screens, safe text and retry' :
+      recoveryManagerMode ? 'PASS offline recovery manager: docking gestures, limited actions and back handling' :
       recoverySettingsMode ? 'PASS recovery settings: shared surface and rail, inherited controls and bidirectional history' :
       recoveryMode ? 'PASS recovery rail: drag, glass, isolated history, four controls and explicit end request' :
       noticeMode ? 'PASS notification glass: text contrast, surfaces, shadows and filter fallback on plain and mixed backdrops' : languageMode ? 'PASS Sugar language: live controls, navigation, native preference restore and DSH isolation' : exitMode ? 'PASS splash exit: five composited reveals and reduced motion' : previewMode ? 'PASS splash preview: cross-origin layout, scaled drags, rotation, cancel and reset' :

@@ -20,6 +20,8 @@
     overview: {parent:'settings', title:'设置'},
     general: {parent:'overview', title:'通用'},
     about: {parent:'general', title:'关于'},
+    licenses: {parent:'about', title:'开源许可证'},
+    'license-detail': {parent:'licenses', title:'许可详情'},
     pet: {parent:'settings', title:'桌宠'},
     'pet-preview': {parent:'pet', title:'动作预览'},
     appearance: {parent:'settings', title:'外观'},
@@ -71,6 +73,7 @@
   let recoveryPage, recoveryState = {};
   let profilePanel, adbState, adbPending, adbTimer, adbResumeTimer;
   let deviceRootState, appInfo;
+  let licenseData, licenseLoading = false, licenseError = false, licenseRequest, licenseId;
   let adbAwaitingSince = 0, adbStale = false, adbTriedConnect = false;
   let nearStyles, nearNodes = new Set(), lastSampleAt = -Infinity;
   function listen(target, event, fn, options) {
@@ -115,6 +118,7 @@
       tab, workspaceId, workspacePath
     };
     if (tab === 'storage-session-detail') return {key:'sugar/' + tab + '/' + sessionDetailId, tab, detailId:sessionDetailId};
+    if (tab === 'license-detail') return {key:'sugar/' + tab + '/' + encodeURIComponent(licenseId), tab, licenseId};
     if (tab) return {key:'sugar/' + tab, tab};
     // The DSH drawer is a transient menu. Swiping back to a conversation restores its page.
     const mark = window.SugarNavigation?.bookmark?.({includeDrawer:false});
@@ -596,6 +600,7 @@
     const slide = Boolean(!scrub && deck && pages[page.parent]?.slide && vertical);
     if (tab === 'adb') root.querySelector('#adb-code').value = '';
     tab = next;
+    if (tab === 'license-detail') renderLicenseDetail(licenseId);
     if (tab === 'notifications') paintNotifications();
     if (tab === 'adb') paintAdb();
     refreshPlatformStatus();
@@ -610,6 +615,7 @@
     state();
     pets?.show(tab);
     storage?.show(tab);
+    if (tab === 'licenses') loadLicenses();
     if (!before && !scrub) rail.setExpanded(true);
     bounds();
     if (!scrub) heading.focus({preventScroll: true});
@@ -780,6 +786,10 @@
         workspacePath = entry.workspacePath;
       }
       if (entry.tab === 'storage-session-detail') sessionDetailId = entry.detailId;
+      if (entry.tab === 'license-detail') {
+        if (!renderLicenseDetail(entry.licenseId)) return false;
+        licenseId = entry.licenseId;
+      }
       showTab(entry.tab, direction, navigationTap);
       return true;
     }
@@ -833,6 +843,7 @@
   }
   function settingsDrag(target, side, motionDirection, draw) {
     if (!target || !deck) return null;
+    if (target.tab === 'license-detail' && tab !== 'license-detail' && !renderLicenseDetail(target.licenseId)) return null;
     if (tab && target.tab) return deck.begin(tab, target.tab, motionDirection, draw);
     if (!tab && !target.tab) return null;
     // While Sugar settings is open, DSH keeps its current page rendered underneath.
@@ -909,6 +920,120 @@
     requestedLanguage = language;
     i18n.setLanguage(language);
     post({type:'setLanguage', language});
+  }
+  const licenseGroups = {project:'项目', android:'Android 组件', runtime:'运行环境', dependencies:'运行环境依赖'};
+  function licenseNode(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+  function licenseLabel(node, text) {
+    node.dataset.licenseLabel = text;
+    node.textContent = t(text);
+    return node;
+  }
+  function paintLicenses() {
+    const pane = root?.querySelector('[data-pane=licenses]');
+    if (!pane) return;
+    for (const node of root.querySelectorAll('[data-license-label]')) node.textContent = t(node.dataset.licenseLabel);
+    const status = pane.querySelector('[data-license-status]');
+    status.textContent = licenseError ? t('暂时无法读取许可信息') : licenseLoading ? t('正在读取许可信息…') : '';
+    status.hidden = !status.textContent;
+    pane.querySelector('[data-license-retry]').hidden = !licenseError;
+    pane.querySelector('[data-license-list]').setAttribute('aria-busy', String(licenseLoading));
+    pane.querySelector('[data-license-count]').textContent = licenseData ? new Intl.NumberFormat(i18n.language).format(licenseData.components.length) : '';
+  }
+  function renderLicenses() {
+    const list = root.querySelector('[data-license-list]');
+    const fragment = document.createDocumentFragment();
+    for (const [groupId, title] of Object.entries(licenseGroups)) {
+      const components = licenseData.components.filter(item => (Object.hasOwn(licenseGroups, item.group) ? item.group : 'dependencies') === groupId);
+      if (!components.length) continue;
+      const group = licenseNode('section', 'license-group');
+      group.dataset.licenseGroup = groupId;
+      group.append(licenseLabel(licenseNode('h3'), title));
+      for (const component of components) {
+        const row = licenseNode('button', 'license-component');
+        row.type = 'button';
+        row.dataset.licenseComponent = component.id;
+        const identity = licenseNode('span', 'license-identity');
+        identity.translate = false;
+        identity.append(licenseNode('span', 'license-name', component.name));
+        const metadata = licenseNode('span', 'license-metadata');
+        if (component.version) metadata.append(licenseNode('span', 'license-version', component.version));
+        metadata.append(licenseNode('span', 'license-tag', component.license));
+        identity.append(metadata);
+        const chevron = licenseNode('span', 'license-chevron');
+        chevron.setAttribute('aria-hidden', 'true');
+        row.append(identity, chevron);
+        group.append(row);
+      }
+      fragment.append(group);
+    }
+    list.replaceChildren(fragment);
+    paintLicenses();
+  }
+  function openLicenseDetail(id) {
+    if (travelling || scrub || !renderLicenseDetail(id)) return;
+    licenseId = id;
+    navigate('license-detail', true);
+  }
+  function renderLicenseDetail(id) {
+    const component = licenseData?.components.find(item => item.id === id);
+    const pane = root?.querySelector('[data-pane=license-detail]');
+    if (!component || !pane) return false;
+    if (pane.dataset.licenseId === id) return true;
+    pane.dataset.licenseId = id;
+    pane.querySelector('h1').textContent = component.name;
+    const body = pane.querySelector('[data-license-detail]');
+    const fragment = document.createDocumentFragment();
+    const metadata = licenseNode('div', 'license-metadata license-detail-metadata');
+    metadata.translate = false;
+    if (component.version) metadata.append(licenseNode('span', 'license-version', component.version));
+    metadata.append(licenseNode('span', 'license-tag', component.license));
+    fragment.append(metadata);
+    if (component.sourceUrl) {
+      const source = licenseLabel(licenseNode('button', 'license-source'), '项目源码');
+      source.type = 'button'; source.dataset.licenseSource = component.id;
+      fragment.append(source);
+    }
+    // Keep upstream names and license originals as text, including their line breaks.
+    // Only the chosen component's documents are mounted; the list stays unchanged.
+    for (const doc of component.documents) {
+      const article = licenseNode('article', 'license-document');
+      article.translate = false;
+      article.append(licenseNode('h2', null, doc.title), licenseNode('pre', null, doc.text));
+      fragment.append(article);
+    }
+    body.replaceChildren(fragment);
+    pane.querySelector('[data-pane-scroll]').scrollTop = 0;
+    return true;
+  }
+  async function loadLicenses() {
+    if (disposed || licenseLoading || licenseData) return;
+    licenseLoading = true; licenseError = false;
+    licenseRequest = new AbortController();
+    paintLicenses();
+    try {
+      const response = await fetch('/__sugar__/open-source-notices.json', {signal:licenseRequest.signal});
+      if (!response.ok) throw new Error('Local license asset unavailable');
+      const data = await response.json();
+      if (data.schema !== 1 || !Array.isArray(data.components) || !data.components.length ||
+          !data.components.every(item => typeof item.id === 'string' && typeof item.name === 'string' &&
+            typeof item.license === 'string' && Array.isArray(item.documents) && item.documents.length &&
+            item.documents.every(doc => typeof doc.title === 'string' && typeof doc.text === 'string'))) {
+        throw new Error('Invalid local license index');
+      }
+      if (disposed) return;
+      licenseData = data;
+      renderLicenses();
+    } catch (error) {
+      if (!disposed && error.name !== 'AbortError') licenseError = true;
+    } finally {
+      licenseLoading = false;
+      if (!disposed) paintLicenses();
+    }
   }
   function settingsPane(id, content, headerAction = '') {
     return `<section data-pane="${id}" ${id === 'overview' ? '' : 'hidden'}><div class="settings-layout">
@@ -1008,7 +1133,18 @@
           <p class="about-version"><span>版本</span> <span data-app-version translate="no"></span></p>
         </div>
         <button type="button" class="about-source" data-about-source><span>在 GitHub 查看源码</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></svg></button>`)}
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></svg></button>
+        <button type="button" class="about-source about-licenses" data-go="licenses"><span>开源许可证<small>捆绑依赖项的第三方声明</small></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>`)}
+      ${settingsPane('licenses', `<p class="license-intro">感谢开源社区的每一份贡献。</p>
+        <button type="button" class="license-release" data-license-release><span><strong>对应源码</strong><small>查看此版本的源码与发布附件</small></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></svg></button>
+        <div class="license-list-heading"><h2>组件与许可</h2><span data-license-count aria-live="polite"></span></div>
+        <p class="license-status" data-license-status role="status" hidden></p>
+        <button type="button" class="license-retry" data-license-retry hidden>重新读取</button>
+        <div data-license-list></div>
+        <p class="license-footnote">许可原文可离线查看，源码链接需联网。</p>`)}
+      ${settingsPane('license-detail', '<div data-license-detail></div>')}
       ${settingsPane('mobile-main' , window.SugarMobileControls.controls.main)}
       ${settingsPane('storage', window.SugarStorage.controls)}
       ${settingsPane('recovery', window.SugarRecoveryPage.controls)}
@@ -1100,6 +1236,8 @@
       const icon = about.querySelector('.about-icon');
       icon.src = appInfo.icon; icon.hidden = false;
     }
+    main.querySelector('[data-pane=license-detail] h1').translate = false;
+    main.querySelector('[data-pane=licenses]').dataset.keepScrollFrom = 'license-detail';
     cleanups.push(i18n.bindStatic(main));
     root.append(main);
     recoveryPage = window.SugarRecoveryPage.mount(main.querySelector('[data-pane=recovery]'), action => {
@@ -1142,6 +1280,10 @@
       const button = e.target.closest('button');
       if (!button) return;
       if (button.hasAttribute('data-about-source')) return post({type:'openSource'});
+      if (button.hasAttribute('data-license-component')) return openLicenseDetail(button.dataset.licenseComponent);
+      if (button.hasAttribute('data-license-release')) return post({type:'openLicenseRelease'});
+      if (button.hasAttribute('data-license-source')) return post({type:'openLicenseSource', id:button.dataset.licenseSource});
+      if (button.hasAttribute('data-license-retry')) return loadLicenses();
       if (button.dataset.language) return selectLanguage(button.dataset.language);
       if (button.dataset.go) {
         if (navigate(button.dataset.go) && button.dataset.go === 'palette') rail.setExpanded(true);
@@ -1190,6 +1332,7 @@
       sessionStoragePage?.paint();
       workspaceFilesPage?.paint();
       paintLanguage();
+      paintLicenses();
       paintNotifications();
       paintAdb();
       state();
@@ -1339,6 +1482,7 @@
   }
   function dispose() {
     disposed = true;
+    licenseRequest?.abort();
     while (cleanups.length) cleanups.pop()();
     closeNoticePicker();
     sessionStoragePage?.show(null);

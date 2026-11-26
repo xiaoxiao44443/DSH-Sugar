@@ -70,6 +70,7 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
     }
     private var settingsVisible = false
     private var connectionSettingsVisible = false
+    private var licenseSettingsVisible = false
     private var recoveryVisible = false
     private var embeddedPanelOpen = false
     private var embeddedGesture: EmbeddedPreviewGesture? = null
@@ -225,6 +226,10 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
                             .put("type", "notificationStatus").put("enabled", notificationsEnabled()).toString()))
                         "openNotificationSettings" -> if (view.hasWindowFocus()) openNotificationSettings()
                         "openSource" -> if (settingsVisible && view.isShown && view.hasWindowFocus()) BrowserLogin(activity).openSource()
+                        "openLicenseSource" -> if (licenseSettingsVisible && view.isShown && view.hasWindowFocus())
+                            BrowserLogin(activity).openLicenseSource(data.optString("id"))
+                        "openLicenseRelease" -> if (licenseSettingsVisible && view.isShown && view.hasWindowFocus())
+                            BrowserLogin(activity).openLicenseRelease()
                         "petStatus", "petChange", "petSpeech", "petAnswerPreview", "petVoiceStatus" -> if (petVisible)
                             petSettings.handle(data, view.hasWindowFocus())
                         "petVoiceSettings" -> if (petVisible && view.isShown && view.hasWindowFocus()) {
@@ -274,6 +279,7 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
                             // A scrub can stage the neighbour and then cancel. Only act on a settled route.
                             val route = data.optString("settingsRoute")
                             connectionSettingsVisible = nowSettings && route == "adb"
+                            licenseSettingsVisible = nowSettings && (route == "licenses" || route == "license-detail")
                             if (route.isNotEmpty() && route.length <= 40) {
                                 val previousRecovery = recoveryVisible
                                 recoveryVisible = nowSettings && route == "recovery"
@@ -552,6 +558,7 @@ internal class EdgeNavigationHost(private val activity: Activity, private val hi
         channel = null
         settingsVisible = false
         connectionSettingsVisible = false
+        licenseSettingsVisible = false
         recoveryVisible = false
         storageUsage.cancel()
         storageVisible = false

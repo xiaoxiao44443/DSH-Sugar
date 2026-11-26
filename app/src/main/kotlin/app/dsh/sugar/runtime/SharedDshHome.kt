@@ -8,6 +8,13 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.attribute.BasicFileAttributes
 
+/**
+ * One user's DSH home is deliberately shared across projects for configuration,
+ * plugins, history and repair workflows. Project filesystem isolation does not
+ * make this directory confidential between projects; read-only still permits reads.
+ * Host plugins/configuration are trusted code. Routing authority is kept separately
+ * in ROUTING, not imported from user-editable .dsh. See docs/projects-and-files.md.
+ */
 internal object SharedDshHome {
     const val PATH = "/home/sugar/.dsh"
     const val ROUTING = "/home/sugar/.sugar-project-state"

@@ -1,5 +1,8 @@
-// This uses DSH's trusted live services. Shared .dsh and host plugins are trusted
-// control-plane code, so these checks are not an isolation boundary against them.
+// Deliberately use DSH's live approval service so sugar-root follows the same
+// session preset and approval UI as other tools, without a second native prompt.
+// Shared .dsh and host plugins are trusted control-plane code: these checks do
+// not isolate an attacker who can modify them. Android's grant to Sugar remains
+// separate. Full-access/manual execution is intentional; see docs/root-access.md.
 function turnId(session) {
   for (let i = session.seq - 1; i >= 0; i--) {
     const event = session.eventAt(i);

@@ -23,6 +23,8 @@ internal class MainTouchHint(private val service: MobileAccessibilityService) {
     private val remove = Runnable { dismiss() }
 
     fun show(x: Float, y: Float, pkg: String) {
+        // The service has already dispatched the action; this only filters decorative feedback.
+        // Omitting a ring on system/permission screens neither permits nor rejects an operation.
         if (pkg.isEmpty() || pkg == "com.android.systemui" || pkg.contains("permissioncontroller") ||
             service.getSystemService(KeyguardManager::class.java).isKeyguardLocked) return
         pending = true

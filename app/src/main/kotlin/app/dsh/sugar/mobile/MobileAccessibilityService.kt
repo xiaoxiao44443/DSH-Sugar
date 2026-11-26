@@ -28,6 +28,11 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
+/**
+ * Local automation uses the accessibility capability the device user enables in Android.
+ * No hard-coded app denylist is imposed, preserving the user's device-management choices;
+ * Android's capability checks and the task's session/control checks still apply.
+ */
 class MobileAccessibilityService : AccessibilityService() {
     private val windowChanges = MainWindowChanges()
     private val touchHint by lazy { MainTouchHint(this) }
@@ -309,6 +314,8 @@ class MobileAccessibilityService : AccessibilityService() {
             val info = try { packageManager.getActivityInfo(component, 0) } catch (_: PackageManager.NameNotFoundException) {
                 throw ScreenProblem("app_unavailable", "The requested activity is not accessible.")
             }
+            // Same-package launches use Sugar's UID and may reach its internal activities.
+            // This does not export them to other UIDs or bypass Android's component checks.
             if (!info.enabled || !info.applicationInfo.enabled || (!info.exported && pkg != packageName))
                 throw ScreenProblem("app_unavailable", "The requested activity cannot be opened.")
             if (byName) Intent.makeMainActivity(component) else Intent().setComponent(component)

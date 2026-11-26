@@ -1,0 +1,2565 @@
+{
+  "components": [
+    {
+      "id": "dsh-sugar",
+      "sourceUrl": "https://github.com/xiaoxiao44443/DSH-Sugar"
+    },
+    {
+      "id": "androidx-annotation",
+      "sourceUrl": "https://android.googlesource.com/platform/frameworks/support/+/androidx-annotation-release/annotation/"
+    },
+    {
+      "id": "bouncycastle",
+      "sourceUrl": "https://github.com/bcgit/bc-java/tree/r1rv81"
+    },
+    {
+      "id": "conscrypt",
+      "sourceUrl": "https://github.com/google/conscrypt/tree/2.5.3"
+    },
+    {
+      "id": "jetbrains-annotations",
+      "sourceUrl": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/"
+    },
+    {
+      "id": "kotlin-stdlib",
+      "sourceUrl": "https://github.com/JetBrains/kotlin/tree/v2.2.10"
+    },
+    {
+      "id": "libadb-android",
+      "sourceUrl": "https://github.com/MuntashirAkon/libadb-android/tree/3.1.1"
+    },
+    {
+      "id": "spake2-c",
+      "sourceUrl": "https://github.com/MuntashirAkon/spake2-c/tree/0d15933e5ba3e662cb01245a7ac0dc9fca3eac31"
+    },
+    {
+      "id": "spake2-java",
+      "sourceUrl": "https://github.com/MuntashirAkon/spake2-java/tree/2.2.1"
+    },
+    {
+      "id": "deepseek-harness",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.2-rc.5"
+    },
+    {
+      "id": "gnu-common-licenses",
+      "sourceUrl": "https://www.gnu.org/licenses/"
+    },
+    {
+      "id": "go-runtime",
+      "sourceUrl": "https://go.dev/dl/"
+    },
+    {
+      "id": "lua",
+      "sourceUrl": "https://www.lua.org/ftp/lua-5.4.9.tar.gz"
+    },
+    {
+      "id": "musl-zig",
+      "sourceUrl": "https://ziglang.org/download/0.17.1/"
+    },
+    {
+      "id": "network-tools",
+      "sourceUrl": "https://github.com/xiaoxiao44443/DSH-Sugar/blob/main/scripts/prepare-network-tools.py"
+    },
+    {
+      "id": "nodejs",
+      "sourceUrl": "https://nodejs.org/download/release/v24.22.2/node-v24.22.2.tar.xz"
+    },
+    {
+      "id": "npm",
+      "sourceUrl": "https://github.com/npm/cli/tree/v11.19.1"
+    },
+    {
+      "id": "pip",
+      "sourceUrl": "https://github.com/pypa/pip/tree/23.0.1"
+    },
+    {
+      "id": "pnpm",
+      "sourceUrl": "https://github.com/pnpm/pnpm/tree/v10.28.2"
+    },
+    {
+      "id": "python",
+      "sourceUrl": "https://www.python.org/downloads/source/"
+    },
+    {
+      "id": "sharp-libvips",
+      "sourceUrl": "https://github.com/lovell/sharp-libvips/tree/v1.3.4"
+    },
+    {
+      "id": "sucrune",
+      "sourceUrl": "https://github.com/xiaoxiao44443/Sucrune/tree/c21af1309a904c8ab916db2e22f35002b669a0e4"
+    },
+    {
+      "id": "npm-9915c24c6f17bea24387",
+      "sourceUrl": "https://github.com/agentclientprotocol/typescript-sdk"
+    },
+    {
+      "id": "npm-5617f6750ef2c5072e0e",
+      "sourceUrl": "https://www.npmjs.com/package/@anthropic-ai/sdk/v/0.129.0"
+    },
+    {
+      "id": "npm-554384fca1bcd49553a4",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-63571ce04a3ca2e18681",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-a83b49d41ca737480e80",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-30a128862c213379c0cf",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-600be7fa37fa52034cd2",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-40c48e360b16629c63f0",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-d07b07d78add2ffaeaee",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-327ed5923482187b405b",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-be16beb212166a9ebc81",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-371985e6d8a9767ade43",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-681fe4e29a054dd4a24c",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-eca09b8faa6950d6783a",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-ea1dee4a96862e2dfe76",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-43b3c97d4d949b81e5ec",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-4eb243650a029e1e5ad2",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-eda45602f25dd6931b16",
+      "sourceUrl": "https://github.com/aws/aws-sdk-js-v3"
+    },
+    {
+      "id": "npm-99f22e6b9259cdb551e8",
+      "sourceUrl": "https://github.com/awslabs/aws-lambda-invoke-store"
+    },
+    {
+      "id": "npm-2c8152c2f849b2d09fad",
+      "sourceUrl": "https://github.com/babel/babel"
+    },
+    {
+      "id": "npm-00b659115b7ee63691d6",
+      "sourceUrl": "https://github.com/babel/babel"
+    },
+    {
+      "id": "npm-66705423d1080f287cdd",
+      "sourceUrl": "https://github.com/babel/babel"
+    },
+    {
+      "id": "npm-df1cc341598208496fe0",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e3194f0ba62a0f954890",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8e71b85fb3bc16ed221c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-44b022e47f648541fdd3",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-4c90532fecb213030c9d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-0075146ef0d19b9287f5",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f9b5d580d886dae3b796",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2d5025fe86628421f98b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-79f10439ab1ec2537641",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-df680e6dc054055f3ed4",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e9cf61e3cab9a83637bf",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-00232a8a21fa98489858",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-36a09ff558d06cd1971f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9103fb9a656677b6e62e",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ab31a100f818c68d4613",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-77ee4a9e5c228eef0b16",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f7941e0d2f16aecbce91",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-dfb97e71ad5fd928ee74",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5ad4252b14a9d2ede1e1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ec2a19a09f1b798610c7",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3439f2878eec22cce518",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e6e709c7b1be60558a0f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c54dfee0f56f35a6bf52",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-00edb58a6c2c1247bdf1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9723d0ba48d8591501dd",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e76d7938b68aad3da37b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-eefa389c008724198bdc",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b139777bccbaac5f5d01",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-bcec3b1d476e2e72d782",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5408164c4bb9eb311bbd",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9b3623f7e56429769cfc",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7b5ffa556480093e76c5",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2ada17565974651fb9f6",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-20dc4ec0953e6f4d38bc",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d0f0293639ff20d3f67c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a9c68f2f4ba74304aea6",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8e1e7e47fd019c3fa28d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-062ac882ae47a79fb17c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2a78057949ab10edc611",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-6ae48eae82fd26d15316",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2ac872a3ef74c75881e3",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7933435723573e6eb472",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-db6d0c9249efb2ecf969",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a76a7b9318be4bc572ca",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7f2ed890adb4eb33daa6",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-346c3bf2f19f46e442e9",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-73c19dc62f80c364ecc3",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-079596e6d99f8867ec9d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-117c9a100c7c5f98ab27",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5c90e185f89515d405d2",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3ed6e6954f85249a1cd0",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5204406c33a614280b19",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-1fdef28bcc8aecdc102a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-801578d7a1d285d09258",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-148d64dc321671e51a29",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d75634fd84f2b0e59be3",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-20c8131e643643542d4b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9fb085967a0f216ecb3d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2139bd46ebcf0dce828a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-4b6e309b8a79cf0beead",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f5b577ee35125bd9ad5b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a0c6e45febe46a15be17",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-956b2c8a8b682a2fd42d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8e59be532961fa45bda7",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-6f9363144c850940a6e6",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9ba32b8e3f110d9471a4",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-821c259b9119e8de6250",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7b437eb6c0e419d915f8",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-279c35e780206907a53b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c6c66a01fed4afaebe77",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ed000f336db14a7ad82f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d16185786d2fb1b02c8d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ad89bbc516d066683364",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f5d8f9da84b90e9c2b55",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8972b0e4bcfc8514209c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-47403d151dbfb0ccb9db",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a7566f397afede74de4d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-602128e4dfa5dc540398",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-351986949be785eb1a28",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f8a56c7fcc5a97566e13",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3a1ab08a48f8077f0922",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-1d68f39ddff32d1a411d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5461b2a7d887b8180bbc",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3100c33e4524f89b3a0a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-84c0e182577b4b966cc2",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b95b117b7859f34f4ebe",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2b6301d35128f0c86492",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-fc88ac764a53e6cc6ac4",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-de55db2cb4ef0ef1c471",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d30e5575acb9bf11c6ce",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a378a5d186ff67e19822",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-4483bb13bc69ba29403d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-594ca7e0b9f3970a7863",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e9db552038b921216ff1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8e69b6af17869e61f0c8",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-60a30cdb1a625c367280",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2db0d397f1907d130e7a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-1e85d1016ad43e40917a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-08d217438ec636db5894",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-0e263734466cb6b72693",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b734de96e318926c6700",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-4ce909ed3246381e9405",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7338fccdcccc2b2df338",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3a0f5b4649bc5697c03a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-805562dd76011ef6b486",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-65883b31abfddc4636a1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-958b242d309017db7ecb",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d154d4988cfe48c8e72b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9fa17c49f2fc54ecd7b6",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b178abcae23773d607f0",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-16908f2161d10fee55b8",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5fd7823def5f6902db7d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7b02536d69e4e11240ba",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2e6dbc2df808d73fe0ae",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-08d0bd40a9ed91399a0a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3c1eca1ee613c472222e",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-39ba5b4963e28cc5fcc2",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9600b28e0df3ff88404c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9df73eda64afe12b6a8f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c2595358e83d3a348b28",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-14a4b5e8ceb61cac0180",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-566e808cf5f38bfe2989",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-697b187d41c04a1b6e1a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f17d529b38c815981a0d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d7d4bdf1694615fc0a98",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-12b7fb55808b735f5a94",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-545a5f6fc377514d542e",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-6c25dadf17f336556072",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-627b13675b422dda2332",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-327de3da131605253068",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-fda7b99c549fa979c83f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-123571174ff9b4d74388",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-21a771b49fa63b31d6ff",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a5bd84f665d98c422868",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-52e98c4c32d377189382",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-56ad37b28e06f367c80b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8bed41dc4927756a756e",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-4e1b75d59b60037cd997",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-48058c3c62a678e2a3b1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-44f0da1f4790712ee966",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8ee6edf49d4450a5b5f2",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-53bd2bffcece0415a2e9",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ec637a1adb603ef5ec04",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3e863465d4439c69458d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-71cb97dc26785e2514e5",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b65dca22fe8e4fb756e1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-301bea2dba363162887a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-206e3d87b8ece0486571",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-cdc46f4f6a55a5cbf7dc",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5432fb70a764e170796a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8ae105e54a8508ff6cee",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-620db352813f9d4f87fa",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f6dad69ac6872731a157",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9931eb7aac766df8cb11",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-dcdcedb61702b1a226af",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-492f94dac7df1ad55766",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-bbd8595935c36f517d48",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e69de5e921405a511b14",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-1361cd938bacc89d40da",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5b8e17bc94eeca288129",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f2d6f26e3708c9b3bb5f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e87fb62f8534c047366a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-0ce027b37d0f4d4dcffa",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8247d5fbed49263fed4b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-68546f99166a3bd20c3f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-aa7fbd5334c1da6d839a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a07809e97c8e97f00f8e",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-af02ea4a65286135a6aa",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-bec1a543bf0b912a5a6c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-826f5c86c3c1703ab682",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-0c8cb610b6e7e6c57da9",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-4e568ee7aa93ef33aa59",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-fc37ae4888d266ebeb4d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e979930c0400d96d7282",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5c950b02f528177f7625",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e708ba4cd18f686323c9",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2d928cb477f98b7cede1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9165ad35cad2be31d5ff",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-33113e60d9de601c6ea1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-85019c91e4edee91a0a0",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2bb17515b222989e8d91",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b8e053944eacf6a697d6",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3e6dc1ebbf5611b8fa1f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-4b4022dd1985c39e9012",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-cb96038231c250cd6a97",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-77934c28c9c7d8647f92",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7db8a5f93235cc248bcb",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c54e599855c4c6a9c47d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-44b6e9bb5d952a61e1dc",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e91e6e1ab263cdfc7d61",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-17b0c6a9511681654760",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-54abd001332c7c940802",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f71d8e70d9cfb2072a8f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7cba2ccebd9e393f6d18",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-0ebbf470408058bad450",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ea0a985433130dbbeab0",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7589d1751a886798015c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d8bca2e23a8af356487d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a399a798bcab5bacc716",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f8da696ad4c57620fe04",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ebd93a578e52e4eeb073",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ee417d8cb8e3f9cdf19d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-fa703bf47bfd2ab472e6",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5121230775177de35289",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ed6c0957dafd9757199f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-03a85ff1cbea36ee9a30",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c9cbe521e79efb72682c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-df32a169cc02874c6c47",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8bb11322b2d50f8f16e7",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c9a7d7a7150beee950e0",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-42495a26f579140cbe99",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-43b5fb2736f34ead3e82",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-557f0f7b743556f88ea3",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-251cd689ce073c3328ea",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f9e7a001e1d0830520ef",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d33a5e9a677eca6e1f0d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-662e19ada9004b3fdbb9",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-27cd3db75f242d535c80",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c454dab9be3b289793ae",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7f51536d03df4ce79bb8",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b7686019c38a75bd06e9",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c836a4e293f1070882b4",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d934a5ac63a94e878ab5",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-053691bd9ee73aa06bd7",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2679528aa62e75a92427",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b855f93e41b0097be7b4",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5e8e9e6f653c1499c1d3",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-29bd748b6fd90cbc5a6c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2ed263efb61a80e69fba",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b5bd44f67591b906267e",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b4df6d5c69e39479dcf8",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-69a908391e91ea16e3ee",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-cd7656953b2c17ab602d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-6bb9c670bcf55af4ed28",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-998d300e43dd28acc30c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2ff178096d1f56127b6b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d8595b1684697b74e5f7",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-442cf1bf4e540b67535e",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-654a9a0e0b5ea3158628",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-08f6bafed1ec27812bce",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-cb77a71efe340bbe2117",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5bbc9409b3fcafb56f1c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c4cefae80c86a089cead",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3910eefaad75cc285255",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9eb238e3b1fd9daeb207",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-fd9c47eab1c492ef2c74",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c011d40df00ce36d0ded",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-74c7f90273ead19f7aa6",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-effb53d7a07d8ce159b0",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-fdabd60e27396c5b88ee",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c17aa6c2f5f82f2071af",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-6153322f1dd79446466c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c3c69f1a4bd293b5babf",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-693ef5a2b089c94e088a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-87db6fc4350bce1e5155",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5f18eb201fef9dd80eeb",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-308ba5d4aa91d31389f1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5d93074f8ccf8a5e0714",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8f2fde4016fe135e4434",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-01a3dd39d095f00d221d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3aca7b5320904f1f2646",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7f704154380f82859cf4",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c8b301c7a4f128e116df",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7da6b3eb9b72aa1c0152",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d282c4db1cd6abfff3b8",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-378a16d00788994496dd",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-30eac015b6cf14bfde07",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3b2c47e944a242fd0499",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b0df5d598bceb14009e4",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-1bc5240d919cc13fcfc1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7c9b65c10b3327a483fa",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-3aa98654f7c7244bc6b6",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c6ed2f80d9618c4d199c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-954f74dd5a69d4b60395",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-80bdf059bd5314f19fec",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-76a04444d19158587de3",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-44c35021be22258b19ca",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-92f0d68d5084cbacd81f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-58ab6ac626d8505a37c1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-bc7c9508ca8b420b0f67",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-6988ee888b123bc7ef95",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-827142efb867dd995207",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c08f69e4ad8381882262",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b2c91f99ba97a9fda658",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e4e47fcb21696008ab72",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-72a37dedec0ee7577a4c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f96823716551d9a70c34",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e6eb803afca1fb33c957",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b758de1b7d1659c46293",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-34b701ecf3aa5c5d6815",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-1f9bdac3f67abee78b9e",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d63cd42a234757c5beb7",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-ab5ec1a26e26f5a089e3",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-1b0da9fafd0f0132a6ca",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a549674f51cc7f582388",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-dd61ef8531b2f65626c4",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8bc7514de2e2961a1b80",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-794e42fb7ea7bf34a076",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-bd94a317dc1bfe2e051f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e603ea4b1ccfbf28d15a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-0ad4522dc1a1d36848a8",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5fe46f64c8f88e8a02c1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-78f9bd875f922620ef33",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-2366d831ab957b053ce4",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a0087f7e427a3b41634f",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7d10acce617637d0689b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-29c559932ea17e2cf6a2",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-c7a5eee816015b07ec5a",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-40ad62703ac520f144be",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-dbb116eced6c51735a87",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-87674bd878b7d998d8c9",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-4f2a53a9808394a9f51b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a5e223d331e76eafc07b",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-7efba6e6e3e0a72fc6f3",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-04b4aaf1b6df520527e1",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-765f0eb4fb2ce8771278",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8e3a51dba845b48c96de",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a900a5942e19a764f2e9",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-5d6af506efdaed5dbda7",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-affa3ca777ef468b77b5",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-f326d924216bd21e15ee",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-d15278ac496c35177f4c",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e0325d02119db03f18b2",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a0b7797358b267e65451",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-10798971d9c2562a6dcf",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-e810141d5b73ea593919",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-b06b9dd7cea823f399ac",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-077f5b1341c5b5507d84",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-edc2c661c8dfbf9c9807",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-4d63cb6aa64c432ade49",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-881b2763fcc5718fbfca",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-a1f7910ba93ce3bfb44d",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-8587e1690a01d23a22dd",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-9d762f3424155cd003f2",
+      "sourceUrl": "https://github.com/deepseek-ai/dsh-libreoffice-kit"
+    },
+    {
+      "id": "npm-7e6976b041255dbac72b",
+      "sourceUrl": "https://github.com/deepseek-ai/dsh-libreoffice-kit"
+    },
+    {
+      "id": "npm-3ad58a3f01d6a7ea6f6e",
+      "sourceUrl": "https://github.com/deepseek-harness/deepseek-harness"
+    },
+    {
+      "id": "npm-6f63cd051574fbffe382",
+      "sourceUrl": "https://github.com/deepseek-harness/deepseek-harness"
+    },
+    {
+      "id": "npm-a9c3a488260543ecc5ea",
+      "sourceUrl": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "npm-277903b69024b615b8dc",
+      "sourceUrl": "https://github.com/eslint-community/regexpp"
+    },
+    {
+      "id": "npm-325c727010d2c3ba0095",
+      "sourceUrl": "https://github.com/googleapis/js-genai"
+    },
+    {
+      "id": "npm-670fb365eb43a20fce41",
+      "sourceUrl": "https://github.com/lovell/colour"
+    },
+    {
+      "id": "npm-4dbb1cd85e9c5457f4ad",
+      "sourceUrl": "https://github.com/lovell/sharp"
+    },
+    {
+      "id": "npm-a12088039edaeea1b63d",
+      "sourceUrl": "https://github.com/laurent22/joplin"
+    },
+    {
+      "id": "npm-9f6e3a2a1e33c607a317",
+      "sourceUrl": "https://github.com/js-temporal/temporal-polyfill"
+    },
+    {
+      "id": "npm-aa477d4d1034b7ea4b2e",
+      "sourceUrl": "https://github.com/jaredwray/keyv"
+    },
+    {
+      "id": "npm-177656647f57ed98e667",
+      "sourceUrl": "https://github.com/mixmark-io/domino"
+    },
+    {
+      "id": "npm-fe1076ec00e074d27467",
+      "sourceUrl": "https://github.com/modelcontextprotocol/typescript-sdk"
+    },
+    {
+      "id": "npm-07940343367425a537fe",
+      "sourceUrl": "https://github.com/modelcontextprotocol/typescript-sdk"
+    },
+    {
+      "id": "npm-65aff18a9fc4c98f9c24",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js/tree/main/api"
+    },
+    {
+      "id": "npm-bfebcf0e0720d88d3bb5",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js/tree/main/experimental/packages/api-logs"
+    },
+    {
+      "id": "npm-7cfe08f65a2802f4d859",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js/tree/main/packages/opentelemetry-core"
+    },
+    {
+      "id": "npm-229a6bb04bdb1f03618c",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js/tree/main/experimental/packages/otlp-exporter-base"
+    },
+    {
+      "id": "npm-f06f0eba42ca7731495f",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js/tree/main/experimental/packages/otlp-transformer"
+    },
+    {
+      "id": "npm-4bd586e4ec9ad72765f1",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js/tree/main/packages/opentelemetry-resources"
+    },
+    {
+      "id": "npm-48f0ceb8ea8414527bf1",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js"
+    },
+    {
+      "id": "npm-06c37493a5f66607eaa3",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js/tree/main/packages/sdk-metrics"
+    },
+    {
+      "id": "npm-6484c73ab54ea6a8834e",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js/tree/main/packages/sdk-trace"
+    },
+    {
+      "id": "npm-86b29f64050eb0888dc9",
+      "sourceUrl": "https://github.com/open-telemetry/opentelemetry-js/tree/main/semantic-conventions"
+    },
+    {
+      "id": "npm-1fefb4e3e524ccd071f3",
+      "sourceUrl": "https://github.com/dcodeIO/protobuf.js"
+    },
+    {
+      "id": "npm-cab63b986f2c84a5cd42",
+      "sourceUrl": "https://github.com/dcodeIO/protobuf.js"
+    },
+    {
+      "id": "npm-7444c90b15685967a2a8",
+      "sourceUrl": "https://github.com/dcodeIO/protobuf.js"
+    },
+    {
+      "id": "npm-219262ab12178f109b13",
+      "sourceUrl": "https://github.com/dcodeIO/protobuf.js"
+    },
+    {
+      "id": "npm-cdd81e8c142615404ca3",
+      "sourceUrl": "https://github.com/dcodeIO/protobuf.js"
+    },
+    {
+      "id": "npm-73d40770bec3b9397d1a",
+      "sourceUrl": "https://github.com/dcodeIO/protobuf.js"
+    },
+    {
+      "id": "npm-c09274e296946685df68",
+      "sourceUrl": "https://github.com/dcodeIO/protobuf.js"
+    },
+    {
+      "id": "npm-ce165d6d460f3b698a11",
+      "sourceUrl": "https://github.com/dcodeIO/protobuf.js"
+    },
+    {
+      "id": "npm-bfa0acb12ea28266f6ec",
+      "sourceUrl": "https://github.com/protobufjs/protobuf.js"
+    },
+    {
+      "id": "npm-3f086487ddb384d630a5",
+      "sourceUrl": "https://github.com/Sec-ant/readable-stream"
+    },
+    {
+      "id": "npm-3699970d0642f9199e62",
+      "sourceUrl": "https://www.npmjs.com/package/@sindresorhus/is/v/7.2.0"
+    },
+    {
+      "id": "npm-aacc52b06dc049b1d0cb",
+      "sourceUrl": "https://www.npmjs.com/package/@sindresorhus/merge-streams/v/4.0.0"
+    },
+    {
+      "id": "npm-5a26801e5892c0a4fb6c",
+      "sourceUrl": "https://github.com/smithy-lang/smithy-typescript"
+    },
+    {
+      "id": "npm-4bec717cb88b2b85cd08",
+      "sourceUrl": "https://github.com/smithy-lang/smithy-typescript"
+    },
+    {
+      "id": "npm-61b9566ff1dc03b15efa",
+      "sourceUrl": "https://github.com/smithy-lang/smithy-typescript"
+    },
+    {
+      "id": "npm-33affc01050927b4474c",
+      "sourceUrl": "https://github.com/smithy-lang/smithy-typescript"
+    },
+    {
+      "id": "npm-71ef22f744e5db2f1c84",
+      "sourceUrl": "https://github.com/smithy-lang/smithy-typescript"
+    },
+    {
+      "id": "npm-24bb63448b6fa79be367",
+      "sourceUrl": "https://github.com/smithy-lang/smithy-typescript"
+    },
+    {
+      "id": "npm-fce1718f916a6b3aa6f7",
+      "sourceUrl": "https://github.com/smithy-lang/smithy-typescript"
+    },
+    {
+      "id": "npm-12f612f49cbf38f9b1e5",
+      "sourceUrl": "https://github.com/StableLib/stablelib"
+    },
+    {
+      "id": "npm-9bfb5ac2eb33aa4c5906",
+      "sourceUrl": "https://github.com/standard-schema/standard-schema"
+    },
+    {
+      "id": "npm-a4ed82f7088e14da661f",
+      "sourceUrl": "https://github.com/swc-project/swc"
+    },
+    {
+      "id": "npm-62ec866ac4dfbdb8d06b",
+      "sourceUrl": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "id": "npm-b06a0902a104c022dd64",
+      "sourceUrl": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "id": "npm-55db2f3e061631bcd9fa",
+      "sourceUrl": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "id": "npm-bc5d965441d1440bec4d",
+      "sourceUrl": "https://github.com/microsoft/vscode-ripgrep"
+    },
+    {
+      "id": "npm-2edb1d1f6f208fd2b741",
+      "sourceUrl": "https://github.com/microsoft/vscode-ripgrep"
+    },
+    {
+      "id": "npm-b4ccb1aaf4904a1615c3",
+      "sourceUrl": "https://github.com/acornjs/acorn"
+    },
+    {
+      "id": "npm-71dffb6ee59acecb7a5c",
+      "sourceUrl": "https://github.com/acornjs/acorn"
+    },
+    {
+      "id": "npm-428ab87654bdb212ef10",
+      "sourceUrl": "https://github.com/TooTallNate/proxy-agents"
+    },
+    {
+      "id": "npm-439af92eda9782c88b62",
+      "sourceUrl": "https://github.com/TooTallNate/proxy-agents"
+    },
+    {
+      "id": "npm-9c728cf87aba8556fa4b",
+      "sourceUrl": "https://ajv.js.org"
+    },
+    {
+      "id": "npm-eb6fb2df860c4a7d86e8",
+      "sourceUrl": "https://www.npmjs.com/package/argparse/v/2.0.1"
+    },
+    {
+      "id": "debian-base-files",
+      "sourceUrl": "https://sources.debian.org/src/base-files/12.4%2Bdeb12u15/"
+    },
+    {
+      "id": "npm-cf278cb8d073b3bd22b6",
+      "sourceUrl": "https://github.com/beatgammit/base64-js"
+    },
+    {
+      "id": "debian-bash",
+      "sourceUrl": "https://sources.debian.org/src/bash/5.2.15-2/"
+    },
+    {
+      "id": "npm-72ac920aeb92af6ca1db",
+      "sourceUrl": "https://github.com/MikeMcl/bignumber.js"
+    },
+    {
+      "id": "npm-4bb967dd233b979efe6d",
+      "sourceUrl": "https://github.com/antfu-collective/birpc"
+    },
+    {
+      "id": "npm-b7dd79cd605cca5d694f",
+      "sourceUrl": "https://github.com/bowser-js/bowser"
+    },
+    {
+      "id": "npm-77cd18a59a06e032914b",
+      "sourceUrl": "https://www.npmjs.com/package/buffer-equal-constant-time/v/1.0.1"
+    },
+    {
+      "id": "npm-1bd8499cb798950b874c",
+      "sourceUrl": "https://www.npmjs.com/package/bundle-name/v/4.1.1"
+    },
+    {
+      "id": "debian-busybox-static",
+      "sourceUrl": "https://sources.debian.org/src/busybox/1.35.0-4%2Bdeb12u1/"
+    },
+    {
+      "id": "npm-f37ef8b2e3e9b8ebde1b",
+      "sourceUrl": "https://www.npmjs.com/package/byte-counter/v/0.1.0"
+    },
+    {
+      "id": "npm-bc4d24341f85f604856e",
+      "sourceUrl": "https://www.npmjs.com/package/bytes/v/3.1.2"
+    },
+    {
+      "id": "npm-d3f9eef7fd13b44881f6",
+      "sourceUrl": "https://github.com/szmarczak/cacheable-lookup"
+    },
+    {
+      "id": "npm-f8f8a1b7931fb688863f",
+      "sourceUrl": "https://github.com/jaredwray/cacheable"
+    },
+    {
+      "id": "npm-6fd1ad8d2f8f4712642e",
+      "sourceUrl": "https://github.com/paulmillr/chokidar"
+    },
+    {
+      "id": "npm-1212d68ae6811596ccdc",
+      "sourceUrl": "https://github.com/pvorb/node-clone"
+    },
+    {
+      "id": "npm-6b1889d1b2ce322531e5",
+      "sourceUrl": "https://github.com/tj/commander.js"
+    },
+    {
+      "id": "npm-1fc62dae8e41674d70d0",
+      "sourceUrl": "https://www.npmjs.com/package/compressible/v/2.0.18"
+    },
+    {
+      "id": "npm-bcef1264655cd29e7b68",
+      "sourceUrl": "https://www.npmjs.com/package/compression/v/1.8.2"
+    },
+    {
+      "id": "npm-a40258d9a4b0ac968135",
+      "sourceUrl": "https://www.npmjs.com/package/content-type/v/2.1.0"
+    },
+    {
+      "id": "debian-coreutils",
+      "sourceUrl": "https://sources.debian.org/src/coreutils/9.1-1/"
+    },
+    {
+      "id": "npm-50cb51119b3e7a0445ea",
+      "sourceUrl": "https://github.com/moxystudio/node-cross-spawn"
+    },
+    {
+      "id": "npm-233219ced46fb5b84e28",
+      "sourceUrl": "https://github.com/visionmedia/debug"
+    },
+    {
+      "id": "npm-6390bf853aed627edd1f",
+      "sourceUrl": "https://github.com/debug-js/debug"
+    },
+    {
+      "id": "npm-3c52a90c77d2d18678a2",
+      "sourceUrl": "https://www.npmjs.com/package/decompress-response/v/10.0.0"
+    },
+    {
+      "id": "npm-fbb9ad6bceeab1d9e4ed",
+      "sourceUrl": "https://www.npmjs.com/package/default-browser/v/5.5.1"
+    },
+    {
+      "id": "npm-f63dfb38aa4c33779345",
+      "sourceUrl": "https://www.npmjs.com/package/default-browser-id/v/5.0.1"
+    },
+    {
+      "id": "npm-6e79b04c4690532e40a5",
+      "sourceUrl": "https://www.npmjs.com/package/define-lazy-prop/v/3.0.0"
+    },
+    {
+      "id": "npm-7028878ddf0fd7d97770",
+      "sourceUrl": "https://www.npmjs.com/package/depd/v/2.0.0"
+    },
+    {
+      "id": "npm-b0d735940e17a041d544",
+      "sourceUrl": "https://www.npmjs.com/package/destroy/v/1.2.0"
+    },
+    {
+      "id": "npm-a7155eec83d1e1001e3a",
+      "sourceUrl": "https://github.com/lovell/detect-libc"
+    },
+    {
+      "id": "npm-5a9cf482041d1ef6e995",
+      "sourceUrl": "https://github.com/kpdecker/jsdiff"
+    },
+    {
+      "id": "npm-7ff5398c8ababb029cbd",
+      "sourceUrl": "https://github.com/Brightspace/node-ecdsa-sig-formatter#readme"
+    },
+    {
+      "id": "npm-e2746902c758ae8a6f91",
+      "sourceUrl": "https://www.npmjs.com/package/ee-first/v/1.1.1"
+    },
+    {
+      "id": "npm-5731d34cde94cba546f9",
+      "sourceUrl": "https://www.npmjs.com/package/encodeurl/v/2.0.3"
+    },
+    {
+      "id": "npm-5463e0a52abb42be051f",
+      "sourceUrl": "https://www.npmjs.com/package/escape-html/v/1.0.3"
+    },
+    {
+      "id": "npm-dfcb09916bd8554b4d5e",
+      "sourceUrl": "https://www.npmjs.com/package/etag/v/1.8.1"
+    },
+    {
+      "id": "npm-09407100555afb65a1bf",
+      "sourceUrl": "https://github.com/EventSource/eventsource#readme"
+    },
+    {
+      "id": "npm-20af37513d93868b6db0",
+      "sourceUrl": "https://github.com/rexxars/eventsource-parser#readme"
+    },
+    {
+      "id": "npm-d38340ef92da2c536b67",
+      "sourceUrl": "https://www.npmjs.com/package/execa/v/10.2.1"
+    },
+    {
+      "id": "npm-ae97d7c14998a815a0e4",
+      "sourceUrl": "https://github.com/justmoon/node-extend"
+    },
+    {
+      "id": "npm-60db03f2d9496a0b9ae9",
+      "sourceUrl": "https://github.com/epoberezkin/fast-deep-equal"
+    },
+    {
+      "id": "npm-72aeb39a8464f8a712db",
+      "sourceUrl": "https://github.com/dchest/fast-sha256-js"
+    },
+    {
+      "id": "npm-ebad77a3620fa91df963",
+      "sourceUrl": "https://github.com/fastify/fast-uri"
+    },
+    {
+      "id": "npm-9a40c73e2482c1cc6519",
+      "sourceUrl": "https://github.com/node-fetch/fetch-blob"
+    },
+    {
+      "id": "npm-f94dc8df951ebb7b9d71",
+      "sourceUrl": "https://github.com/101arrowz/fflate"
+    },
+    {
+      "id": "npm-e40a8fa62b11394bb3c9",
+      "sourceUrl": "https://github.com/101arrowz/fflate"
+    },
+    {
+      "id": "npm-a3889276b8e03c042204",
+      "sourceUrl": "https://www.npmjs.com/package/figures/v/6.1.0"
+    },
+    {
+      "id": "npm-b31e0f237200fcef0b85",
+      "sourceUrl": "https://www.npmjs.com/package/form-data-encoder/v/4.1.0"
+    },
+    {
+      "id": "npm-57e46e70e3cf628270eb",
+      "sourceUrl": "https://github.com/jimmywarting/FormData#readme"
+    },
+    {
+      "id": "npm-f40feff15332333f77ef",
+      "sourceUrl": "https://www.npmjs.com/package/fresh/v/2.0.0"
+    },
+    {
+      "id": "npm-9592a42af881c300b4f6",
+      "sourceUrl": "https://github.com/googleapis/google-cloud-node"
+    },
+    {
+      "id": "debian-gcc-12-base",
+      "sourceUrl": "https://sources.debian.org/src/gcc-12/12.2.0-14%2Bdeb12u1/"
+    },
+    {
+      "id": "npm-612a1489b46663462f99",
+      "sourceUrl": "https://github.com/googleapis/google-cloud-node-core"
+    },
+    {
+      "id": "npm-c5e93a0a2e1dba96f3aa",
+      "sourceUrl": "https://www.npmjs.com/package/get-stream/v/9.0.1"
+    },
+    {
+      "id": "npm-78d694275685a0f7eab3",
+      "sourceUrl": "https://github.com/googleapis/google-cloud-node"
+    },
+    {
+      "id": "npm-0f403441e9df9734e96a",
+      "sourceUrl": "https://github.com/googleapis/google-cloud-node-core"
+    },
+    {
+      "id": "npm-6e6251a9ab96b15818d2",
+      "sourceUrl": "https://www.npmjs.com/package/got/v/14.6.6"
+    },
+    {
+      "id": "npm-5a8c8949d21b749573f7",
+      "sourceUrl": "https://github.com/npm/hosted-git-info"
+    },
+    {
+      "id": "npm-3c5f965724f98cbe6ea5",
+      "sourceUrl": "https://github.com/kornelski/http-cache-semantics"
+    },
+    {
+      "id": "npm-707a89567e9b013efa55",
+      "sourceUrl": "https://www.npmjs.com/package/http-errors/v/2.0.1"
+    },
+    {
+      "id": "npm-fb2e6f2b7b5c52b68ff3",
+      "sourceUrl": "https://github.com/TooTallNate/proxy-agents"
+    },
+    {
+      "id": "npm-a06eeac086cf230c3bfc",
+      "sourceUrl": "https://github.com/szmarczak/http2-wrapper"
+    },
+    {
+      "id": "npm-b6aac91220cd7856e313",
+      "sourceUrl": "https://github.com/TooTallNate/proxy-agents"
+    },
+    {
+      "id": "npm-4499d3c6a4f775c2f053",
+      "sourceUrl": "https://github.com/TooTallNate/proxy-agents"
+    },
+    {
+      "id": "npm-10c9b779aebd314ed460",
+      "sourceUrl": "https://github.com/ehmicky/human-signals"
+    },
+    {
+      "id": "npm-3eafa9bfb872baf192e8",
+      "sourceUrl": "https://github.com/isaacs/inherits"
+    },
+    {
+      "id": "npm-cb3eb5b02801a63fbaf3",
+      "sourceUrl": "https://github.com/whitequark/ipaddr.js"
+    },
+    {
+      "id": "npm-b21de9a8d47c7c165b91",
+      "sourceUrl": "https://www.npmjs.com/package/is-docker/v/3.0.0"
+    },
+    {
+      "id": "npm-5c276fae7d395a2f6311",
+      "sourceUrl": "https://www.npmjs.com/package/is-in-ssh/v/1.0.0"
+    },
+    {
+      "id": "npm-3f45825f7cda0ec2231b",
+      "sourceUrl": "https://www.npmjs.com/package/is-inside-container/v/1.0.0"
+    },
+    {
+      "id": "npm-d33682e498f67d04f3d3",
+      "sourceUrl": "https://www.npmjs.com/package/is-plain-obj/v/4.1.0"
+    },
+    {
+      "id": "npm-4cc0b1f9633a6b9b1b7f",
+      "sourceUrl": "https://www.npmjs.com/package/is-stream/v/4.0.1"
+    },
+    {
+      "id": "npm-e1632ee1ad93eb0dc2ea",
+      "sourceUrl": "https://www.npmjs.com/package/is-unicode-supported/v/2.1.0"
+    },
+    {
+      "id": "npm-a44f70aa8a1b98c8ef6c",
+      "sourceUrl": "https://www.npmjs.com/package/is-wsl/v/3.1.1"
+    },
+    {
+      "id": "npm-2f62e711a6921973ef3f",
+      "sourceUrl": "https://github.com/isaacs/isexe"
+    },
+    {
+      "id": "npm-1c38817e99a5d571ba0c",
+      "sourceUrl": "https://github.com/panva/jose"
+    },
+    {
+      "id": "npm-f4371f095c6f087cf414",
+      "sourceUrl": "https://www.npmjs.com/package/js-tokens/v/4.0.0"
+    },
+    {
+      "id": "npm-f454554c643bd231e598",
+      "sourceUrl": "https://www.npmjs.com/package/js-yaml/v/4.3.2"
+    },
+    {
+      "id": "npm-90222f20a3a449d3068a",
+      "sourceUrl": "https://www.npmjs.com/package/jsbi/v/4.3.2"
+    },
+    {
+      "id": "npm-88c834751617826d4173",
+      "sourceUrl": "https://www.npmjs.com/package/json-bigint/v/1.0.0"
+    },
+    {
+      "id": "npm-55f85fb2549d12a5c769",
+      "sourceUrl": "https://github.com/ThomasAribart/json-schema-to-ts"
+    },
+    {
+      "id": "npm-e830fd7d93f6ebaa3030",
+      "sourceUrl": "https://github.com/epoberezkin/json-schema-traverse"
+    },
+    {
+      "id": "npm-f88899a11ab5a12ccbcc",
+      "sourceUrl": "https://github.com/brianloveswords/node-jwa"
+    },
+    {
+      "id": "npm-03d6c969c12414a1fa1c",
+      "sourceUrl": "https://github.com/brianloveswords/node-jws"
+    },
+    {
+      "id": "npm-b95898f12ca2422cf590",
+      "sourceUrl": "https://github.com/jaredwray/keyv"
+    },
+    {
+      "id": "npm-15a3a3ad24d1f0bb2458",
+      "sourceUrl": "https://github.com/Koromix/koffi"
+    },
+    {
+      "id": "debian-libbz2-1.0",
+      "sourceUrl": "https://sources.debian.org/src/bzip2/1.0.8-5/"
+    },
+    {
+      "id": "debian-libc-bin",
+      "sourceUrl": "https://sources.debian.org/src/glibc/2.36-9%2Bdeb12u14/"
+    },
+    {
+      "id": "debian-libc6",
+      "sourceUrl": "https://sources.debian.org/src/glibc/2.36-9%2Bdeb12u14/"
+    },
+    {
+      "id": "debian-libcom-err2",
+      "sourceUrl": "https://sources.debian.org/src/e2fsprogs/1.47.0-2/"
+    },
+    {
+      "id": "debian-libcrypt1",
+      "sourceUrl": "https://sources.debian.org/src/libxcrypt/4.4.33-2/"
+    },
+    {
+      "id": "debian-libdb5.3",
+      "sourceUrl": "https://sources.debian.org/src/db5.3/5.3.28%2Bdfsg2-1/"
+    },
+    {
+      "id": "debian-libexpat1",
+      "sourceUrl": "https://sources.debian.org/src/expat/2.5.0-1%2Bdeb12u2/"
+    },
+    {
+      "id": "debian-libffi8",
+      "sourceUrl": "https://sources.debian.org/src/libffi/3.4.4-1/"
+    },
+    {
+      "id": "debian-libgdbm6",
+      "sourceUrl": "https://sources.debian.org/src/gdbm/1.23-3/"
+    },
+    {
+      "id": "debian-libgssapi-krb5-2",
+      "sourceUrl": "https://sources.debian.org/src/krb5/1.20.1-2%2Bdeb12u5/"
+    },
+    {
+      "id": "debian-libk5crypto3",
+      "sourceUrl": "https://sources.debian.org/src/krb5/1.20.1-2%2Bdeb12u5/"
+    },
+    {
+      "id": "debian-libkeyutils1",
+      "sourceUrl": "https://sources.debian.org/src/keyutils/1.6.3-2/"
+    },
+    {
+      "id": "debian-libkrb5-3",
+      "sourceUrl": "https://sources.debian.org/src/krb5/1.20.1-2%2Bdeb12u5/"
+    },
+    {
+      "id": "debian-libkrb5support0",
+      "sourceUrl": "https://sources.debian.org/src/krb5/1.20.1-2%2Bdeb12u5/"
+    },
+    {
+      "id": "debian-liblzma5",
+      "sourceUrl": "https://sources.debian.org/src/xz-utils/5.4.1-1%2Bdeb12u1/"
+    },
+    {
+      "id": "debian-libncursesw6",
+      "sourceUrl": "https://sources.debian.org/src/ncurses/6.4-4/"
+    },
+    {
+      "id": "debian-libnsl2",
+      "sourceUrl": "https://sources.debian.org/src/libnsl/1.3.0-2/"
+    },
+    {
+      "id": "debian-libpython3.11-minimal",
+      "sourceUrl": "https://sources.debian.org/src/python3.11/3.11.2-6%2Bdeb12u9/"
+    },
+    {
+      "id": "debian-libpython3.11-stdlib",
+      "sourceUrl": "https://sources.debian.org/src/python3.11/3.11.2-6%2Bdeb12u9/"
+    },
+    {
+      "id": "debian-libreadline8",
+      "sourceUrl": "https://sources.debian.org/src/readline/8.2-1.3/"
+    },
+    {
+      "id": "debian-libsqlite3-0",
+      "sourceUrl": "https://sources.debian.org/src/sqlite3/3.40.1-2%2Bdeb12u2/"
+    },
+    {
+      "id": "debian-libssl3",
+      "sourceUrl": "https://sources.debian.org/src/openssl/3.0.20-1~deb12u2/"
+    },
+    {
+      "id": "debian-libtinfo6",
+      "sourceUrl": "https://sources.debian.org/src/ncurses/6.4-4/"
+    },
+    {
+      "id": "debian-libtirpc3",
+      "sourceUrl": "https://sources.debian.org/src/libtirpc/1.3.3%2Bds-1/"
+    },
+    {
+      "id": "debian-libuuid1",
+      "sourceUrl": "https://sources.debian.org/src/util-linux/2.38.1-5%2Bdeb12u3/"
+    },
+    {
+      "id": "npm-d4b99df79a95ae637423",
+      "sourceUrl": "https://github.com/dcodeIO/long.js"
+    },
+    {
+      "id": "npm-df21b4179784c93c50ca",
+      "sourceUrl": "https://www.npmjs.com/package/lowercase-keys/v/3.0.0"
+    },
+    {
+      "id": "npm-aca9cdd4321dd851dbbf",
+      "sourceUrl": "https://www.npmjs.com/package/lru-cache/v/11.5.3"
+    },
+    {
+      "id": "debian-media-types",
+      "sourceUrl": "https://sources.debian.org/src/media-types/10.0.0/"
+    },
+    {
+      "id": "npm-4f88fcddeb8de9fdedcb",
+      "sourceUrl": "https://www.npmjs.com/package/mime-db/v/1.54.0"
+    },
+    {
+      "id": "npm-d3f6b61aada9a3c3ec55",
+      "sourceUrl": "https://www.npmjs.com/package/mime-types/v/3.0.2"
+    },
+    {
+      "id": "npm-bc40786fcb616b9c2a4f",
+      "sourceUrl": "https://www.npmjs.com/package/mimic-response/v/4.0.0"
+    },
+    {
+      "id": "npm-8db48b704a04c34cf4aa",
+      "sourceUrl": "https://github.com/lucaong/minisearch"
+    },
+    {
+      "id": "npm-484b814b85d5028e3424",
+      "sourceUrl": "https://www.npmjs.com/package/ms/v/2.0.0"
+    },
+    {
+      "id": "npm-2083576c5af805492764",
+      "sourceUrl": "https://www.npmjs.com/package/ms/v/2.1.3"
+    },
+    {
+      "id": "debian-ncurses-base",
+      "sourceUrl": "https://sources.debian.org/src/ncurses/6.4-4/"
+    },
+    {
+      "id": "npm-2562d60ec88688a734d0",
+      "sourceUrl": "https://www.npmjs.com/package/negotiator/v/0.6.4"
+    },
+    {
+      "id": "npm-860ecfa7ab0ce48c1602",
+      "sourceUrl": "https://www.npmjs.com/package/negotiator/v/1.1.0"
+    },
+    {
+      "id": "npm-a00cd7868cf5256479e2",
+      "sourceUrl": "https://github.com/nodejs/node-addon-api"
+    },
+    {
+      "id": "npm-6b4634c8cfe1436d31e7",
+      "sourceUrl": "https://github.com/deepseek-ai/dsh-node-addon-require-builtin"
+    },
+    {
+      "id": "npm-0f4c1bea29c23a40bb3f",
+      "sourceUrl": "https://github.com/deepseek-ai/dsh-node-addon-require-builtin"
+    },
+    {
+      "id": "npm-dd316c7e2336b463e8a3",
+      "sourceUrl": "https://github.com/deepseek-ai/dsh-node-addon-require-builtin"
+    },
+    {
+      "id": "npm-3c25065fd2bc1b6b5685",
+      "sourceUrl": "https://github.com/jimmywarting/node-domexception"
+    },
+    {
+      "id": "npm-22edb8ba3fe3457e8c1a",
+      "sourceUrl": "https://github.com/node-fetch/node-fetch"
+    },
+    {
+      "id": "npm-6a6819e7c41543dcd25c",
+      "sourceUrl": "https://github.com/microsoft/node-pty"
+    },
+    {
+      "id": "npm-2518c84d0834fe2beae5",
+      "sourceUrl": "https://www.npmjs.com/package/normalize-url/v/8.1.1"
+    },
+    {
+      "id": "npm-80e3b8debcda7e32748f",
+      "sourceUrl": "https://www.npmjs.com/package/npm-run-path/v/6.0.0"
+    },
+    {
+      "id": "npm-ab76330096f053517f0a",
+      "sourceUrl": "https://www.npmjs.com/package/on-finished/v/2.4.2"
+    },
+    {
+      "id": "npm-5c7ccebb19b45155d9a3",
+      "sourceUrl": "https://www.npmjs.com/package/on-headers/v/1.1.0"
+    },
+    {
+      "id": "npm-6ac77d846c988586dfd8",
+      "sourceUrl": "https://www.npmjs.com/package/open/v/11.0.4"
+    },
+    {
+      "id": "npm-a2ea6a51d347184e423c",
+      "sourceUrl": "https://www.npmjs.com/package/openai/v/7.19.0"
+    },
+    {
+      "id": "npm-670a713be3edcba07971",
+      "sourceUrl": "https://www.npmjs.com/package/p-cancelable/v/4.0.1"
+    },
+    {
+      "id": "npm-fc2f132db6038cb9e267",
+      "sourceUrl": "https://www.npmjs.com/package/p-limit/v/7.3.3"
+    },
+    {
+      "id": "npm-725caf13d8b81b2412f6",
+      "sourceUrl": "https://www.npmjs.com/package/p-retry/v/4.6.2"
+    },
+    {
+      "id": "npm-e4ba3ac9af79c37bcea1",
+      "sourceUrl": "https://github.com/nodeca/pako"
+    },
+    {
+      "id": "npm-9fe87b690fd2621a458a",
+      "sourceUrl": "https://www.npmjs.com/package/parse-ms/v/4.0.0"
+    },
+    {
+      "id": "npm-c3fdd1b6fb725cb30e8f",
+      "sourceUrl": "https://www.npmjs.com/package/parseurl/v/1.3.3"
+    },
+    {
+      "id": "npm-4c9360d45d9c66f7bb6a",
+      "sourceUrl": "https://github.com/promplate/partial-json-parser-js"
+    },
+    {
+      "id": "npm-e1a2a032096ace66b422",
+      "sourceUrl": "https://www.npmjs.com/package/path-key/v/3.1.1"
+    },
+    {
+      "id": "npm-8e0734b8abb76579df21",
+      "sourceUrl": "https://www.npmjs.com/package/path-key/v/4.0.0"
+    },
+    {
+      "id": "npm-7c5f372425355293c448",
+      "sourceUrl": "https://www.npmjs.com/package/picocolors/v/1.1.1"
+    },
+    {
+      "id": "npm-0eb48e249822c101af2c",
+      "sourceUrl": "https://github.com/micromatch/picomatch"
+    },
+    {
+      "id": "npm-560377ce6df233b2e39e",
+      "sourceUrl": "https://github.com/crouchcd/pkce-challenge"
+    },
+    {
+      "id": "npm-bf666e269b6718b91aaa",
+      "sourceUrl": "https://www.npmjs.com/package/powershell-utils/v/0.2.1"
+    },
+    {
+      "id": "npm-50ad6835bcf54205b31c",
+      "sourceUrl": "https://www.npmjs.com/package/pretty-ms/v/9.3.1"
+    },
+    {
+      "id": "npm-7c5a2b4503b4d0f6f1a8",
+      "sourceUrl": "https://protobufjs.github.io/protobuf.js/"
+    },
+    {
+      "id": "debian-python3-distutils",
+      "sourceUrl": "https://sources.debian.org/src/python3-stdlib-extensions/3.11.2-3/"
+    },
+    {
+      "id": "debian-python3-gdbm",
+      "sourceUrl": "https://sources.debian.org/src/python3-stdlib-extensions/3.11.2-3/"
+    },
+    {
+      "id": "debian-python3-lib2to3",
+      "sourceUrl": "https://sources.debian.org/src/python3-stdlib-extensions/3.11.2-3/"
+    },
+    {
+      "id": "debian-python3-pip-whl",
+      "sourceUrl": "https://sources.debian.org/src/python-pip/23.0.1%2Bdfsg-1/"
+    },
+    {
+      "id": "debian-python3.11",
+      "sourceUrl": "https://sources.debian.org/src/python3.11/3.11.2-6%2Bdeb12u9/"
+    },
+    {
+      "id": "debian-python3.11-minimal",
+      "sourceUrl": "https://sources.debian.org/src/python3.11/3.11.2-6%2Bdeb12u9/"
+    },
+    {
+      "id": "npm-8f4d9751e91da4c395d0",
+      "sourceUrl": "https://www.npmjs.com/package/quick-lru/v/5.1.1"
+    },
+    {
+      "id": "npm-d8d03a877289186b5131",
+      "sourceUrl": "https://www.npmjs.com/package/range-parser/v/1.3.0"
+    },
+    {
+      "id": "npm-df5701fc5bfa347f2da6",
+      "sourceUrl": "https://github.com/paulmillr/readdirp"
+    },
+    {
+      "id": "npm-bc20339cbc91aaa3e6dc",
+      "sourceUrl": "https://www.npmjs.com/package/require-from-string/v/2.0.2"
+    },
+    {
+      "id": "npm-636ca46ba37c63c457e1",
+      "sourceUrl": "https://github.com/szmarczak/resolve-alpn"
+    },
+    {
+      "id": "npm-defaaa431bb97a98ec4d",
+      "sourceUrl": "https://www.npmjs.com/package/resolve.exports/v/2.0.4"
+    },
+    {
+      "id": "npm-b0b4336600294a3256ca",
+      "sourceUrl": "https://www.npmjs.com/package/responselike/v/4.0.2"
+    },
+    {
+      "id": "npm-99f853a446feaf46ce26",
+      "sourceUrl": "https://github.com/devongovett/restructure"
+    },
+    {
+      "id": "npm-96cc5eabb0f923263868",
+      "sourceUrl": "https://github.com/tim-kos/node-retry"
+    },
+    {
+      "id": "npm-fc1543a0f38ecc40ba4f",
+      "sourceUrl": "https://github.com/jakubroztocil/rrule"
+    },
+    {
+      "id": "npm-d5373e028313ca08b7b5",
+      "sourceUrl": "https://www.npmjs.com/package/run-applescript/v/7.1.0"
+    },
+    {
+      "id": "npm-952cf236ee56e7de5ea7",
+      "sourceUrl": "https://github.com/feross/safe-buffer"
+    },
+    {
+      "id": "npm-302f8da5f167ba57bc8e",
+      "sourceUrl": "https://github.com/npm/node-semver"
+    },
+    {
+      "id": "npm-2519670ce9ac452c40f0",
+      "sourceUrl": "https://www.npmjs.com/package/send/v/1.2.1"
+    },
+    {
+      "id": "npm-aa686afa5272f44cbfea",
+      "sourceUrl": "https://www.npmjs.com/package/serve-static/v/2.2.1"
+    },
+    {
+      "id": "npm-7787a1d3bc2f39b65d75",
+      "sourceUrl": "https://github.com/wesleytodd/setprototypeof"
+    },
+    {
+      "id": "npm-939087f848623246bd15",
+      "sourceUrl": "https://github.com/lovell/sharp"
+    },
+    {
+      "id": "npm-a9cba97b71b818fb0a49",
+      "sourceUrl": "https://www.npmjs.com/package/shebang-command/v/2.0.0"
+    },
+    {
+      "id": "npm-849fb37298f1c4dcdeb6",
+      "sourceUrl": "https://www.npmjs.com/package/shebang-regex/v/3.0.0"
+    },
+    {
+      "id": "npm-e22167f4b69c3205debf",
+      "sourceUrl": "https://github.com/ljharb/shell-quote"
+    },
+    {
+      "id": "npm-09ce5ebc7ff1552bf0ed",
+      "sourceUrl": "https://github.com/tapjs/signal-exit"
+    },
+    {
+      "id": "npm-d39841e95558c32cf23f",
+      "sourceUrl": "https://www.npmjs.com/package/statuses/v/2.0.2"
+    },
+    {
+      "id": "npm-bb0ee48daa0e8accc4e8",
+      "sourceUrl": "https://www.npmjs.com/package/strip-final-newline/v/4.0.0"
+    },
+    {
+      "id": "npm-4ef81fc0c96baa21cd16",
+      "sourceUrl": "https://github.com/devongovett/tiny-inflate"
+    },
+    {
+      "id": "npm-2067d1f99d35f28c8384",
+      "sourceUrl": "https://www.npmjs.com/package/toidentifier/v/1.0.1"
+    },
+    {
+      "id": "npm-131e613e1eac7def8447",
+      "sourceUrl": "https://github.com/ThomasAribart/ts-algebra"
+    },
+    {
+      "id": "npm-8ac62c15d1347d063daf",
+      "sourceUrl": "https://github.com/Microsoft/tslib"
+    },
+    {
+      "id": "npm-2f04b0c3fdc7de67e3e6",
+      "sourceUrl": "https://github.com/mixmark-io/turndown"
+    },
+    {
+      "id": "npm-bbd093f1c027815ad37d",
+      "sourceUrl": "https://www.npmjs.com/package/type-fest/v/4.41.0"
+    },
+    {
+      "id": "npm-28d1b4358ceaeea87ff2",
+      "sourceUrl": "https://github.com/nodejs/undici"
+    },
+    {
+      "id": "npm-53cb0487b88bcc9ad00e",
+      "sourceUrl": "https://github.com/nodejs/undici"
+    },
+    {
+      "id": "npm-0fc73d951acee5c32b35",
+      "sourceUrl": "https://github.com/devongovett/unicode-properties"
+    },
+    {
+      "id": "npm-6b98369ab3a20a3c074a",
+      "sourceUrl": "https://github.com/devongovett/unicode-trie"
+    },
+    {
+      "id": "npm-68062966f02bddea5ee5",
+      "sourceUrl": "https://www.npmjs.com/package/unicorn-magic/v/0.3.0"
+    },
+    {
+      "id": "npm-d308bd3935a6f29310b2",
+      "sourceUrl": "https://www.npmjs.com/package/vary/v/1.1.2"
+    },
+    {
+      "id": "npm-2349028b62115a87d9af",
+      "sourceUrl": "https://github.com/MattiasBuelens/web-streams-polyfill"
+    },
+    {
+      "id": "npm-5a71f2b741944bf107d6",
+      "sourceUrl": "https://github.com/isaacs/node-which"
+    },
+    {
+      "id": "npm-4f0425de28a65c15039c",
+      "sourceUrl": "https://www.npmjs.com/package/which-command/v/0.1.0"
+    },
+    {
+      "id": "npm-ad0573cb088f1fbe75ba",
+      "sourceUrl": "https://github.com/websockets/ws"
+    },
+    {
+      "id": "npm-ee8506733ae11ac9b9d7",
+      "sourceUrl": "https://www.npmjs.com/package/wsl-utils/v/1.0.1"
+    },
+    {
+      "id": "npm-214e9e8e22cdb064b0a1",
+      "sourceUrl": "https://github.com/lddubeau/xmlchars"
+    },
+    {
+      "id": "npm-9b53222172e570a39130",
+      "sourceUrl": "https://eemeli.org/yaml/"
+    },
+    {
+      "id": "npm-7b6613e07e59537bf5a2",
+      "sourceUrl": "https://www.npmjs.com/package/yocto-queue/v/1.2.2"
+    },
+    {
+      "id": "npm-c169b4a653f4256c024d",
+      "sourceUrl": "https://www.npmjs.com/package/yoctocolors/v/2.2.0"
+    },
+    {
+      "id": "debian-zlib1g",
+      "sourceUrl": "https://sources.debian.org/src/zlib/1.2.13.dfsg-1/"
+    },
+    {
+      "id": "npm-924ff20fc2135421a33c",
+      "sourceUrl": "https://github.com/colinhacks/zod"
+    },
+    {
+      "id": "npm-31d0566281954af7ee8d",
+      "sourceUrl": "https://github.com/colinhacks/zod"
+    }
+  ],
+  "schema": 1
+}

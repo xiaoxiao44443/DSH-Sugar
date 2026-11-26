@@ -35,6 +35,36 @@ archive hashes. Unresolved or changed sources fail the build. Output archives
 use sorted entries, fixed timestamps and fixed modes. They contain no local
 machine paths.
 
+## SPAKE2 corresponding source
+
+The notices archive includes both `spake2-java-2.2.1-source.tar.gz` and
+`spake2-c-0d15933e5ba3e662cb01245a7ac0dc9fca3eac31-source.tar.gz` under
+`android/spake2/`. GitHub tag archives leave submodule directories empty:
+the second archive is the exact `android/src/main/cpp/spake2-c` gitlink in
+the Java 2.2.1 tag, not the latest branch. Both have locked URLs, sizes and
+SHA-256 hashes in `companions-lock.json`.
+
+Packaging requires both archives and checks that the Java/JNI build files,
+C sources, headers and licenses are nonempty regular files. An empty
+submodule directory, missing header or link in place of source fails the
+release even when the downloaded tarball matches its checksum.
+`android/spake2/BUILDING.txt` in the output explains how to unpack the C
+archive into the Java tree and build the AAR or ARM64 JNI library using
+the included upstream Gradle/CMake files. No submodule network checkout
+is needed to assemble the supplied sources; build tools and dependency
+downloads are separate.
+
+When updating SPAKE2, audit the new tag's gitlink, update both locked input
+archives and `SPAKE2_SOURCE_FILES`/version constants in the packager, and
+recheck the build instructions. Do not substitute a source tag's empty
+submodule directory for the actual C source archive.
+
+Run the offline regression checks with:
+
+```sh
+python -m unittest discover -s scripts/release -p 'test_*.py'
+```
+
 ## Updating dependencies
 
 The lock is an audited baseline, not an automatic dependency detector. It checks

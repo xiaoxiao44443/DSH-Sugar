@@ -78,6 +78,14 @@ internal class BrowserLogin(private val activity: Activity) {
 
     fun openSource() = openBrowser(Uri.parse("https://github.com/xiaoxiao44443/DSH-Sugar"))
 
+    fun openLicenseSource(id: String) {
+        OpenSourceNotices.sourceUrl(activity, id)?.let { openBrowser(Uri.parse(it)) }
+    }
+
+    fun openLicenseRelease() {
+        OpenSourceNotices.releaseUrl(activity)?.let { openBrowser(Uri.parse(it)) }
+    }
+
     @Suppress("DEPRECATION")
     private fun openBrowser(uri: Uri) {
         val intent = Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)

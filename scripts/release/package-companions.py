@@ -12,6 +12,7 @@ import json
 import re
 import shutil
 import subprocess
+import tarfile
 import tempfile
 import time
 import urllib.request
@@ -24,6 +25,28 @@ ARCHIVES = {
     "assets/network-tools/tools.zip": "network-tools",
     "assets/mobile-python/runtime.zip": "python",
     "assets/guest/zoneinfo.zip": "zoneinfo",
+}
+
+
+# Audited together with the spake2-android 2.2.1 AAR. GitHub tag tarballs do
+# not expand git submodules, so both source archives are mandatory.
+SPAKE2_JAVA_VERSION = "2.2.1"
+SPAKE2_C_COMMIT = "0d15933e5ba3e662cb01245a7ac0dc9fca3eac31"
+SPAKE2_JAVA_ARCHIVE = f"android/spake2/spake2-java-{SPAKE2_JAVA_VERSION}-source.tar.gz"
+SPAKE2_C_ARCHIVE = f"android/spake2/spake2-c-{SPAKE2_C_COMMIT}-source.tar.gz"
+SPAKE2_SOURCE_FILES = {
+    SPAKE2_JAVA_ARCHIVE: (f"spake2-java-{SPAKE2_JAVA_VERSION}", (
+        "LICENSE", ".gitmodules", "build.gradle", "settings.gradle",
+        "gradlew", "gradle/wrapper/gradle-wrapper.jar",
+        "gradle/wrapper/gradle-wrapper.properties", "android/build.gradle",
+        "android/src/main/cpp/CMakeLists.txt", "android/src/main/cpp/spake2_jni.cpp",
+        "android/src/main/java/io/github/muntashirakon/crypto/spake2/Spake2Context.java",
+        "android/src/main/java/io/github/muntashirakon/crypto/spake2/Spake2Role.java",
+    )),
+    SPAKE2_C_ARCHIVE: (f"spake2-c-{SPAKE2_C_COMMIT}", (
+        "LICENSE", "sha512.c", "spake2.c", "ed25519.h", "curve25519_32.h",
+        "include/spake2/sha512.h", "include/spake2/spake2.h",
+    )),
 }
 
 
@@ -226,6 +249,88 @@ def verify_dsc(index: dict, downloads: dict[str, Path]) -> None:
             raise ValueError(f"Source file inventory mismatch: {source['source']}")
 
 
+def verify_spake2_sources(inputs: list[dict], downloads: dict[str, Path]) -> None:
+    """Check actual build inputs, not just a tarball's checksum or empty dirs."""
+    for archive_path, (source_root, required_files) in SPAKE2_SOURCE_FILES.items():
+        records = [r for r in inputs if r["archivePath"] == archive_path]
+        if len(records) != 1:
+            raise ValueError(f"Expected one locked SPAKE2 source archive: {archive_path}")
+        with tarfile.open(downloads[records[0]["sha256"]], "r:gz") as source:
+            members = source.getmembers()
+            by_name = {m.name: m for m in members}
+            if len(by_name) != len(members):
+                raise ValueError(f"Duplicate SPAKE2 source entries: {archive_path}")
+            for relative in required_files:
+                name = f"{source_root}/{relative}"
+                member = by_name.get(name)
+                if member is None or not member.isfile() or member.size <= 0:
+                    raise ValueError(f"Missing or empty SPAKE2 source file: {name}")
+                with source.extractfile(member) as content:
+                    if not content.read(1):
+                        raise ValueError(f"Unreadable SPAKE2 source file: {name}")
+
+
+def spake2_build_instructions() -> bytes:
+    return fr"""SPAKE2 Android source assembly and build
+
+This directory contains the unmodified spake2-java {SPAKE2_JAVA_VERSION} tag
+archive, including its Java/JNI sources and Gradle/CMake build files, and the
+spake2-c submodule at commit {SPAKE2_C_COMMIT}.
+That commit is the gitlink at android/src/main/cpp/spake2-c in the Java tag;
+it is not the current head of the C repository.
+
+Origins, byte counts and SHA-256 checksums are recorded in ../../upstream-inputs.json.
+The source archives retain their original LICENSE files and per-file notices.
+The parent project is LGPL-3.0. The C sources also include LGPL-2.1-or-later
+and ISC notices; preserve those notices when redistributing them.
+
+Assemble the source tree (POSIX shell with tar, from this directory):
+
+  tar -xzf spake2-java-{SPAKE2_JAVA_VERSION}-source.tar.gz
+  mkdir -p spake2-java-{SPAKE2_JAVA_VERSION}/android/src/main/cpp/spake2-c
+  tar -xzf spake2-c-{SPAKE2_C_COMMIT}-source.tar.gz --strip-components=1 \
+    -C spake2-java-{SPAKE2_JAVA_VERSION}/android/src/main/cpp/spake2-c
+
+The C directory must now contain sha512.c, spake2.c, ed25519.h,
+curve25519_32.h and include/spake2/*.h. No git checkout or network fetch is
+needed to restore this submodule. The release packager verifies these files
+are nonempty regular files before publishing the companion archive.
+
+Build the Android AAR using the unmodified upstream project:
+
+  cd spake2-java-{SPAKE2_JAVA_VERSION}
+  ./gradlew :android:assembleRelease
+
+Use JDK 17 or newer and configure the Android SDK via ANDROID_HOME or
+local.properties. The upstream project selects Android Gradle Plugin 8.9.2,
+SDK platform 35 and build-tools 35.0.0; install an Android NDK and CMake for
+its externalNativeBuild. The included wrapper pins Gradle and verifies its
+distribution checksum. Initial toolchain/dependency downloads require network
+access. On Windows use gradlew.bat instead. Output:
+android/build/outputs/aar/android-release.aar (includes libspake2.so).
+
+To build only the ARM64 JNI library with an installed NDK and CMake/Ninja,
+run from the assembled project root (ANDROID_NDK_HOME is the NDK path):
+
+  cmake -S android/src/main/cpp -B build/spake2-arm64 -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+    -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-21 \
+    -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="$PWD/build/spake2-arm64" \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384"
+  cmake --build build/spake2-arm64
+
+When using CMake 4+, also pass -DCMAKE_POLICY_VERSION_MINIMUM=3.5 to
+the configure command for the upstream project's older minimum version.
+The explicit library output directory is required by its post-build strip
+command. This native build was checked with NDK 26.3.11579264.
+
+Sugar consumes the upstream AAR as a dependency; these instructions rebuild
+its sources, not a promise of a byte-identical upstream binary. To use a
+modified library in Sugar, replace the SPAKE2 dependency with the rebuilt AAR
+and rebuild Sugar using its published Android build instructions.
+""".encode()
+
+
 def package(args: argparse.Namespace) -> None:
     lock = read_json(HERE / "companions-lock.json")
     index = read_json(HERE / "debian-sources.json")
@@ -250,6 +355,7 @@ def package(args: argparse.Namespace) -> None:
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             downloads = dict(pool.map(lambda item: (item[0], fetch(item[1], args.cache_dir)), records.items()))
         verify_dsc(index, downloads)
+        verify_spake2_sources(lock["upstreamInputs"], downloads)
         with tempfile.TemporaryDirectory(dir=args.output_dir) as staging:
             staging = Path(staging)
             with zipfile.ZipFile(staging / "debian-corresponding-source.zip", "w", allowZip64=True) as sources:
@@ -260,6 +366,7 @@ def package(args: argparse.Namespace) -> None:
             with zipfile.ZipFile(staging / "third-party-notices.zip", "w", allowZip64=True) as notices:
                 for record in sorted(lock["upstreamInputs"], key=lambda r: r["archivePath"]):
                     add(notices, record["archivePath"], downloads[record["sha256"]].read_bytes())
+                add(notices, "android/spake2/BUILDING.txt", spake2_build_instructions())
                 add(notices, "upstream-inputs.json", json_bytes(lock["upstreamInputs"]))
                 add(notices, "debian/index.json", json_bytes(index))
                 add(notices, "npm/dsh-linux-arm64-lock.json", json_bytes(read_json(args.project_root / "scripts/dsh-linux-arm64-lock.json")))
@@ -307,7 +414,7 @@ def main() -> None:
     args = parser.parse_args()
     try:
         package(args)
-    except (OSError, ValueError, RuntimeError, KeyError, subprocess.CalledProcessError, zipfile.BadZipFile) as error:
+    except (OSError, ValueError, RuntimeError, KeyError, subprocess.CalledProcessError, zipfile.BadZipFile, tarfile.TarError) as error:
         parser.exit(1, f"Release companion error: {error}\n")
 
 

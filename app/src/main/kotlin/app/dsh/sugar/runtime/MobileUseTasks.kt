@@ -381,6 +381,8 @@ internal object MobileUseTasks {
         if (owner.conversation.isBlank() || owner.conversation.length > 256 || (id.isNotEmpty() && !validId(id)))
             return failure("invalid_task", "Invalid conversation or task.")
         val current = tasks[owner]
+        // screen chooses a target, not additional Android privileges. "ask" is a screen chooser
+        // (or the configured ADB fallback), not per-action approval; refresh still checks capability.
         if (method == "begin") {
             if (!validId(id) || screen !in setOf("ask","main","virtual")) return failure("invalid_target","Choose a valid screen.")
             if (current != null && (current.id == id || !current.ended)) return act(current, "status")

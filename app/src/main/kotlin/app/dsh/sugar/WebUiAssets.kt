@@ -47,6 +47,8 @@ internal class WebUiAssets(private val context: Context) {
     fun intercept(request: WebResourceRequest, authenticatedOrigin: String?): WebResourceResponse? {
         if (authenticatedOrigin == null || request.isForMainFrame || request.method != "GET") return null
         val url = request.url.toString()
+        if (OpenSourcePolicy.matchesRequest(url, authenticatedOrigin, request.method, request.isForMainFrame))
+            return OpenSourceNotices.response(context)
         if (!url.startsWith("$authenticatedOrigin/assets/")) return null
         val pets = "$authenticatedOrigin/assets/sugar/pets/"
         if (url.startsWith(pets)) return petAsset(url.removePrefix(pets))

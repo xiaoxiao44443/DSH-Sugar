@@ -352,6 +352,9 @@ internal class ProjectBridge(val context: Context, private val client: RuntimeCl
                     cwd="/workspace",resident=true,secretEnv=mapOf("SUGAR_PROJECT_TOKEN" to secret),
                     trustedExecutable=launcher,
                     workspaceDirectory=mount?.let { LocalDocumentDirectory(context, it.tree) },
+                    // Intentional shared user home, not a per-project account boundary.
+                    // Landlock limits writes separately; outbound networking is also a
+                    // separate capability and is not disabled by a read-only file policy.
                     directoryBind=GuestDirectoryBind(controlId, SharedDshHome.PATH, SharedDshHome.PATH))
             } finally { secret.fill('\u0000') }
             try {
